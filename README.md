@@ -1,11 +1,13 @@
-# AmadeusGithubBugDataset
+# AmadeusGitHubBugDataset
 
-This repo contains everything required to reproduce what is described in "Root cause prediction based on bug reports" by T. Hirsch and B. Hofer.
-Including the full dataset, all code for dataset creation and automated ML bug classification.
-As our work is ongoing this dataset is subject to change.
+This repo contains everything required to reproduce what is described in "Root cause prediction based on bug reports" by T. Hirsch and B. Hofer,
+including the full data set, all code for data set creation and automated ML bug classification.
+As our work is ongoing this data set is subject to change.
 
-## The dataset
-### Using the dataset:
+## The data set
+ToDo: describe data set - what is it?
+
+### Using the data set:
 Create a python script, or console and run the following:
 ```python
 from pandasMagic import BugDataFrames, Filters
@@ -16,38 +18,40 @@ df = Filters.remove_pull_request_issues(df) # remove all PRs
 Have a look at [RUN_example_load_dataset.py](RUN_example_load_dataset.py) for an example.
 
 ## Machine learning experiment
-### Plots and Performance reports:
-Plots for all individual experiment runs, as well as textual information on performance and selected hyperparameters can be found here: [mlClassifier/figures](mlClassifier/figures)
+ToDo: describe data set - what is it?
 
-### Textual data
-The trainingset can be found in [mlClassifier/data](mlClassifier/data)
+### Plots and Performance reports:
+Plots for all individual experiment runs, as well as textual information on performance and selected hyperparameters can be found here: [mlClassifier/figures](mlClassifier/figures).
+
+### Training data
+The training set can be found in [mlClassifier/data](mlClassifier/data).
 
 ### Running the experiment
 To start the experiment, run the following script: [RUN_ml_experiment.py](RUN_ml_experiment.py) (this will run the experiment 10 times, this can be changed in line 81 in main())
 
-### Creating your own trainingset
-Create your own manual classification or mapping in a csv, and add modify the training set creation in [mlClassifier/InputDataCreator.py](mlClassifier/InputDataCreator.py).
-
-accordingly.
-Remove the existing trainingset in [mlClassifier/data](mlClassifier/data).
+### Creating your own training set
+Create your own manual classification or mapping in a csv, and modify the training set creation in [mlClassifier/InputDataCreator.py](mlClassifier/InputDataCreator.py) accordingly.
+Remove the existing training set in [mlClassifier/data](mlClassifier/data).
 
 Run this script: [RUN_create_trainingset.py](RUN_create_trainingset.py).
 
-## Extending the dataset
+## Extending the data set
 ### File locations
 Collected issue tickets for all projects can be found in [githubanalysis/data](githubanalysis/data).
 
 ### File structure
-Please have a look at [exampleIssue.json](exampleIssue.json) for an example on the structure of the dataset files.
+Please have a look at [exampleIssue.json](exampleIssue.json) for an example on the structure of the data set files.
 
-### Extending the dataset 
+### Extending the data set 
 Download the newest version of the gumtree-spoon-ast-diff jar library here:
-https://github.com/SpoonLabs/gumtree-spoon-ast-diff
-Update the [config.json](config.json) file with your java sdk location, the path to the spoon library, and a github API key.
+https://github.com/SpoonLabs/gumtree-spoon-ast-diff.
 
-The list of github projects are stored in the CONFIG_PATHS field in [common/constants.py](common/constants.py).
+Update the [config.json](config.json) file with your Java SDK location, the path to the spoon library, and a GitHub API key.
+Creating a GitHub API key and adding it to the config files is strongly recommended.
 
-To re-build the full dataset run [RUN_build_dataset.py](RUN_build_dataset.py) (be aware this will take a long time, create quite some traffic, and will overwrite the existing dataset).
+The list of GitHub projects are stored in the CONFIG_PATHS field in [common/constants.py](common/constants.py).
+
+To re-build the full data set run [RUN_build_dataset.py](RUN_build_dataset.py) (be aware this will take a long time, create quite some traffic, and will overwrite the existing data set).
 
 To add new projects, create config files in [githubanalysis/data](githubanalysis/data).
 
@@ -55,7 +59,6 @@ Modify line 15 in [RUN_build_dataset.py](RUN_build_dataset.py) to include only n
 
 Finally, add the new configs to the CONFIG_PATHS to use them in keyword search and ML experiments.
 
-Creating a Github API key and adding it to the config files is strongly recommended.
 
 ## Python requirements
 
@@ -89,15 +92,15 @@ The conda environment can be found in [conda.yml](conda.yml).
 
 ## Other scripts and structure of this repo
 
-* [githubanalysis/githubIssueAquisition](githubanalysis/githubIssueAquisition) - Contains everything for fetching issues from github.
-* [githubanalysis/codeAnalysis](githubanalysis/codeAnalysis) - Contains java aware differ.
+* [githubanalysis/githubIssueAquisition](githubanalysis/githubIssueAquisition) - Contains everything for fetching issues from GitHub.
+* [githubanalysis/codeAnalysis](githubanalysis/codeAnalysis) - Contains Java aware differ.
 * [githubanalysis/gitRepoAnalysis](githubanalysis/gitRepoAnalysis) - Contains all code for performing operations on local git repos.
-* [githubanalysis/data](githubanalysis/data) - tThe data and config files for all projects.
+* [githubanalysis/data](githubanalysis/data) - The data and config files for all projects.
 * [githubanalysis/db](githubanalysis/db) - Scripts for creating the code stats and other metadata based on fetched issues.
 
-* [keywordSearch](keywordSearch) - Should be self explanatory.
+* [RUN_search_keywords.py](RUN_search_keywords.py) and [keywordSearch](keywordSearch) - Should be self explanatory.
 
-* [mlClassifier](mlClassifier) - The trainingset, scripts for creation them, as well as ouptut folder for the experiments.
+* [mlClassifier](mlClassifier) - The training set, scripts for creation them, as well as ouptut folder for the experiments.
 
 * [pandasMagic](pandasMagic) - Scripts for combining the raw data of all fetched projects, and applying filters to them.
 
