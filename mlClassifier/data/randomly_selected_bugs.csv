@@ -1,0 +1,161 @@
+url,RootCause,RootCauseDetail,Confidence
+https://github.com/hazelcast/hazelcast/issues/166,Concurrency,Order violation,8
+https://github.com/netty/netty/issues/1898,Semantic,Exception handling,9
+https://github.com/elastic/elasticsearch/issues/2461,Semantic,Missing case,8
+https://github.com/elastic/elasticsearch/issues/10351,Semantic,Exception handling,9
+https://github.com/eclipse/hono/issues/1988,Semantic,Processing,10
+https://github.com/redisson/redisson/issues/2153,Semantic,Processing,8
+https://github.com/elastic/elasticsearch/issues/5871,Other,Documentation,9
+https://github.com/bazelbuild/bazel/issues/3763,Semantic,Missing case,10
+https://github.com/eXist-db/exist/issues/1293,Concurrency,Other,9
+https://github.com/elastic/elasticsearch/issues/4486,Other,Documentation,9
+https://github.com/elastic/elasticsearch/issues/868,,,0
+https://github.com/mybatis/mybatis-3/issues/61,Semantic,Processing,9
+https://github.com/elastic/elasticsearch/issues/12212,Semantic,Processing,9
+https://github.com/eclipse/ceylon-ide-eclipse/issues/1470,,,0
+https://github.com/elastic/elasticsearch/issues/4960,Semantic,Processing,9
+https://github.com/apache/shardingsphere/issues/382,,,0
+https://github.com/spring-projects/spring-framework/issues/24088,Semantic,Missing case,8
+https://github.com/mapsforge/mapsforge/issues/753,Semantic,Processing,10
+https://github.com/netty/netty/issues/2297,,,0
+https://github.com/spring-projects/spring-boot/issues/4124,,,0
+https://github.com/netty/netty/issues/2252,Semantic,Processing,10
+https://github.com/spring-projects/spring-boot/issues/145,Semantic,Missing case,9
+https://github.com/spring-projects/spring-framework/issues/24861,Semantic,Missing case,9
+https://github.com/eXist-db/exist/issues/1415,Concurrency,Other,9
+https://github.com/eclipse/n4js/issues/560,Semantic,Processing,8
+https://github.com/spring-projects/spring-framework/issues/22603,Semantic,Processing,9
+https://github.com/pmd/pmd/issues/1990,Semantic,Processing,9
+https://github.com/spring-projects/spring-boot/issues/18910,Semantic,Processing,10
+https://github.com/elastic/elasticsearch/issues/11870,Semantic,Processing,9
+https://github.com/elastic/elasticsearch/issues/1497,,,0
+https://github.com/hazelcast/hazelcast/issues/14358,Semantic,Missing case,8
+https://github.com/eclipse/n4js/issues/1756,,,0
+https://github.com/eclipse/ceylon-ide-eclipse/issues/1522,Semantic,Processing,8
+https://github.com/spring-projects/spring-session/issues/1250,,,0
+https://github.com/netty/netty/issues/4205,Memory,Memory leak,9
+https://github.com/elastic/elasticsearch/issues/1463,,,0
+https://github.com/aol/cyclops/issues/276,Semantic,Processing,10
+https://github.com/netty/netty/issues/4265,Semantic,Processing,9
+https://github.com/netty/netty/issues/3900,,,0
+https://github.com/skylot/jadx/issues/685,Semantic,Processing,9
+https://github.com/MenoData/Time4J/issues/809,Semantic,Missing case,9
+https://github.com/AsyncHttpClient/async-http-client/issues/1327,,,0
+https://github.com/spring-projects/spring-boot/issues/2220,Semantic,Processing,9
+https://github.com/elastic/elasticsearch/issues/15148,,,
+https://github.com/netty/netty/issues/1390,Semantic,Exception handling,9
+https://github.com/eclipse/ceylon-ide-eclipse/issues/1020,Semantic,Processing,9
+https://github.com/naver/pinpoint/issues/5261,Semantic,Missing case,10
+https://github.com/elastic/elasticsearch/issues/1229,Semantic,Processing,8
+https://github.com/hazelcast/hazelcast/issues/3633,Semantic,Processing,9
+https://github.com/netty/netty/issues/4170,Semantic,Processing,8
+https://github.com/hazelcast/hazelcast/issues/258,Semantic,Processing,9
+https://github.com/checkstyle/checkstyle/issues/3839,Semantic,Missing case,8
+https://github.com/spring-projects/spring-boot/issues/5517,Semantic,Processing,9
+https://github.com/netty/netty/issues/4247,Semantic,Processing,10
+https://github.com/intuit/karate/issues/244,Semantic,Missing case,9
+https://github.com/speedment/speedment/issues/628,Semantic,Missing case,9
+https://github.com/Azure/azure-iot-sdk-java/issues/127,Semantic,Processing,8
+https://github.com/skylot/jadx/issues/712,Semantic,Processing,8
+https://github.com/netty/netty/issues/2014,Semantic,Processing,9
+https://github.com/eclipse/ceylon-ide-eclipse/issues/1711,Semantic,Processing,10
+https://github.com/eclipse/n4js/issues/1443,Semantic,Missing case,10
+https://github.com/netty/netty/issues/2544,Semantic,Missing case,10
+https://github.com/checkstyle/checkstyle/issues/2811,Semantic,Missing case,10
+https://github.com/eclipse/lemminx/issues/574,Semantic,Processing,9
+https://github.com/spring-projects/spring-boot/issues/836,Semantic,Missing case,9
+https://github.com/bazelbuild/bazel/issues/5815,Semantic,Processing,9
+https://github.com/elastic/elasticsearch/issues/7793,Semantic,Missing case,8
+https://github.com/spring-projects/spring-boot/issues/4552,Semantic,Missing case,9
+https://github.com/netty/netty/issues/278,Semantic,Missing case,9
+https://github.com/eclipse/ceylon-ide-eclipse/issues/1537,,,0
+https://github.com/spring-projects/spring-boot/issues/9797,Semantic,Missing case,9
+https://github.com/spring-projects/spring-batch/issues/766,Semantic,Processing,8
+https://github.com/restlet/restlet-framework-java/issues/1038,Semantic,Processing,10
+https://github.com/spring-projects/spring-batch/issues/3717,Semantic,Processing,8
+https://github.com/eclipse/n4js/issues/435,Semantic,Processing,8
+https://github.com/redisson/redisson/issues/102,Semantic,Processing,10
+https://github.com/spring-projects/spring-boot/issues/2135,,,0
+https://github.com/graphhopper/graphhopper/issues/282,Semantic,Processing,8
+https://github.com/elastic/elasticsearch/issues/6279,Semantic,Missing case,9
+https://github.com/netty/netty/issues/258,Semantic,Exception handling,9
+https://github.com/AsyncHttpClient/async-http-client/issues/1434,Semantic,Processing,10
+https://github.com/intuit/karate/issues/773,Semantic,Missing case,9
+https://github.com/hazelcast/hazelcast/issues/14909,,,0
+https://github.com/google/closure-compiler/issues/717,Semantic,Missing case,9
+https://github.com/spring-projects/spring-security/issues/5163,Semantic,Processing,9
+https://github.com/netty/netty/issues/7329,Semantic,Processing,8
+https://github.com/netty/netty/issues/769,Semantic,Missing case,9
+https://github.com/redisson/redisson/issues/2217,Semantic,Processing,8
+https://github.com/bazelbuild/bazel/issues/3553,Semantic,Missing case,8
+https://github.com/spring-projects/spring-boot/issues/139,Semantic,Missing case,10
+https://github.com/elastic/elasticsearch/issues/5622,Semantic,Missing case,9
+https://github.com/bytedeco/javacv/issues/1179,Semantic,Processing,9
+https://github.com/grpc/grpc-java/issues/2726,Semantic,Processing,10
+https://github.com/eclipse/hono/issues/1370,Semantic,Missing case,8
+https://github.com/haraldk/TwelveMonkeys/issues/492,Semantic,Missing case,8
+https://github.com/spring-projects/spring-boot/issues/12447,Semantic,Processing,10
+https://github.com/checkstyle/checkstyle/issues/3210,Concurrency,other,8
+https://github.com/elastic/elasticsearch/issues/5142,Semantic,Processing,8
+https://github.com/checkstyle/checkstyle/issues/3507,Semantic,Processing,8
+https://github.com/elastic/elasticsearch/issues/2657,Semantic,Processing,9
+https://github.com/elastic/elasticsearch/issues/4112,Semantic,Missing case,8
+https://github.com/eclipse/elk/issues/457,Semantic,Processing,10
+https://github.com/GoogleCloudPlatform/google-cloud-eclipse/issues/166,,,0
+https://github.com/spring-projects/spring-session/issues/154,Semantic,Missing case,9
+https://github.com/MenoData/Time4J/issues/577,Semantic,Missing case,9
+https://github.com/spring-projects/spring-security/issues/5742,Semantic,Processing,8
+https://github.com/AsyncHttpClient/async-http-client/issues/1028,Semantic,Processing,8
+https://github.com/JetBrains/idea-gitignore/issues/295,,,0
+https://github.com/yegor256/takes/issues/331,Semantic,Processing,8
+https://github.com/spring-projects/spring-session/issues/665,Semantic,Processing,8
+https://github.com/Azure/azure-iot-sdk-java/issues/205,Semantic,Processing,8
+https://github.com/google/ExoPlayer/issues/4406,,,0
+https://github.com/bazelbuild/bazel/issues/1166,Semantic,Missing case,9
+https://github.com/bazelbuild/bazel/issues/2904,Semantic,Processing,7
+https://github.com/spring-projects/spring-boot/issues/12965,Semantic,Missing case,9
+https://github.com/netty/netty/issues/7156,Semantic,Processing,10
+https://github.com/eclipse/reddeer/issues/420,Semantic,Processing,7
+https://github.com/haraldk/TwelveMonkeys/issues/399,Semantic,Processing,8
+https://github.com/netty/netty/issues/5045,Semantic,Processing,9
+https://github.com/spring-projects/spring-boot/issues/14665,Semantic,Processing,10
+https://github.com/spring-projects/spring-boot/issues/17798,Semantic,Processing,7
+https://github.com/speedment/speedment/issues/200,Semantic,Missing case,8
+https://github.com/checkstyle/checkstyle/issues/6474,,,0
+https://github.com/AsyncHttpClient/async-http-client/issues/939,Semantic,Missing case,9
+https://github.com/AsyncHttpClient/async-http-client/issues/969,,,0
+https://github.com/graphhopper/graphhopper/issues/1223,Semantic,Missing case,9
+https://github.com/google/ExoPlayer/issues/2292,Semantic,Processing,8
+https://github.com/AsyncHttpClient/async-http-client/issues/301,Semantic,Missing case,8
+https://github.com/spring-projects/spring-boot/issues/2341,Semantic,Processing,8
+https://github.com/BroadleafCommerce/BroadleafCommerce/issues/1163,,,0
+https://github.com/orientechnologies/orientdb/issues/2121,Semantic,Processing,8
+https://github.com/square/okhttp/issues/4875,Semantic,Processing,8
+https://github.com/bazelbuild/bazel/issues/3923,Semantic,Missing case,7
+https://github.com/eclipse/ceylon-ide-eclipse/issues/1606,Semantic,Processing,7
+https://github.com/netty/netty/issues/141,Semantic,Processing,7
+https://github.com/eclipse/ceylon-ide-eclipse/issues/1361,,,0
+https://github.com/redisson/redisson/issues/515,Semantic,Missing case,8
+https://github.com/AsyncHttpClient/async-http-client/issues/1265,,,0
+https://github.com/junit-team/junit5/issues/810,Semantic,Missing case,8
+https://github.com/spring-projects/spring-security/issues/4794,Semantic,Processing,9
+https://github.com/eclipse/jetty.project/issues/355,Semantic,Exception Handling,10
+https://github.com/netty/netty/issues/4927,,,0
+https://github.com/netty/netty/issues/7178,Semantic,Missing case,8
+https://github.com/BroadleafCommerce/BroadleafCommerce/issues/705,Semantic,Missing case,9
+https://github.com/google/ExoPlayer/issues/4954,Semantic,Missing case,8
+https://github.com/netty/netty/issues/1830,Semantic,Processing,10
+https://github.com/netty/netty/issues/7173,Semantic,Processing,8
+https://github.com/skylot/jadx/issues/711,Semantic,Missing case,9
+https://github.com/checkstyle/checkstyle/issues/7756,Semantic,Processing,8
+https://github.com/reactor/reactor-core/issues/1070,Memory,Memory leak,9
+https://github.com/MenoData/Time4J/issues/807,Semantic,Missing case,9
+https://github.com/flutter/flutter-intellij/issues/271,,,0
+https://github.com/spring-projects/spring-boot/issues/2218,Semantic,Exception handling,9
+https://github.com/requery/requery/issues/303,Semantic,Missing case,8
+https://github.com/elastic/elasticsearch/issues/1297,Semantic,Processing,8
+https://github.com/spring-projects/spring-boot/issues/19949,Semantic,Exception handling,9
+https://github.com/spring-projects/spring-framework/issues/23551,Semantic,Processing,9
+https://github.com/BroadleafCommerce/BroadleafCommerce/issues/497,Semantic,Processing,9
+https://github.com/thinkaurelius/titan/issues/784,,,0
+https://github.com/eclipse/kapua/issues/2547,Semantic,Processing,7

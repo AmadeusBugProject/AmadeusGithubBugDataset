@@ -1,0 +1,2 @@
+Incorrect assertion in loading OAuth2AuthorizationRequest
+`HttpSessionOAuth2AuthorizationRequestRepository.loadAuthorizationRequest()` asserts the `state` parameter as required which is incorrect. If the `state` parameter is not available in the `request` than it should simply return `null`.

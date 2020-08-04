@@ -1,0 +1,2 @@
+Generated code doesn't compile when custom type mapper maps to a nullable primitive type
+The generated `hashCode()` attempts to take `Integer.hashCode(myEntity.getMyIntField())` even though `myEntity.getMyIntField()` returns an `OptionalInt`.

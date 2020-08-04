@@ -1,0 +1,71 @@
+2.4.2 RC1: Connection leak detection false positive
+I tried 2.4.2 RC1 in replacement to 2.4.1.
+
+Without any changes to the app, HikariCP reports a connection leak after pool-initialization.
+But there is no leaking connection: one connection in pool, one idle, one connection to the database.
+
+Excerpt from log (pool configuration and leak alert):
+
+```
+[#| 16.10.2015 14:01:05.887 | ... | DEBUG com.zaxxer.hikari.HikariConfig 
+dev - configuration:
+allowPoolSuspension.............false
+autoCommit......................true
+catalog.........................
+connectionInitSql...............
+connectionTestQuery.............
+connectionTimeout...............2000
+dataSource......................
+dataSourceClassName.............org.postgresql.ds.PGSimpleDataSource
+dataSourceJNDI..................
+dataSourceProperties............{serverName=…, socketTimeout=15, user=…, databaseName=…, tcpKeepAlive=true, prepareThreshold=0, password=<masked>, portNumber=, loginTimeout=15}
+driverClassName.................
+healthCheckProperties...........{}
+healthCheckRegistry.............
+idleTimeout.....................1200000
+initializationFailFast..........true
+isolateInternalQueries..........false
+jdbc4ConnectionTest.............false
+jdbcUrl.........................
+leakDetectionThreshold..........10000
+maxLifetime.....................43200000
+maximumPoolSize.................50
+metricRegistry..................com.codahale.metrics.MetricRegistry@148da145
+metricsTrackerFactory...........
+minimumIdle.....................0
+password........................<masked>
+poolName........................dev
+readOnly........................false
+registerMbeans..................true
+scheduledExecutorService........
+threadFactory……………….<customClass>$1@21540445
+transactionIsolation............
+username........................
+validationTimeout...............2000
+dev - is starting.
+dev - Connection.setNetworkTimeout() is not supported (...)
+|#]
+
+[#| 16.10.2015 14:01:05.927 | … | DEBUG com.zaxxer.hikari.pool.HikariPool 
+dev - Added connection org.postgresql.jdbc4.Jdbc4Connection@3a4a6161
+|#]
+
+[#| 16.10.2015 14:01:05.928 | ... | DEBUG com.zaxxer.hikari.pool.PoolBase 
+dev - Closing connection org.postgresql.jdbc4.Jdbc4Connection@3a4a6161: (connection evicted by user)
+|#]
+
+
+…<no action from app>...
+
+
+[#| 16.10.2015 14:01:15.948 | ... | WARN  com.zaxxer.hikari.pool.ProxyLeakTask 
+Connection leak detection triggered for connection org.postgresql.jdbc4.Jdbc4Connection@3a4a6161, stack trace follows
+java.lang.Exception: Apparent connection leak detected
+    at com.zaxxer.hikari.pool.HikariPool.<init>(HikariPool.java:138) ~[HikariCP-2.4.2-RC1.jar:na]
+    at com.zaxxer.hikari.HikariDataSource.<init>(HikariDataSource.java:71) ~[HikariCP-2.4.2-RC1.jar:na]
+    ...
+|#]
+
+[#| 16.10.2015 14:01:35.897 | … | DEBUG com.zaxxer.hikari.pool.HikariPool 
+Before cleanup  pool dev stats (total=1, active=0, idle=1, waiting=0)
+```

@@ -1,0 +1,56 @@
+Potential connection leakage in case of aborted request
+In PoolingHttpDestination:process(final C connection, boolean dispatch) a check is performed to ensure the request was not aborted before being associated with a connection and if it was then the connection is neither released or closed. Might be useful to move the connection release code below in a separate method and use it for both cases - i.e. when there's no exchange or the request was aborted prior to creation of the exchange.
+
+```
+public void process(final C connection, boolean dispatch)
+    {
+        HttpClient client = getHttpClient();
+        final HttpExchange exchange = getHttpExchanges().poll();
+        if (LOG.isDebugEnabled())
+            LOG.debug("Processing exchange {} on {} of {}", exchange, connection, this);
+        if (exchange == null)
+        {
+            if (!connectionPool.release(connection))
+                connection.close();
+
+            if (!client.isRunning())
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} is stopping", client);
+                connection.close();
+            }
+        }
+        else
+        {
+            final Request request = exchange.getRequest();
+            Throwable cause = request.getAbortCause();
+            if (cause != null)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Aborted before processing {}: {}", exchange, cause);
+                // It may happen that the request is aborted before the exchange
+                // is created. Aborting the exchange a second time will result in
+                // a no-operation, so we just abort here to cover that edge case.
+                exchange.abort(cause);
+            }
+            else
+            {
+                if (dispatch)
+                {
+                    client.getExecutor().execute(new Runnable()
+                    {
+                        @Override
+                        public void run()
+                        {
+                            send(connection, exchange);
+                        }
+                    });
+                }
+                else
+                {
+                    send(connection, exchange);
+                }
+            }
+        }
+    }
+```

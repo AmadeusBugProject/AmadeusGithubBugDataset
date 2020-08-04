@@ -1,0 +1,41 @@
+GemFire Samples throw IllegalStateException on Shutdown
+If I run the following from the root project
+
+NOTE: It does not happen if I run from the specific samples
+
+```bash
+$ gradlew clean check
+```
+
+I get the exception
+
+```
+:samples:httpsession-gemfire-clientserver:integrationTomcatStop
+Invocation of destroy method failed on bean with name 'gemfirePool'
+java.lang.IllegalStateException: Pool could not be destroyed because it is still in use by 1 regions
+	at com.gemstone.gemfire.cache.client.internal.PoolImpl.destroy(PoolImpl.java:501)
+	at org.springframework.data.gemfire.client.PoolFactoryBean.destroy(PoolFactoryBean.java:158)
+	at org.springframework.beans.factory.support.DisposableBeanAdapter.destroy(DisposableBeanAdapter.java:272)
+	at org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.destroyBean(DefaultSingletonBeanRegistry.java:578)
+	at org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.destroySingleton(DefaultSingletonBeanRegistry.java:554)
+	at org.springframework.beans.factory.support.DefaultListableBeanFactory.destroySingleton(DefaultListableBeanFactory.java:954)
+	at org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.destroySingletons(DefaultSingletonBeanRegistry.java:523)
+	at org.springframework.beans.factory.support.DefaultListableBeanFactory.destroySingletons(DefaultListableBeanFactory.java:961)
+	at org.springframework.context.support.AbstractApplicationContext.destroyBeans(AbstractApplicationContext.java:1033)
+	at org.springframework.context.support.AbstractApplicationContext.doClose(AbstractApplicationContext.java:1009)
+	at org.springframework.context.support.AbstractApplicationContext.close(AbstractApplicationContext.java:961)
+	at org.springframework.web.context.ContextLoader.closeWebApplicationContext(ContextLoader.java:581)
+	at org.springframework.web.context.ContextLoaderListener.contextDestroyed(ContextLoaderListener.java:116)
+	at org.apache.catalina.core.StandardContext.listenerStop(StandardContext.java:5061)
+	at org.apache.catalina.core.StandardContext.stopInternal(StandardContext.java:5719)
+	at org.apache.catalina.util.LifecycleBase.stop(LifecycleBase.java:232)
+	at org.apache.catalina.Lifecycle$stop$0.call(Unknown Source)
+	at org.codehaus.groovy.runtime.callsite.CallSiteArray.defaultCall(CallSiteArray.java:48)
+	at org.apache.catalina.Lifecycle$stop$0.call(Unknown Source)
+	at org.codehaus.groovy.runtime.callsite.AbstractCallSite.callSafe(AbstractCallSite.java:80)
+	at com.bmuschko.gradle.tomcat.embedded.BaseTomcatServerImpl.stop(BaseTomcatServerImpl.groovy:61)
+	at com.bmuschko.gradle.tomcat.embedded.TomcatServer$stop$8.call(Unknown Source)
+	at com.bmuschko.gradle.tomcat.internal.ShutdownMonitor.run(ShutdownMonitor.groovy:75)
+```
+
+The tests still pass, but this error should not be happening

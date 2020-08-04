@@ -1,0 +1,6 @@
+AbstractChannel#filterOutboundMessage may mask writing a released empty buffer
+AbstractChannel attempts to "filter" messages which are written [1]. A goal of this process is to copy from heap to direct if necessary. However implementations of this method [2][3] may translate a buffer with 0 readable bytes to EMPTY_BUFFER. This may mask a user error where an empty buffer is written but already released.
+
+[1] https://github.com/netty/netty/blob/4.1/transport/src/main/java/io/netty/channel/AbstractChannel.java#L877
+[2] https://github.com/netty/netty/blob/4.1/transport-native-kqueue/src/main/java/io/netty/channel/kqueue/AbstractKQueueChannel.java#L252
+[3] https://github.com/netty/netty/blob/4.1/transport-native-epoll/src/main/java/io/netty/channel/epoll/AbstractEpollChannel.java#L306

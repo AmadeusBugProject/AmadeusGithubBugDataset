@@ -1,0 +1,2 @@
+import pandasMagic.Filters
+import pandasMagic.BugDataFrames

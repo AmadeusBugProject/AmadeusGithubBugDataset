@@ -1,0 +1,26 @@
+database cursor not closed in certain scenarios
+Bug reported on oC tracker, also valid for Nc:
+
+---
+### Actual behaviour
+
+-database cursor may be left open
+### Expected behaviour
+
+-cursors even empty ones (moveToFirst returns false) should be closed
+
+The database cursor used by the delete() method (Line 94) in FileContentProvider class may be left unclosed if cursor.moveToFirst() returns false:
+
+https://github.com/owncloud/android/blob/master/src/com/owncloud/android/providers/FileContentProvider.java
+
+```
+if (c != null && c.moveToFirst()) {
+                    remoteId = c.getString(c.getColumnIndex(ProviderTableMeta.FILE_REMOTE_ID));
+                    //ThumbnailsCacheManager.removeFileFromCache(remoteId);
+                    c.close();
+                }
+```
+
+---
+
+I'll open a PR right away.

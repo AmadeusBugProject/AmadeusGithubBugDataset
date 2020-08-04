@@ -1,0 +1,63 @@
+Race NettyResponseFuture.cancel() may produce NPE
+It seems that NettyResponseFuture.cancel() is written with concurency support with CAS to prevent double execution. But assigning null to timeoutsHolder is not protected with CAS or storing it to the local. This may result in NPE. Here it the test, that may reproduce it (or may not):
+```
+package com.sopovs.moradanen.jcstress.asynchttpclient;
+
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+
+import org.asynchttpclient.DefaultAsyncHttpClient;
+import org.asynchttpclient.ListenableFuture;
+import org.asynchttpclient.Response;
+
+public class RaceCancelTest {
+	public static void main(String[] args) throws InterruptedException {
+		try (DefaultAsyncHttpClient httpClient = new DefaultAsyncHttpClient()) {
+			BlockingQueue<ListenableFuture<Response>> queue1 = new LinkedBlockingQueue<>(),
+					queue2 = new LinkedBlockingQueue<>();
+			Thread thread1 = new CancellingThread(queue1), thread2 = new CancellingThread(queue2);
+			thread1.start();
+			thread2.start();
+			for (int i = 0; i < 100; i++) {
+				ListenableFuture<Response> future = httpClient.prepareGet("http://google.com").execute();
+				queue1.add(future);
+				queue2.add(future);
+				while(!queue1.isEmpty() || !queue2.isEmpty()){
+					Thread.yield();
+				}
+			}
+			thread1.interrupt();
+			thread2.interrupt();
+		}
+	}
+
+	static class CancellingThread extends Thread {
+		private final BlockingQueue<ListenableFuture<Response>> queue;
+
+		public CancellingThread(BlockingQueue<ListenableFuture<Response>> queue) {
+			this.queue = queue;
+		}
+
+		@Override
+		public void run() {
+			while (!this.isInterrupted()) {
+				try {
+					ListenableFuture<Response> future = queue.take();
+					future.cancel(true);
+				} catch (InterruptedException e) {
+					this.interrupt();
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+		}
+	}
+}
+```
+And here is the stacktrace:
+```
+java.lang.NullPointerException
+	at org.asynchttpclient.netty.NettyResponseFuture.cancelTimeouts(NettyResponseFuture.java:286)
+	at org.asynchttpclient.netty.NettyResponseFuture.cancel(NettyResponseFuture.java:143)
+	at com.sopovs.moradanen.jcstress.asynchttpclient.RaceCancelTest$CancellingThread.run(RaceCancelTest.java:44)
+```

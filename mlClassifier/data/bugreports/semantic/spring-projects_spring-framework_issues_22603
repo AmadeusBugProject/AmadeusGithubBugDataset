@@ -1,0 +1,43 @@
+Locale inconsistently resolves to null for invalid input value
+<!--
+!!! For Security Vulnerabilities, please go to https://pivotal.io/security !!!
+-->
+**Affects:** 5.1.5.RELEASE
+
+---
+
+I am trying to receive a `Locale` into a required `@RequestParam`. The happy path parsing works great, but I am receiving `null` into my `@RequestMapping` when `Locale` parsing fails. Here's my currently-failing test (run against Spring Boot 2.1.3.RELEASE):
+
+```java
+@WebMvcTest
+public class LocaleDeserializationTest {
+
+    @Configuration
+    static class Config {
+
+        @RestController
+        static class LocaleController {
+
+            @GetMapping("/request-param")
+            public String requestParam(@RequestParam Locale locale) {
+                return locale.toLanguageTag();
+            }
+        }
+    }
+
+    @Autowired
+    MockMvc mockMvc;
+
+    @Test
+    public void badLocaleRequestParam() throws Exception {
+        mockMvc.perform(get("/request-param").param("locale", "thiswillbebadrequest"))
+                .andExpect(status().isBadRequest());
+    }
+}
+```
+
+This in fact throws a `NullPointerException` because `locale` is null within the execution of the `requestParam()` method. I also tried marking the argument as `@NonNull` (the Spring variant) but that also still allowed `null` to come in for `Locale`.
+
+A bit of investigation led me to the `StringToLocaleConverter`, and `StringUtils.parseLocale()` correctly returns null. I would expect that since my `@RequestParam` is a _required_ parameter, this would end up returning a 400 client response.
+
+The same thing happens with `@PathVariable`, but I would expect that one would actually be a 404 not found.

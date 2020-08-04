@@ -1,0 +1,19 @@
+NullPointerException in LocalTransport
+I made a LocalTransport server/client pair.
+I made them share a LocalEventLoopGroup(1)
+
+Server.channelRead() calls ctx.close()
+
+I then get:
+    [WARN] SingleThreadEventExecutor - Unexpected exception from an event executor:  <java.lang.NullPointerException>java.lang.NullPointerException
+        at io.netty.channel.local.LocalChannel.access$300(LocalChannel.java:44)
+        at io.netty.channel.local.LocalChannel$4.run(LocalChannel.java:169)
+        at io.netty.channel.local.LocalEventLoop.run(LocalEventLoop.java:33)
+        at io.netty.util.concurrent.SingleThreadEventExecutor$2.run(SingleThreadEventExecutor.java:101)
+        at java.lang.Thread.run(Thread.java:724)
+
+That's the connectPromise.
+
+If I allow the EventLoopGroup 2 threads, then it does not throw NPE.
+
+But I really want 1 thread to synchronize logging, as I'm in a test suite.

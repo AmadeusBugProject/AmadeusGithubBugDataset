@@ -1,0 +1,2 @@
+PrimaryBalance in BalancedShardsAllocator can trigger unneeded relocation
+today if two nodes have very similar weights but only differ in the number of primaries a relocation can happen due to tie-breaking on the primaries per node. This might happen only if lots of relocations have happened before but still can trigger a unnecessary relocation.

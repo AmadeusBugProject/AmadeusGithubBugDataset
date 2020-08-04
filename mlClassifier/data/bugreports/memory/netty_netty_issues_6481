@@ -1,0 +1,20 @@
+SSL_read failed: OpenSSL error
+Netty 4.1.9-SNAPSHOT with netty-tcnative 2.0.0.Beta6
+
+I'll try to provide a repro but I'm seeing the following error in our application when I upgrade to Netty 4.1.9-SNAPSHOT and netty-tcnative 2.0.0.Beta6.
+
+From what I can tell, the SSL hanshake completes, I receive the HTTP request, I respond with `ctx.writeAndFlush(FullHttpResponse)`, I see the response data in curl but it cuts off randomly and both ends report the following errors:
+
+```
+// Server: Netty w/ OpenSSL on port 8443
+ReferenceCountedOpenSslEngine DEBUG: SSL_read failed: OpenSSL error: error:1409442E:SSL routines:ssl3_read_bytes:tlsv1 alert protocol version
+```
+
+```
+// Client: curl -k https://localhost:8443
+curl: (56) SSL read: error:1408F10B:SSL routines:SSL3_GET_RECORD:wrong version number, errno 0
+```
+
+An another observation is that curl seems to be a bit more stable. Some requests do succeed but Browsers (I tested Chrome and FF) on the other hand fail pretty reliably (every time). The problem goes away as soon as I switch back to Netty 4.1.8.
+
+This resembles what we observed in the #6466 ticket (minus the Exception).

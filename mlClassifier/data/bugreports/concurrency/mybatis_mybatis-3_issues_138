@@ -1,0 +1,23 @@
+NullPointer in FIFOCache.java in the clear() method
+Today we got a 500 and in looking at the stack trace we saw this to be the issue.
+
+68636256-Caused by: java.lang.NullPointerException
+68636298-       at java.util.LinkedList.clear(LinkedList.java:294)
+68636350-       at org.apache.ibatis.cache.decorators.FifoCache.clear(FifoCache.java:65)
+68636424-       at org.apache.ibatis.cache.decorators.ScheduledCache.clear(ScheduledCache.java:67)
+68636508-       at org.apache.ibatis.cache.decorators.ScheduledCache.clearWhenStale(ScheduledCache.java:84)
+68636601-       at org.apache.ibatis.cache.decorators.ScheduledCache.getObject(ScheduledCache.java:53)
+68636689-       at org.apache.ibatis.cache.decorators.LoggingCache.getObject(LoggingCache.java:50)
+68636773-       at org.apache.ibatis.cache.decorators.SynchronizedCache.getObject(SynchronizedCache.java:55)
+68636867-       at org.apache.ibatis.executor.CachingExecutor.query(CachingExecutor.java:94)
+
+when using grepcode.com I can see that in the clear() method 
+
+63  public void More ...clear() {
+64    delegate.clear();
+65    keyList.clear();
+66  }
+
+that the keyList is null so the nullpointer is being thrown there.  We arent so sure why it is null there but wanted to see if maybe someone had some input.   We are also curious on what could make this error occur as 500s are not something that we expect to be happening out of the cache of mybatis. That cache is not supposed to be empty and this only happened once and never again.  We are currently using 3.2.2 so we are also wondering if upgrading could maybe fix this issue or if something else maybe would.  
+
+Thank you in advance!

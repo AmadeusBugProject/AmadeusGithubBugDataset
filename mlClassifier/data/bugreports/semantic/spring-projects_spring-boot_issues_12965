@@ -1,0 +1,55 @@
+Empty YAML array does not override property from source with lower precedence
+SpringBoot version - 1.5.10.RELEASE
+I'm using Spring Centralized Configuration to store my application configuration and it works fine for single valued properties but for MultiValued properties remote config is not able to override local properties.
+
+remote config file: test-cloud-config.yml
+
+```yaml
+test:
+  empty:
+    strKey: 
+    listKey: []
+```
+
+SpringBoot resource local: application.yml
+
+```yaml
+test:
+  empty:
+    strKey: local str Key
+    listKey: localOne, localTwo
+```
+
+My spring boot class:-
+
+   
+
+```java
+@Component
+public class TestRemoteConfig {
+    
+    @Value("${test.empty.strKey}")
+    private String testEmptyStrKey;
+    	
+    @Value("${test.empty.listKey}")
+    private String[] testEmptyListKey;
+    	
+    @PostConstruct
+    public void init(){
+        System.out.println("Test override EmptyStrKey's value :- "+ testEmptyStrKey);
+        System.out.println("Test override EmptyListKey's value :- "+ Arrays.asList(testEmptyListKey));
+    }
+
+}
+```
+
+Output
+
+```
+Test override EmptyStrKey's value :- 
+Test override EmptyListKey's value :- [localOne, localTwo]
+```
+
+but I expect 'testEmptyListKey' to be empty.
+
+> Note: This works when I use .properties in place of .yml as config file

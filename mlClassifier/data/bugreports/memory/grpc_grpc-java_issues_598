@@ -1,0 +1,20 @@
+Memory leaking when using ALPN
+We're experiencing a slow memory leak with 0.7.1 when using ALPN and TLS. The server is built and started with this code : 
+
+```
+NettyServerBuilder builder = NettyServerBuilder.forPort(port);
+definitions.forEach(builder::addService);
+SslContext context = SslContextBuilder.forServer(keyCertPathprivateKeyPath).build();
+builder.sslContext(context);
+ServerImpl server = builder.build();
+server.start();
+```
+
+This is the alpn version that we're using.
+-Xbootclasspath/p:/usr/lib/java/alpn-boot-8.1.3.v20150130.jar"
+
+Running a heap dump, we're seeing a huge amount of SSLEngineImpl objects stored in a concurrent hash map : 
+
+![image](https://cloud.githubusercontent.com/assets/9012046/8503526/2c2acda0-21c9-11e5-9dfe-ba599b324c12.png)
+
+The server is running behind a Amazon ELB. This might be related since the Amazon load balancer would open connections every once in a while to the server and to ping and make sure the server is live. Unfortunately it takes a long time to replicate, the server would run out of memory after 36 hours or so, but it doesn't seem like the number of requests 

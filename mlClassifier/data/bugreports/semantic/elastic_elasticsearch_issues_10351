@@ -1,0 +1,2 @@
+Failure to register of one misconfigured repository might prevent future repository registration
+If a repository cannot be registered on one of non-master nodes because of configuration issue (for example if the repository plugin is not installed on the node) it might prevent other properly configured repositories from registering on the node.

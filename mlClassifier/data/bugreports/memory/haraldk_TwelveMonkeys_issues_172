@@ -1,0 +1,2 @@
+TIFF: Some LZW encoded TIFFs may throw IndexOutOfBoundsException due to buffer overflow
+The TIFFs are probably incorrectly compressed (compressed around boundaries), however a larger buffer should handle it.

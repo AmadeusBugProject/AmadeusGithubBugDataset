@@ -1,0 +1,40 @@
+Indexed Scripts/Templates: Indexed Scripts used during reduce phase sometimes hang
+Indexed scripts might need to get fetched via a GET call which is very cheap since those shards are local since they expand `[0-all]` but sometimes in the case of a node client holding no data we need to do a get call on the first get. Yet this get call seems to be executed on the transport thread and might deadlock since it needs that thread to process the get response. See stacktrace below... The problem here is that some of the actions in `SearchServiceTransportAction` don't use the `search` threadpool but use `SAME` instead which can cause this issue. We should use `SEARCH` instead for the most of the operations except of free context I guess.
+
+```
+2> "elasticsearch[node_s2][local_transport][T#1]" ID=1421 WAITING on org.elasticsearch.common.util.concurrent.BaseFuture$Sync@2b1fdd72
+  2>    at sun.misc.Unsafe.park(Native Method)
+  2>    - waiting on org.elasticsearch.common.util.concurrent.BaseFuture$Sync@2b1fdd72
+  2>    at java.util.concurrent.locks.LockSupport.park(LockSupport.java:175)
+  2>    at java.util.concurrent.locks.AbstractQueuedSynchronizer.parkAndCheckInterrupt(AbstractQueuedSynchronizer.java:836)
+  2>    at java.util.concurrent.locks.AbstractQueuedSynchronizer.doAcquireSharedInterruptibly(AbstractQueuedSynchronizer.java:997)
+  2>    at java.util.concurrent.locks.AbstractQueuedSynchronizer.acquireSharedInterruptibly(AbstractQueuedSynchronizer.java:1304)
+  2>    at org.elasticsearch.common.util.concurrent.BaseFuture$Sync.get(BaseFuture.java:274)
+  2>    at org.elasticsearch.common.util.concurrent.BaseFuture.get(BaseFuture.java:113)
+  2>    at org.elasticsearch.action.support.AdapterActionFuture.actionGet(AdapterActionFuture.java:45)
+  2>    at org.elasticsearch.script.ScriptService.getScriptFromIndex(ScriptService.java:377)
+  2>    at org.elasticsearch.script.ScriptService.compile(ScriptService.java:295)
+  2>    at org.elasticsearch.script.ScriptService.executable(ScriptService.java:457)
+  2>    at org.elasticsearch.search.aggregations.metrics.scripted.InternalScriptedMetric.reduce(InternalScriptedMetric.java:99)
+  2>    at org.elasticsearch.search.aggregations.InternalAggregations.reduce(InternalAggregations.java:140)
+  2>    at org.elasticsearch.search.controller.SearchPhaseController.merge(SearchPhaseController.java:374)
+  2>    at org.elasticsearch.action.search.type.TransportSearchDfsQueryThenFetchAction$AsyncAction.innerFinishHim(TransportSearchDfsQueryThenFetchAction.java:209)
+  2>    at org.elasticsearch.action.search.type.TransportSearchDfsQueryThenFetchAction$AsyncAction.finishHim(TransportSearchDfsQueryThenFetchAction.java:196)
+  2>    at org.elasticsearch.action.search.type.TransportSearchDfsQueryThenFetchAction$AsyncAction$2.onResult(TransportSearchDfsQueryThenFetchAction.java:172)
+  2>    at org.elasticsearch.action.search.type.TransportSearchDfsQueryThenFetchAction$AsyncAction$2.onResult(TransportSearchDfsQueryThenFetchAction.java:166)
+  2>    at org.elasticsearch.search.action.SearchServiceTransportAction$18.handleResponse(SearchServiceTransportAction.java:440)
+  2>    at org.elasticsearch.search.action.SearchServiceTransportAction$18.handleResponse(SearchServiceTransportAction.java:431)
+  2>    at org.elasticsearch.transport.local.LocalTransport$3.run(LocalTransport.java:322)
+  2>    at com.google.common.util.concurrent.MoreExecutors$DirectExecutorService.execute(MoreExecutors.java:299)
+  2>    at org.elasticsearch.transport.local.LocalTransport.handleParsedResponse(LocalTransport.java:317)
+  2>    at org.elasticsearch.test.transport.AssertingLocalTransport.handleParsedResponse(AssertingLocalTransport.java:59)
+  2>    at org.elasticsearch.transport.local.LocalTransport.handleResponse(LocalTransport.java:313)
+  2>    at org.elasticsearch.transport.local.LocalTransport.messageReceived(LocalTransport.java:238)
+  2>    at org.elasticsearch.transport.local.LocalTransportChannel$1.run(LocalTransportChannel.java:78)
+  2>    at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1142)
+  2>    at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:617)
+  2>    at java.lang.Thread.run(Thread.java:745)
+  2>    Locked synchronizers:
+  2>    - java.util.concurrent.ThreadPoolExecutor$Worker@2339bcc9
+  2> 
+```

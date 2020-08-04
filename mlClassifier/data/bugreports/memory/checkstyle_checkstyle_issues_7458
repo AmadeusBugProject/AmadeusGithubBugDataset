@@ -1,0 +1,7 @@
+Sonar violation: "ThreadLocal" variables should be cleaned up when no longer used
+https://sonarcloud.io/project/issues?id=org.checkstyle%3Acheckstyle&resolved=false&rules=java%3AS5164&types=BUG
+
+such code it is resulted in incomplete Multithreading implementation.
+Violation looks valid.
+
+Should we update code with execution of `remove` ? or remove ThreadLocal ? Or mark this as "Won't fix" ?

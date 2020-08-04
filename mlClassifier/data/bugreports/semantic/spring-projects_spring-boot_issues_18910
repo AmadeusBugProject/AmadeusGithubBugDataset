@@ -1,0 +1,6 @@
+@ServletComponentScan does not work with a component index
+when ServletComponentRegisteringPostProcessor add @WebServlet, it requires an ScannedGenericBeanDefinition from an ClassPathScanningCandidateComponentProvider.
+
+it works fine without Context-Indexer but wrong with Context-Indexer.
+ClassPathScanningCandidateComponentProvider will return an AnnotatedGenericBeanDefinition, when their is an spring.components file.
+

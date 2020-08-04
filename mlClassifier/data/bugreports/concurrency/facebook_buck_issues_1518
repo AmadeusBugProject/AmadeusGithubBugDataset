@@ -1,0 +1,41 @@
+"A build rule for this target has already been created" errors after enabling action_graph_parallelization_enabled
+Seems like this option may not be fully ready yet? @yiding 
+
+Stacktrace
+```
+Not using buckd because NO_BUCKD is set.
+PARSING BUCK FILES... 3.1s (100%)
+CREATING ACTION GRAPH: FINISHED IN 2.2s
+BUILDING: FINISHED IN 10.9s
+DOWNLOADED 0.00 BYTES/SEC AVG, 0 ARTIFACTS, 0.00 BYTES
+[2017-09-09 07:29:26.321][error][command:null][tid:01][com.facebook.buck.cli.Main] Uncaught exception at top level
+com.google.common.util.concurrent.UncheckedExecutionException: java.lang.IllegalStateException: A build rule for this target has already been created: //.okbuck/cache:com.android.support.animated-vector-drawable-26.0.2.aar#aar_prebuilt_jar,dex
+	at com.google.common.util.concurrent.Futures.wrapAndThrowUnchecked(Futures.java:1329)
+	at com.google.common.util.concurrent.Futures.getUnchecked(Futures.java:1314)
+	at com.facebook.buck.rules.MultiThreadedBuildRuleResolver.requireRule(MultiThreadedBuildRuleResolver.java:105)
+	at com.facebook.buck.rules.ActionGraphCache$1.lambda$2(ActionGraphCache.java:215)
+	at java.util.concurrent.CompletableFuture.uniApply(CompletableFuture.java:602)
+	at java.util.concurrent.CompletableFuture$UniApply.tryFire(CompletableFuture.java:577)
+	at java.util.concurrent.CompletableFuture$Completion.exec(CompletableFuture.java:443)
+	at java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:289)
+	at java.util.concurrent.ForkJoinPool$WorkQueue.runTask(ForkJoinPool.java:1056)
+	at java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1692)
+	at java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:157)
+Caused by: java.lang.IllegalStateException: A build rule for this target has already been created: //.okbuck/cache:com.android.support.animated-vector-drawable-26.0.2.aar#aar_prebuilt_jar,dex
+	at com.google.common.base.Preconditions.checkState(Preconditions.java:444)
+	at com.facebook.buck.rules.MultiThreadedBuildRuleResolver.addToIndex(MultiThreadedBuildRuleResolver.java:118)
+	at com.facebook.buck.android.AndroidBinaryGraphEnhancer.createPreDexRulesForLibraries(AndroidBinaryGraphEnhancer.java:594)
+	at com.facebook.buck.android.AndroidBinaryGraphEnhancer.createAdditionalBuildables(AndroidBinaryGraphEnhancer.java:341)
+	at com.facebook.buck.android.AndroidBinaryDescription.createBuildRule(AndroidBinaryDescription.java:305)
+	at com.facebook.buck.android.AndroidBinaryDescription.createBuildRule(AndroidBinaryDescription.java:1)
+	at com.facebook.buck.rules.DefaultTargetNodeToBuildRuleTransformer.transform(DefaultTargetNodeToBuildRuleTransformer.java:88)
+	at com.facebook.buck.rules.MultiThreadedBuildRuleResolver.lambda$1(MultiThreadedBuildRuleResolver.java:108)
+	at com.facebook.buck.rules.MultiThreadedBuildRuleResolver$2.compute(MultiThreadedBuildRuleResolver.java:155)
+	at java.util.concurrent.RecursiveTask.exec(RecursiveTask.java:94)
+	at java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:289)
+	at java.util.concurrent.ForkJoinTask.doJoin(ForkJoinTask.java:389)
+	at java.util.concurrent.ForkJoinTask.get(ForkJoinTask.java:1001)
+	at com.facebook.buck.util.concurrent.WorkThreadTrackingFutureDecorator.get(WorkThreadTrackingFutureDecorator.java:52)
+	at com.google.common.util.concurrent.Uninterruptibles.getUninterruptibly(Uninterruptibles.java:142)
+	at com.google.common.util.concurrent.Futures.getUnchecked(Futures.java:1312)
+```

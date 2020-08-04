@@ -1,0 +1,6 @@
+Memory leak in MimeTypeUtils LRUCache
+In then current LRUCache implementation, the queue tracking recently used cached values is thread safe, at least each call to offer/add values to it is.
+
+But in the case of highly concurrent calls for the same cached value, the current implementation can add multiple instances of the same value to the queue. Since the queue is unbounded, this can lead to memory leak issues or large queues which increases the time spent when going over the queue to find values to remove.
+
+We'll also use this issue to improve queue lookup for recently used values by starting from the end and using a different queue implementation.

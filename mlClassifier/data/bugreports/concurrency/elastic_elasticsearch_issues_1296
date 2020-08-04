@@ -1,0 +1,2 @@
+Rapidly concurrent deleting/creating an index leaves index inconsistent
+I tried to delete an index, and less than a second later, another machine attempted to perform an index. That recreated the index before the deletion propagated cleanly, leaving the cluster inconsistent. Example log output: https://gist.github.com/1187311

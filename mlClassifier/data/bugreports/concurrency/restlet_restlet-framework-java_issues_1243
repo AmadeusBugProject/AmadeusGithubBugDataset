@@ -1,0 +1,5 @@
+Concurrency issue when comparing MediaType#parameters
+Encountered Deadlock in the org.restlet.data.MediaType class while comparing the parameters:
+https://github.com/restlet/restlet-framework-java/blob/2.3/modules/org.restlet/src/org/restlet/data/MediaType.java#L965
+
+Noticed that two threads where comparing the two same media types but in distinct order. The deadlock is caused by the fact that WrapperList relies on the Vector class and that each thread locks one list of parameters and wait for the other when comparing it.

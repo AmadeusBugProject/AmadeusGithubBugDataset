@@ -1,0 +1,66 @@
+Entities.canEncode() with non-fast-path encoding is not thread safe on Android (jsoup 1.11.1)
+(This crash doesn't occur on 1.10.3 or 1.10.2)
+
+I'm pulling a list of elements from a document and using several threads to parse them, but when I call ``Element.html()`` I get this exception
+
+``
+System.err: Caused by: java.lang.IllegalStateException: Current state = CODING_END, new state = CODING
+System.err:     at java.nio.charset.CharsetEncoder.throwIllegalStateException(CharsetEncoder.java:1014)
+System.err:     at java.nio.charset.CharsetEncoder.canEncode(CharsetEncoder.java:923)
+System.err:     at java.nio.charset.CharsetEncoder.canEncode(CharsetEncoder.java:973)
+System.err:     at org.jsoup.nodes.Entities.canEncode(Entities.java:298)
+System.err:     at org.jsoup.nodes.Entities.escape(Entities.java:233)
+System.err:     at org.jsoup.nodes.Attributes.html(Attributes.java:323)
+System.err:     at org.jsoup.nodes.Element.outerHtmlHead(Element.java:1328)
+System.err:     at org.jsoup.nodes.Node$OuterHtmlVisitor.head(Node.java:709)
+System.err:     at org.jsoup.select.NodeTraversor.traverse(NodeTraversor.java:45)
+System.err:     at org.jsoup.nodes.Node.outerHtml(Node.java:573)
+System.err:     at org.jsoup.nodes.Element.html(Element.java:1366)
+System.err:     at org.jsoup.nodes.Element.html(Element.java:1360)
+System.err:     at com.testapp.JsoupMultithreadedTest$ParseTask.call(JsoupMultithreadedTest.java:49)
+System.err:     at com.testapp.thread.JsoupMultithreadedTest$ParseTask.call(JsoupMultithreadedTest.java:39)
+System.err:     at java.util.concurrent.FutureTask.run(FutureTask.java:266)
+System.err:     at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1162)
+System.err:     at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:636)
+System.err:     at java.lang.Thread.run(Thread.java:764)
+``
+
+The state can vary, I've also seen ``END_OF_INPUT`` and ``RESET``.
+
+Here's an example that displays the behaviour on Android - it seems to work fine on my Windows 10 machine, but crashes every time on an Android device (Android 6.0.1) and emulator (Android 8.0). The site's encoding [is apparently](https://validator.w3.org/nu/?doc=https%3A%2F%2Fforums.somethingawful.com%2F) ``Windows 1252`` even though the content type is set as ``iso-8859-1``. Works fine with a single thread, and you can run it multithreaded on ``1.10.3`` with no problems.
+
+```java
+public class JsoupMultithreadedTest {
+
+    private static final String pageUrl = "https://forums.somethingawful.com";
+    private static final ExecutorService executor = Executors.newFixedThreadPool(2);
+
+    public static void run() throws IOException, InterruptedException, ExecutionException {
+        Document document = Jsoup.connect(pageUrl).get();
+        Elements headlines = document.select(".forum");
+
+        List<Callable<String>> tasks = new ArrayList<>();
+        for (Element headline : headlines) {
+            tasks.add(new ParseTask(headline));
+        }
+
+        for (Future<String> result : executor.invokeAll(tasks)) {
+            System.out.println(result.get());
+        }
+    }
+
+    private static class ParseTask implements Callable<String> {
+
+        private final Element rootElement;
+
+        private ParseTask(Element rootElement) {
+            this.rootElement = rootElement;
+        }
+
+        @Override
+        public String call() throws Exception {
+            return rootElement.html();
+        }
+    }
+}
+```

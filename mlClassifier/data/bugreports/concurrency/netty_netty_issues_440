@@ -1,0 +1,18 @@
+SimpleChannelHandler.channelDisconnected() not called sometimes due to a race condition in AbstractNioWorker.close(AbstractNioChannel<?> channel, ChannelFuture future)
+When both the client and server disconnect the socket channel at the same time, AbstractNioWorker.close(AbstractNioChannel<?> channel, ChannelFuture future) can be called by 2 different Netty Daemon threads at the same time.
+The race condition happens when:
+Thread 1 runs into "if (channel.setClosed())" where "channel" is a NioSocketChannel object. It context-switches to Thread 2 right before "return super.setClosed();" inside of "NioSocketChannel.setClosed()".
+Since Thread 1 has "connected" true and "channel.setClosed()" false, so fireChannelDisconnected() will not be triggered.
+And Thread 2 has "connected" false and "channel.setClosed()" true, so fireChannelDisconnected() will not be triggered either.
+
+I made a fix in "NioSocketChannel.setClosed()" by doing:
+    @Override
+    protected boolean setClosed() {
+        if (super.setClosed()) {
+            state = ST_CLOSED;
+            return true;
+        } else {
+            return false;
+        }
+    }
+The issue seems fixed.

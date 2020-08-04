@@ -1,0 +1,5 @@
+NPE OrderToPaymentRequestDTOServiceImpl for a certain state of order
+java.lang.NullPointerException
+at org.broadleafcommerce.core.payment.service.OrderToPaymentRequestDTOServiceImpl.populateDefaultLineItemsAndSubtotal(OrderToPaymentRequestDTOServiceImpl.java:241)
+
+There may be a state where totals are null

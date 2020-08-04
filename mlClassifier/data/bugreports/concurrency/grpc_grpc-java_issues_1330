@@ -1,0 +1,20 @@
+Receiving ClosedChannelException instead of actual error
+We aren't reporting a helpful error in very simple connectivity cases, like the server port is closed. Here is what it looks like when using the interop client against a non-existent server: 
+
+```
+$ ./build/install/grpc-interop-testing/bin/test-client
+Running test empty_unary
+...
+Exception in thread "main" io.grpc.StatusRuntimeException: UNAVAILABLE
+        at io.grpc.Status.asRuntimeException(Status.java:431)
+        at io.grpc.stub.ClientCalls.getUnchecked(ClientCalls.java:157)
+        at io.grpc.stub.ClientCalls.blockingUnaryCall(ClientCalls.java:106)
+        at io.grpc.testing.integration.TestServiceGrpc$TestServiceBlockingStub.emptyCall(TestServiceGrpc.java:212)
+        at io.grpc.testing.integration.AbstractTransportTest.emptyUnary(AbstractTransportTest.java:164)
+        at io.grpc.testing.integration.TestServiceClient.runTest(TestServiceClient.java:220)
+        at io.grpc.testing.integration.TestServiceClient.run(TestServiceClient.java:209)
+        at io.grpc.testing.integration.TestServiceClient.main(TestServiceClient.java:80)
+Caused by: java.nio.channels.ClosedChannelException
+```
+
+It seems the problem may also impact other, much harder to diagnose, issues like client certificate validation (like in #1327).

@@ -1,0 +1,36 @@
+Error when outputting to log
+A connection that resulted in a connection error was made. Then:
+<pre>
+java.util.concurrent.CompletionException: java.lang.IllegalStateException: Called endChange before beginChange
+	at java.util.concurrent.CompletableFuture.encodeThrowable(CompletableFuture.java:273)
+	at java.util.concurrent.CompletableFuture.completeThrowable(CompletableFuture.java:280)
+	at java.util.concurrent.CompletableFuture$AsyncRun.run(CompletableFuture.java:1629)
+	at java.util.concurrent.CompletableFuture$AsyncRun.exec(CompletableFuture.java:1618)
+	at java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:289)
+	at java.util.concurrent.ForkJoinPool$WorkQueue.runTask(ForkJoinPool.java:1056)
+	at java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1692)
+	at java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:157)
+Caused by: java.lang.IllegalStateException: Called endChange before beginChange
+	at javafx.collections.ListChangeBuilder.endChange(ListChangeBuilder.java:538)
+	at javafx.collections.ObservableListBase.endChange(ObservableListBase.java:205)
+	at javafx.collections.ModifiableObservableListBase.add(ModifiableObservableListBase.java:155)
+	at java.util.AbstractList.add(AbstractList.java:108)
+	at com.speedment.tool.core.internal.component.UserInterfaceComponentImpl.showNotification(UserInterfaceComponentImpl.java:669)
+	at com.speedment.tool.core.internal.component.UserInterfaceComponentImpl.showNotification(UserInterfaceComponentImpl.java:664)
+	at com.speedment.tool.core.internal.component.UserInterfaceComponentImpl.showNotification(UserInterfaceComponentImpl.java:659)
+	at com.speedment.tool.core.internal.component.UserInterfaceComponentImpl.lambda$start$2(UserInterfaceComponentImpl.java:179)
+	at com.speedment.common.logger.internal.AbstractLogger.lambda$log$5(AbstractLogger.java:455)
+	at java.util.concurrent.ConcurrentHashMap$KeySetView.forEach(ConcurrentHashMap.java:4649)
+	at java.util.Collections$SetFromMap.forEach(Collections.java:5476)
+	at com.speedment.common.logger.internal.AbstractLogger.log(AbstractLogger.java:455)
+	at com.speedment.common.logger.internal.AbstractLogger.log(AbstractLogger.java:422)
+	at com.speedment.common.logger.internal.AbstractLogger.error(AbstractLogger.java:343)
+	at com.speedment.common.logger.internal.SystemOutLogger.error(SystemOutLogger.java:25)
+	at com.speedment.runtime.core.internal.component.ConnectionPoolComponentImpl.newConnection(ConnectionPoolComponentImpl.java:122)
+	at com.speedment.runtime.core.internal.component.ConnectionPoolComponentImpl.getConnection(ConnectionPoolComponentImpl.java:95)
+	at com.speedment.runtime.core.internal.component.ConnectionPoolComponentImpl.getConnection(ConnectionPoolComponentImpl.java:79)
+	at com.speedment.runtime.core.internal.db.AbstractDbmsMetadataHandler.getConnection(AbstractDbmsMetadataHandler.java:779)
+	at com.speedment.runtime.core.internal.db.AbstractDbmsMetadataHandler.lambda$readSchemaMetadata$4(AbstractDbmsMetadataHandler.java:171)
+	at java.util.concurrent.CompletableFuture$AsyncRun.run(CompletableFuture.java:1626)
+	... 5 more
+</pre>

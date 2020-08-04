@@ -1,0 +1,13 @@
+"websocket" valid upgrade request, but not "WebSocket"?
+I'm using org.jboss.netty.example.http.websocketx.client.WebSocketClient to talk to the lastest version of Chromium. I get the following stack trace:
+
+> Apr 22, 2012 3:34:41 AM org.jboss.netty.example.http.websocketx.client.WebSocketClient
+> INFO: WebSocket Client connecting
+> Apr 22, 2012 3:34:41 AM org.jboss.netty.example.http.websocketx.client.WebSocketClient
+> INFO: WebSocket Client sending message
+> Apr 22, 2012 3:34:41 AM org.jboss.netty.example.http.websocketx.client.WebSocketClient
+> INFO: WebSocket Client sending ping
+> org.jboss.netty.handler.codec.http.websocketx.WebSocketHandshakeException: Invalid handshake response upgrade: WebSocket
+>         at org.jboss.netty.handler.codec.http.websocketx.WebSocketClientHandshaker13.finishHandshake(WebSocketClientHandshaker13.java:182)
+
+[The line in question](https://github.com/netty/netty/blob/master/codec-http/src/main/java/io/netty/handler/codec/http/websocketx/WebSocketClientHandshaker13.java#L181). Is it intentional that "websocket" is a valid response but not "WebSocket"?

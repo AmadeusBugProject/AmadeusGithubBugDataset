@@ -1,0 +1,39 @@
+The ChannelHandler which is used to construct Http2MultiplexCodecBuilder will also be added to out bound streams
+### Expected behavior
+The `ChannelHandler` which is used to construct `Http2MultiplexCodecBuilder` should only be added to remotely-created streams.
+### Actual behavior
+It is also added to out bound streams.
+### Steps to reproduce
+Modify `Http2MultiplexCodecBuilderTest`, replace the code in `setUp`
+
+```
+        Bootstrap cb = new Bootstrap()
+                .channel(LocalChannel.class)
+                .group(group)
+                .handler(new Http2MultiplexCodecBuilder(false, new TestChannelInitializer()).build());
+```
+to
+```
+        Bootstrap cb = new Bootstrap()
+                .channel(LocalChannel.class)
+                .group(group)
+                .handler(new Http2MultiplexCodecBuilder(false, new ChannelInitializer<Channel>() {
+
+                    @Override
+                    protected void initChannel(Channel ch) throws Exception {
+                        throw new RuntimeException("should not be call for outbound stream");
+                    }
+                }).build());
+```
+Then `createOutboundStream` and `multipleOutboundStreams` will both fail.
+### Minimal yet complete reproducer code (or URL to code)
+Just apply this patch
+https://github.com/Apache9/netty/commit/2dcbae3109bbab5699dbfd64176694c8d43f69ca
+### Netty version
+4.1.15.Final
+### JVM version (e.g. `java -version`)
+java version "1.8.0_121"
+Java(TM) SE Runtime Environment (build 1.8.0_121-b13)
+Java HotSpot(TM) 64-Bit Server VM (build 25.121-b13, mixed mode)
+### OS version (e.g. `uname -a`)
+Linux zhangduo-ubuntu 4.4.0-93-generic #116-Ubuntu SMP Fri Aug 11 21:17:51 UTC 2017 x86_64 x86_64 x86_64 GNU/Linux

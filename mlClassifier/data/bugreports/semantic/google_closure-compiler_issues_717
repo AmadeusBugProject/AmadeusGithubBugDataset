@@ -1,0 +1,14 @@
+Transpiling of `for (let x of ...)` doesn't transpile `let`.
+In the following example `let str` doesn't get renamed. In `for (let str;;)` it's renamed as it should be.
+
+``` javascript
+var str = 'hi';
+
+for (let str of [1, 2, 3]) {
+  alert(str);
+}
+
+alert(str);
+```
+
+https://closure-compiler-debugger.appspot.com/#input0%3Dvar%2520str%2520%253D%2520'hi'%253B%250A%250Afor%2520(let%2520str%2520of%2520%255B1%252C%25202%252C%25203%255D)%2520%257B%250A%2520%2520alert(str)%253B%250A%257D%250A%250Aalert(str)%253B%250A%26input1%26conformanceConfig%26externs%26refasterjs-template%26includeDefaultExterns%3D1%26CHECK_SYMBOLS%3D1%26CHECK_TYPES%3D1%26LANG_IN_IS_ES6%3D1%26MISSING_PROPERTIES%3D1%26PRETTY_PRINT%3D1%26TRANSPILE%3D1

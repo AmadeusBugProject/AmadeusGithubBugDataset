@@ -1,0 +1,17 @@
+DiagramLayoutEngine#layout(...) and concurrency
+In the context of KLighD and incremental update we currently face a concurrency issue. 
+
+First some context: 
+There are two `#layout(...)` methods within the `DiagramLayoutEngine`: [The first one](https://github.com/eclipse/elk/blob/master/plugins/org.eclipse.elk.core.service/src/org/eclipse/elk/core/service/DiagramLayoutEngine.java#L356) divides the layout task into three steps (buildLayoutGraph, layout, and applyLayout), where the first and the third step are executed on the UI thread. [The second one](https://github.com/eclipse/elk/blob/master/plugins/org.eclipse.elk.core.service/src/org/eclipse/elk/core/service/DiagramLayoutEngine.java#L486) executes the overall process in one go and on the calling thread. 
+
+We were wondering as to why this distinction is made. One thing we could imagine is that GMF-like editors require that the access to the view model is performed on the UI thread. 
+
+Now to problem: KLighD internally maintains a _view model_ for which a layout graph is created and laid out. It always uses the _first_ `layout(..)` method to perform the layout. Now, since the second step (of the three steps mentioned above) is executed on a different thread, the incremental update may alter the view model during the layout process. One may thing that this is not a problem since layout is performed on the previously created layout graph (which was done on the UI thread). However, before the actual layout algorithm is called, the `addDiagramConfig(...)` method 
+ is invoked in [line 393](https://github.com/eclipse/elk/blob/master/plugins/org.eclipse.elk.core.service/src/org/eclipse/elk/core/service/DiagramLayoutEngine.java#L393). In KLighD's case this calls the `KLighdLayoutConfigurationStore`, which in turn accesses the original view model. 
+
+During this it can happen that the incremental update modifies the view model and the configuration store tries to access invalid elements, which eventually yields NPEs and the likes. 
+
+Note that the issue doesn't occur with the second `layout` method. 
+
+An easy way to solve the issue seems to be to move the `addDiagramConfig` call into the first step, which would then _build and configure the layout graph_. 
+@spoenemann any thoughts from your side? 

@@ -1,0 +1,2 @@
+Forking cannot be disabled if Spring Loaded is present
+After change https://github.com/spring-projects/spring-boot/commit/f4fbc3e33955c34aae21e93d8b235d9914213080 the new logic disrespects configuration option `fork=false` if hotswap classloader (springloaded) present.

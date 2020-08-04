@@ -1,0 +1,4 @@
+Changes object type of the previous value in StringRepeatCountEncodingStrategy
+#### Description
+Current previous value is stored as a String, if input value is [null, null, "value", "value"], it is impossible to distinguish between the initial value and the previous value.
+To save the previous value, change it to AtomicReference.

@@ -1,0 +1,2 @@
+TTL Purge Thread might bring back already deleted index
+the node level TTL Purger thread fires up bulk delete request that might trigger `auto_create_index` if the purger thread runs a bulk after the index has been deleted.

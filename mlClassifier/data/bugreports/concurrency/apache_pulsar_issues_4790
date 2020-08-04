@@ -1,0 +1,59 @@
+healthcheck report error: Trying to subscribe with incompatible schema
+**Describe the bug**
+healthcheck api report error
+
+**To Reproduce**
+Steps to reproduce the behavior:
+1. access http://127.0.0.1:8080/admin/v2/brokers/health
+2. see errors
+```
+ --- An unexpected error occurred in the server ---
+
+Message: org.apache.pulsar.client.api.PulsarClientException$IncompatibleSchemaException: Trying to subscribe with incompatible schema
+
+Stacktrace:
+
+java.util.concurrent.CompletionException: org.apache.pulsar.client.api.PulsarClientException$IncompatibleSchemaException: Trying to subscribe with incompatible schema
+	at java.util.concurrent.CompletableFuture.encodeThrowable(CompletableFuture.java:292)
+	at java.util.concurrent.CompletableFuture.completeThrowable(CompletableFuture.java:308)
+	at java.util.concurrent.CompletableFuture.uniRun(CompletableFuture.java:700)
+	at java.util.concurrent.CompletableFuture$UniRun.tryFire(CompletableFuture.java:687)
+	at java.util.concurrent.CompletableFuture.postComplete(CompletableFuture.java:474)
+	at java.util.concurrent.CompletableFuture.completeExceptionally(CompletableFuture.java:1977)
+	at org.apache.pulsar.client.impl.ClientCnx.handleError(ClientCnx.java:597)
+	at org.apache.pulsar.common.protocol.PulsarDecoder.channelRead(PulsarDecoder.java:154)
+	at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:362)
+	at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:348)
+	at io.netty.channel.AbstractChannelHandlerContext.fireChannelRead(AbstractChannelHandlerContext.java:340)
+	at io.netty.handler.codec.ByteToMessageDecoder.fireChannelRead(ByteToMessageDecoder.java:323)
+	at io.netty.handler.codec.ByteToMessageDecoder.channelRead(ByteToMessageDecoder.java:297)
+	at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:362)
+	at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:348)
+	at io.netty.channel.AbstractChannelHandlerContext.fireChannelRead(AbstractChannelHandlerContext.java:340)
+	at io.netty.channel.DefaultChannelPipeline$HeadContext.channelRead(DefaultChannelPipeline.java:1434)
+	at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:362)
+	at io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:348)
+	at io.netty.channel.DefaultChannelPipeline.fireChannelRead(DefaultChannelPipeline.java:965)
+	at io.netty.channel.epoll.AbstractEpollStreamChannel$EpollStreamUnsafe.epollInReady(AbstractEpollStreamChannel.java:799)
+	at io.netty.channel.epoll.EpollEventLoop.processReady(EpollEventLoop.java:433)
+	at io.netty.channel.epoll.EpollEventLoop.run(EpollEventLoop.java:330)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$5.run(SingleThreadEventExecutor.java:909)
+	at io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
+	at java.lang.Thread.run(Thread.java:745)
+Caused by: org.apache.pulsar.client.api.PulsarClientException$IncompatibleSchemaException: Trying to subscribe with incompatible schema
+	at org.apache.pulsar.client.impl.ClientCnx.getPulsarClientException(ClientCnx.java:905)
+	... 20 more
+```
+
+**Expected behavior**
+
+**Screenshots**
+
+
+**Desktop (please complete the following information):**
+ - OS: [Linux]
+
+**Additional context**
+version: apache-pulsar-2.4.0
+access other broker/cluster api not encounter errors, like get http://127.0.0.1:8080/admin/v2/clusters successfully
+use bin/pulsar-client to produce or consume data is ok

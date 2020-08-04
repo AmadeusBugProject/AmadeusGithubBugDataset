@@ -1,0 +1,12 @@
+KMeansClustering cause thread leak
+#### Issue Description
+
+i use KMeansClustering like KMeansTest.java
+every client request, i get new kmeans object by KMeansClustering.setup()
+but there is no way to destroy threads allocate by KMeansClustering 
+after thousands or more request, too many threads cause crash
+
+#### Version Information
+
+* deeplearning4j ver newest
+* windows 7 and centos 6.x

@@ -1,0 +1,19 @@
+NPE in cleartext upgrade
+### Expected behavior
+No null pointer exceptions
+
+### Actual behavior
+When an HTTP/1.1 upgrade request comes in, we call `onHttpServerUpgrade` in Http2ConnectionHandler.  This makes us create a stream, which eventually calls `new DefaultHttp2StreamChannel`, which is fine, except that it assumes that handlerAdded has already been called on Http2MultiplexCodec . . . which is always true except when we're doing a cleartext upgrade.
+
+### Steps to reproduce
+
+Make an HttpServerUpgradeHandler, with an Http2MultiplexCodec.  Send an h2c upgrade request.
+
+### Minimal yet complete reproducer code (or URL to code)
+
+Try to upgrade this to netty 4.1.15.
+
+https://github.com/twitter/finagle/blob/develop/finagle-http2/src/main/scala/com/twitter/finagle/http2/Http2CleartextServerInitializer.scala#L74
+
+### Netty version
+4.1.15.Final

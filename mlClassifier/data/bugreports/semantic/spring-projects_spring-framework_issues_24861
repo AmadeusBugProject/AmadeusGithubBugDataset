@@ -1,0 +1,10 @@
+Annotation searches potentially synthesize annotations unnecessarily
+## Overview
+
+Prior to Spring Framework 5.2, some of our annotation utilities would not _synthesize_ an annotation if it was already synthesized or not _synthesizable_.
+
+It appears that we may have lost this functionality with the introduction of the new `MergedAnnotations` API. This issue is therefore labeled as a _potential_ regression.
+
+## Deliverables
+
+- [x] Determine if annotations are synthesized unnecessarily and decide where to go from there.

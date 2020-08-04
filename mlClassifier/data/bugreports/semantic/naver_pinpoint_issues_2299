@@ -1,0 +1,28 @@
+Scatter chart stuck, how to reset settings
+Hi. 
+
+I use Pinpoint RC2
+
+No idea why my scatter chart is not working anymore (It was fine for a couple of weeks)
+
+![image](https://cloud.githubusercontent.com/assets/561441/20931919/0fa15564-bbd3-11e6-860f-fa790eb5066c.png)
+
+... Maybe after I set Y Axis to 30 ms , but I can't change it anymore, as I can't click on options gear 
+(the cursor is in crosshair mode, no click possible)
+
+I could find that the following request: http://server/getScatterData.pinpoint?to=1481038925000&from=1481038625000&limit=5000&filter=&application=APPLICATION&xGroupUnit=987&yGroupUnit=0
+
+returns: 
+
+"java.lang.IllegalArgumentException: **yGroupUnit(0)** must be positive number\r\n\tat com.navercorp.pinpoint.web.controller.ScatterChartController.getScatterData(ScatterChartController.java:156)\r\n\tat sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)\r\n\tat sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)\r\n\tat sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)\r\n\tat java.lang.reflect.Method.invoke(Method.java:497)\r\n\tat org.springframework.web.method.support.InvocableHandlerMethod.doInvoke(InvocableHandlerMethod.java:222)\r\n\tat org.springframework.web.method.support.InvocableHandlerMethod.invokeForRequest(InvocableHandlerMethod.java:137)\r\n\tat org.springframework.web.servlet.mvc.method.annotation.ServletInvocableHandlerMethod.invokeAndHandle(ServletInvocableHandlerMethod.java:110)\r\n\tat org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.invokeHandlerMethod(RequestMappingHandlerAdapter.java:775)\r\n\tat org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.handleInternal(RequestMappingHandlerAdapter.java:705)\r\n\tat org.springframework.web.servlet.mvc.method.AbstractHandlerMethodAdapter.handle(AbstractHandlerMethodAdapter.java:85)\r\n\tat org.springframework.web.servlet.DispatcherServlet.doDispatch(DispatcherServlet.java:959)\r\n\tat org.springframework.web.servlet.DispatcherServlet.doService(DispatcherServlet.java:893)\r\n\tat 
+....
+
+
+Could you please tell me: 
+
+- Where are stored these GUI settings (they seem permanent) and how to reset to defaults ? 
+- What is yGroupUnit ? Is it related to Y max value on the graph ? 
+
+Thanks 
+
+

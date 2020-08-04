@@ -1,0 +1,20 @@
+Feature request: API to release pooled direct buffers in PooledByteBufAllocator
+Right now there is no way to release pooled `DirectByteBuffer`s in `PooledByteBufAllocator`. However, Netty uses no cleaner DirectByteBuffer by default since 4.0.37. Hence, if I create a client using `PooledByteBufAllocator`, then send some messages and shutdown the client, there will be some DirectByteBuffers still in `PooledByteBufAllocator` (they are just put back into the PoolChunkList) and I don't find any way to release them, but no cleaner DirectByteBuffers require being released manually.
+
+Running the following test will see `OutOfDirectMemoryError` quickly.
+
+``` Java
+    @Test
+    public void testNoCleanerDirectByteBuffer() throws InterruptedException {
+        // System.setProperty("io.netty.maxDirectMemory", "0");
+        for(;;) {
+            PooledByteBufAllocator allocator = new PooledByteBufAllocator(true);
+            allocator.buffer(8000).release();
+            allocator.freeThreadLocalCache();
+        }
+    }
+```
+
+Right now we just use `System.setProperty("io.netty.maxDirectMemory", "0");` to disable it to pass our thousands of unit tests.
+
+It would be better that Netty provides an API to release them so that we can try the no cleaner DirectByteBuffers.

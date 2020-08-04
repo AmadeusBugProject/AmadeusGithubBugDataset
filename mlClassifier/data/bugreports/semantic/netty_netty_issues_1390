@@ -1,0 +1,10 @@
+RxtxChannel blocks forever when reading.
+From an e-mail:
+
+> Netty + RXTX works well on windows 7, but while we porting it to Linux(tested on both Digi Embedded Linux and Ubuntu 12), an important problem has meet.
+> 
+> Because RxtxChannel is using oiochannel framework, which has only one thread for a channel, and rxtx in linux is doing blocking read(readArray() from RXTX won't return unless there is data input). This will unable RXTXChannel from executing any task else - most significantly, can't write data to channel.
+> 
+> We consider this problem as a bug from RXTX(as its behavior is inconsistent cross platforms), and triggered by netty. We didn't find a proper workaround with current framework. Maybe currently this problem described above can be documented as known limitation to somewhere?
+
+OioByteChannel should call `InputStream.read()` only when `InputStream.available()` returns a non-zero value.  It's probably that the `InputStream` implementation of rxtx is not correct.

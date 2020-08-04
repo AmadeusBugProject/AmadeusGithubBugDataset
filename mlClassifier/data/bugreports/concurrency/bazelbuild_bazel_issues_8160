@@ -1,0 +1,10 @@
+BES fails with Non-consecutive sequence number error
+With Bazel from HEAD we see the below error quite a bit
+
+```
+ERROR: The Build Event Protocol upload failed: INVALID_ARGUMENT: INVALID_ARGUMENT: Non-consecutive sequence number
+```
+
+The error appeared on most of the failed steps in the below downstream run
+
+https://buildkite.com/bazel/bazel-at-head-plus-downstream/builds/932

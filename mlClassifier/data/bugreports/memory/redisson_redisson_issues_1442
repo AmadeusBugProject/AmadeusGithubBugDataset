@@ -1,0 +1,32 @@
+RLocalCachedMap memory leak when using EvictionPolicy.WEAK
+﻿### Expected behavior
+Weak references should be cleared.
+
+### Actual behavior
+It seems that even when using static Strings for keys and values and only ```fastPut``` method the OOM error occurs after several thousands of invocations.
+  
+### Steps to reproduce or test case
+I have created a separate repo to easier reproduce the problem:
+https://github.com/pawelgrzes/redisson-mem-leak
+
+### Redis version
+4.0.9
+
+### Redisson version
+3.7.0
+
+### Redisson configuration
+```
+RedissonClient redissonClient = Redisson.create();
+
+LocalCachedMapOptions ops = LocalCachedMapOptions.defaults()
+  .cacheSize(0)
+  .timeToLive(0)
+  .maxIdle(0)
+  .reconnectionStrategy(LocalCachedMapOptions.ReconnectionStrategy.CLEAR)
+  .syncStrategy(LocalCachedMapOptions.SyncStrategy.INVALIDATE)
+  .evictionPolicy(LocalCachedMapOptions.EvictionPolicy.WEAK);
+
+RLocalCachedMap<String, String> map = redissonClient.getLocalCachedMap("sample-cache", ops);
+```
+

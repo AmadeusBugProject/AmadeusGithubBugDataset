@@ -1,0 +1,4 @@
+Did ChannelOutBoundBuffer need to remove NIOBUFFER threadLocal while the message is done
+I found DirectBufferR is reference by ThreadLocal in the sender side even the message is already received by the receiver for a long time.
+this problem is occurs in SPARK, which use netty to send block.
+I not familiar with netty, or there have other solution to resolve that problem

@@ -1,0 +1,2 @@
+DeviceConnectionService returns 500 for non-existing last-gateway entry
+When trying to retrieve the last known gateway for a device, the DeviceConnectionService returns a 500 error code if no entry for the device exists. However, according to the API spec it should return a 404 in that case.

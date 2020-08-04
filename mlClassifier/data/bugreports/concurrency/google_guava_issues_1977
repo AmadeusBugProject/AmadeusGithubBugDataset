@@ -1,0 +1,5 @@
+Possible deadlock in ImmutableList 
+ImmutableList contains following code since version 15.0
+
+ private static final ImmutableList<Object> EMPTY =
+      new RegularImmutableList<Object>(ObjectArrays.EMPTY_ARRAY);

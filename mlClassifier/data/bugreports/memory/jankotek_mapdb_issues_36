@@ -1,0 +1,2 @@
+Disk leak in journaled (transactional mode) 
+Transactional mode does not mark deleted physical records as free. It will not reuse space after release, but grow file instead.

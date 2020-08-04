@@ -1,0 +1,22 @@
+Parameter Mapping issue with Mybatis 3.2.2
+Since I upgraded to mybatis 3.2.2, one of my sql is failing. It used to work prior to upgrading to 3.2.2. 
+
+To reproduce this issue, make a slight modification to the src\test\java\org\apache\ibatis\submitted\basetest\Mapper.xml file to "getUser" Select statement:
+
+```
+<select id="getUser" parameterType="java.lang.String" resultType="org.apache.ibatis.submitted.basetest.User">
+        select * from users 
+       <if test="value not in {null, ''}">
+       where name = #{value}
+      </if>
+</select>
+```
+
+Once the above change is made, in BaseTest.java, line 57 is changed to:
+`final User user = mapper.getUser("User1");`
+
+When you run the test, you will now get the following error that did not used to occur before the upgrade to 3.2.2:
+
+```
+Type handler was null on parameter mapping for property 'value'. It was either not specified and/or could not be found for the javaType / jdbcType combination specified.
+```

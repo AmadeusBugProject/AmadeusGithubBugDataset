@@ -1,0 +1,9 @@
+ContentEncoding header should not return "identity"
+As per spec  http://tools.ietf.org/html/rfc2616#section-14.11 
+
+The default (identity) encoding; the use of no transformation whatsoever. This content-coding is used only in the Accept- Encoding header, and SHOULD NOT be used in the Content-Encoding header.
+
+Offending code is I think in 4.0.0.Alpha7
+HttpContentDecoder//getTargetContentEncoding
+
+I need to look further at subclass behaviour though.

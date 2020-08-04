@@ -1,0 +1,7 @@
+Remove thread-unsafe context from the AbstractCheck class
+Now the `AbstractCheck` class contains some thread-unsafe context, therefore we cannot use the same check instance across multiple threads.
+
+All thread-unsafe members should be rewritten so that they could be used from the separate threads:
+
+1. `messages` - it is updated via `clearMessages` and `log` methods.
+1. `fileContents` - it is updated via `setFileContents` and queried via `getLine`, `getFileContents`

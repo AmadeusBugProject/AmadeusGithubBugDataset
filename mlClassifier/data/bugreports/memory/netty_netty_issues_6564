@@ -1,0 +1,38 @@
+When the number of pending unencrypted bytes is high, SslHandler tries to allocate a huge outNet buffer.
+### Expected behavior
+
+When a user attempts to write a large buffer (e.g. 1GB) via SslHandler, SslHandler should not attempt to allocate an outNet buffer that's as large as the buffer given by the user, because
+
+- We may not be able to flush fast enough to deallocate it soon.
+- A user may get an OOME when under backpressure due to double memory allocation.
+- It's inefficient to allocate a direct buffer that's bigger than 16MiB (pooled allocator's chunk size)
+
+### Actual behavior
+
+When a user attempts to write a large buffer, SslHandler should not allocate a huge buffer upfront but only allocate up to certain threshold. e.g. Always keep the number of pending outNet bytes low even if `SslHandler.pendingUnencryptedWrites.bytes` is high.
+
+### Steps to reproduce
+
+- Give JVM relatively small amount of heap and direct memory (e.g. 128m)
+- On an SSL connection, attempt to send a buffer that's slightly larger than half of the available direct memory. 
+- SslHandler will attempt to allocate a buffer that's as large as the buffer being sent and end up with an OOME.
+
+### Minimal yet complete reproducer code (or URL to code)
+
+I reproduced the problem by running `./gradlew core:check` for [Armeria](https://github.com/line/armeria), but it's not a minimal reproducer obviously. You get the idea though, right? ;-)
+
+### Netty version
+
+4.1.9.Final. No problem with 4.1.8.Final.
+
+### JVM version (e.g. `java -version`)
+
+```
+java version "1.8.0_112"
+Java(TM) SE Runtime Environment (build 1.8.0_112-b15)
+Java HotSpot(TM) 64-Bit Server VM (build 25.112-b15, mixed mode)
+```
+
+### OS version (e.g. `uname -a`)
+
+`Linux porori 4.9.0-0.bpo.2-amd64 #1 SMP Debian 4.9.13-1~bpo8+1 (2017-02-27) x86_64 GNU/Linux`

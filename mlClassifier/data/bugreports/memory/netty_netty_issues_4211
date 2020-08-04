@@ -1,0 +1,9 @@
+[ForkJoinPool] Thread Local Leak detected
+The Atmosphere Framework bundles the [ForkJoinPool](https://github.com/netty/netty/blob/master/common/src/main/java/io/netty/util/internal/chmv8/ForkJoinPool.java) implementation of Netty. It seems there is a Thread Local leak as reported [here](https://github.com/Atmosphere/atmosphere/issues/2048)
+
+``` java
+SEVERE: The web application [/atmosphere-chat] created a ThreadLocal with key of type [java.lang.ThreadLocal] (value [java.lang.ThreadLocal@41a80e5a]) and a value of type [org.atmosphere.util.chmv8.ForkJoinPool.Submitter]
+ (value [org.atmosphere.util.chmv8.ForkJoinPool$Submitter@450ae3fb]) but failed to remove it when the web application was stopped. This is very likely to create a memory leak.
+```
+
+When using the JDK7/8 implementation the leak doesn't occurs (no error message) so I suspect the current implementation leaks.

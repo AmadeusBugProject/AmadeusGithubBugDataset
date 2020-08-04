@@ -1,0 +1,41 @@
+AnnotationUseStyle: compact_no_array does not violate extended and multi param annotations
+```
+/var/tmp $ cat TestClass.java 
+@SuppressWarnings(value = "rawtypes") // 'value=' is superflous (non-compact) - VIOLATION
+public class Example {
+    @SuppressWarnings({"unchecked"}) // array is superflous - VIOLATION 
+    public void somePublicMethod() {
+    }
+
+    @SomeAnnotation(attr1="value1", arrt2={"value2"}) // array is superfluous  - VIOLATION
+    public Object[] stuff;
+}
+
+/var/tmp $ cat my_check.xml 
+<?xml version="1.0"?>
+<!DOCTYPE module PUBLIC
+          "-//Puppy Crawl//DTD Check Configuration 1.3//EN"
+          "http://www.puppycrawl.com/dtds/configuration_1_3.dtd">
+<module name = "Checker">
+    <module name="TreeWalker">
+        <module name="AnnotationUseStyle">
+            <property name="elementStyle" value="compact_no_array" />
+            <property name="trailingArrayComma" value="ignore" />
+        </module>
+    </module>
+</module>
+
+/var/tmp $ java -jar checkstyle-7.0-all.jar -c my_check.xml TestClass.java 
+Starting audit...
+[ERROR] /var/tmp/TestClass.java:3: Annotation style must be 'COMPACT_NO_ARRAY'. [AnnotationUseStyle]
+Audit done.
+Checkstyle ends with 1 errors.
+```
+
+Expected violations are marked at source code - there should be 3 of them as all of them are not compact.
+
+Attention: "compact" mode should give 1 violation 1st line.
+
+http://checkstyle.sourceforge.net/config_annotation.html#AnnotationUseStyle
+http://checkstyle.sourceforge.net/property_types.html#elementStyle
+## 

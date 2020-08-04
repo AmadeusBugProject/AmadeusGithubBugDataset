@@ -1,0 +1,98 @@
+Connection Leaks happening during WebSocket Operations
+Hi All,
+
+Where exactly we are supposed to do response.close() in case of WebSocket operations? I don't see any in the example i.e [WebSocketEcho](https://github.com/square/okhttp/blob/master/samples/guide/src/main/java/okhttp3/recipes/WebSocketEcho.java) provided in okhttp repo.
+
+We're trying to get rid of these OkHttp connection leaks generated during WebSocket operations in [fabric8io/kubernetes-client](https://github.com/fabric8io/kubernetes-client). For example, There is one websocket operation happening in [PodOperationsImpl](https://github.com/fabric8io/kubernetes-client/blob/master/kubernetes-client/src/main/java/io/fabric8/kubernetes/client/dsl/internal/PodOperationsImpl.java#L267)"
+```
+        try {
+            URL url = new URL(URLUtils.join(getResourceUrl().toString(), sb.toString()));
+            Request.Builder r = new Request.Builder().url(url).header("Sec-WebSocket-Protocol", "v4.channel.k8s.io").get();
+            OkHttpClient clone = client.newBuilder().readTimeout(0, TimeUnit.MILLISECONDS).build();
+            final ExecWebSocketListener execWebSocketListener = new ExecWebSocketListener(getConfig(), in, out, err, errChannel, inPipe, outPipe, errPipe, errChannelPipe, execListener);
+            clone.newWebSocket(r.build(), execWebSocketListener);
+            execWebSocketListener.waitUntilReady();
+            return execWebSocketListener;
+        } catch (Throwable t) {
+            throw KubernetesClientException.launderThrowable(forOperationType("exec"), t);
+        }
+```
+Which gets handled on [ExecWebSocketListener](https://github.com/fabric8io/kubernetes-client/blob/7ea9ce885f9fad72949db6e3f5cc8dceb8ce8766/kubernetes-client/src/main/java/io/fabric8/kubernetes/client/dsl/internal/ExecWebSocketListener.java#L212) , We're closing socket in [close(..)](https://github.com/fabric8io/kubernetes-client/blob/7ea9ce885f9fad72949db6e3f5cc8dceb8ce8766/kubernetes-client/src/main/java/io/fabric8/kubernetes/client/dsl/internal/ExecWebSocketListener.java#L138) callback here:
+```
+    private void closeWebSocketOnce(int code, String reason) {
+      if (closed.get()) {
+        return;
+      }
+
+      try {
+        WebSocket ws = webSocketRef.get();
+        if (ws != null) {
+          ws.close(code, reason);
+        }
+      } catch (Throwable t) {
+        LOGGER.debug("Error closing WebSocket.", t);
+      }
+    }
+```
+But somehow we're still getting connection leaks, In logs I can see that stacktrace points to the WebSocket opening operation in PodOperationsImpl:
+```
+
+Sep 09, 2018 12:08:43 PM okhttp3.internal.platform.Platform log
+WARNING: A connection to http://localhost:55231/ was leaked. Did you forget to close a response body?
+java.lang.Throwable: response.body().close()
+    at okhttp3.internal.platform.Platform.getStackTraceForCloseable(Platform.java:144)
+    at okhttp3.RealCall.captureCallStackTrace(RealCall.java:89)
+    at okhttp3.RealCall.enqueue(RealCall.java:98)
+    at okhttp3.internal.ws.RealWebSocket.connect(RealWebSocket.java:183)
+    at okhttp3.OkHttpClient.newWebSocket(OkHttpClient.java:436)
+    at io.fabric8.kubernetes.client.dsl.internal.PodOperationsImpl.exec(PodOperationsImpl.java:267)
+    at io.fabric8.kubernetes.client.dsl.internal.PodOperationsImpl.exec(PodOperationsImpl.java:61)
+    at io.fabric8.kubernetes.client.mock.ExecTest.doExec(ExecTest.java:99)
+    at io.fabric8.kubernetes.client.mock.ExecTest.doIteration(ExecTest.java:81)
+    at io.fabric8.kubernetes.client.mock.ExecTest.testConnectionLeaks(ExecTest.java:73)
+    at io.fabric8.kubernetes.client.mock.ExecTest.testMockServer(ExecTest.java:50)
+    at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+    at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+    at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+    at java.lang.reflect.Method.invoke(Method.java:498)
+    at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:50)
+    at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+    at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:47)
+    at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+    at org.junit.rules.ExternalResource$1.evaluate(ExternalResource.java:48)
+    at org.junit.rules.RunRules.evaluate(RunRules.java:20)
+    at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:325)
+    at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:78)
+    at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:57)
+    at org.junit.runners.ParentRunner$3.run(ParentRunner.java:290)
+    at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:71)
+    at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:288)
+    at org.junit.runners.ParentRunner.access$000(ParentRunner.java:58)
+    at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:268)
+    at org.junit.runners.ParentRunner.run(ParentRunner.java:363)
+    at org.apache.maven.surefire.junit4.JUnit4Provider.execute(JUnit4Provider.java:369)
+    at org.apache.maven.surefire.junit4.JUnit4Provider.executeWithRerun(JUnit4Provider.java:275)
+    at org.apache.maven.surefire.junit4.JUnit4Provider.executeTestSet(JUnit4Provider.java:239)
+    at org.apache.maven.surefire.junit4.JUnit4Provider.invoke(JUnit4Provider.java:160)
+    at org.apache.maven.surefire.booter.ForkedBooter.invokeProviderInSameClassLoader(ForkedBooter.java:373)
+    at org.apache.maven.surefire.booter.ForkedBooter.runSuitesInProcess(ForkedBooter.java:334)
+    at org.apache.maven.surefire.booter.ForkedBooter.execute(ForkedBooter.java:119)
+    at org.apache.maven.surefire.booter.ForkedBooter.main(ForkedBooter.java:407)
+```
+
+There is a PR already in progress which tries to close response body and reduce leaks(not working though): https://github.com/fabric8io/kubernetes-client/pull/1198 . Could anyone please check what we're doing wrong here? Any kind of help would be highly appreciated :-). 
+
+* **Steps to reproduce:**
+
+1. Clone kubernetes-client repository:
+```
+git clone -b reduceOkHttpLeaks https://github.com/rohanKanojia/kubernetes-client.git
+```
+
+2. Navigate to `kubernetes-tests` directory and run:
+```
+ mvn -Dtest="io.fabric8.kubernetes.client.mock.ExecTest#testMockServer" test
+```
+
+3. Wait ~10 minutes. For me after 5th iteration(after 5 minutes) logs appears.
+* OkHttp Version: 3.9.1

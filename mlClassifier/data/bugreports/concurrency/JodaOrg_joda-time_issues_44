@@ -1,0 +1,2 @@
+Fix chronology cache synchronization
+Fix cache synchronization in BuddhistChronology and GJChronology.

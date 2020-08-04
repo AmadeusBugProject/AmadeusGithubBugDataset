@@ -1,0 +1,16 @@
+Arithmetic overflow when calculating sampleDecodingTime resulting in negative value
+When using dynamic DASH stream, the decodeTime is a very large value. I have seen e.g. 14419621440000000.
+
+In com.google.android.exoplayer.extractor.mp4.FragmentedMp4Extractor.parseTrun() line 498 that large value is used in this calculation (cumulativeTime is derived from decodeTime):
+
+```
+ sampleDecodingTimeTable[i] = (cumulativeTime * 1000) / timescale;
+```
+
+This calculation can overflow and result in a negative sampleDecodingTime which prevents the player from starting playback further on.
+
+This can be fixed by rearranging the calculation like this:
+
+```
+  sampleDecodingTimeTable[i] = (cumulativeTime / timescale) * 1000L;
+```

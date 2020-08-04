@@ -1,0 +1,9 @@
+Cannot Parse/Validate XML if there is a reference to DTD
+I have an XML response which contains 
+!DOCTYPE USER SYSTEM "http://127.0.0.1:5000/login/dtd"
+
+
+
+and when I try to parse the XML it complains about DTD not being available.
+
+Karate should be able to bypass the need for DTD to validate XML response.

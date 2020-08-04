@@ -1,0 +1,8 @@
+StompHeaders constants can no longer be used to fetch headers from DefaultHeaders
+A change between 4.1.0 beta5 and 4.1.0 beta6 changed the way keys are compared in DefaultHeaders:
+
+https://github.com/netty/netty/blame/4f204009dedac6104f67188348b1cfc27e358109/codec/src/main/java/io/netty/handler/codec/DefaultHeaders.java#L113
+
+ByteString.equals() always fails when given a String (and vice versa).  beta5 used keyComparator.compare() which would accommodate a mixture of Strings and ByteString (AsciiString).
+
+Ultimately, I can no longer do [StompFrame] frame.headers().get( StompHeaders.ACCEPT_VERSION ) as it will always return null.

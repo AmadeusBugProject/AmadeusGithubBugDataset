@@ -1,0 +1,2 @@
+Search context is not cleaned when scroll search is cancelled
+Cancelling search with scroll can leave some search contexts behind. See test failure in https://elasticsearch-ci.elastic.co/job/elastic+elasticsearch+master+multijob-unix-compatibility/os=ubuntu/160/console

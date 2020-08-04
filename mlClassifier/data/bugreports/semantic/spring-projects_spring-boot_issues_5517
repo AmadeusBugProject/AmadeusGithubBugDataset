@@ -1,0 +1,33 @@
+MessageChannelMetricWriter and @ExportMetricWriter
+The `MessageChannelMetricWriter` `@Bean` in the `MetricsChannelAutoConfiguration` must be marked with the `@ExportMetricWriter`, otherwise it is skipped by the `MetricExportAutoConfiguration`:
+
+``` java
+@Autowired(required = false)
+@ExportMetricWriter
+private Map<String, GaugeWriter> writers = Collections.emptyMap();
+```
+
+After declaring the former in my own config:
+
+``` java
+@Bean
+public MessageChannel metricsChannel() {
+    return new DirectChannel();
+}
+
+@Bean
+@ExportMetricWriter
+public MessageChannelMetricWriter messageChannelMetricWriter() {
+    return new MessageChannelMetricWriter(metricsChannel());
+}
+
+@Bean
+@ServiceActivator(inputChannel = "metricsChannel")
+public MessageHandler metricsHandler() {
+    return System.out::println;
+}
+```
+
+The metrics are started to appear in the STDOUT periodically as it is declared by the `MetricExportProperties`.
+
+Also see http://stackoverflow.com/questions/36272482/write-out-spring-boot-metrics-to-stdout-or-aggregator.

@@ -1,0 +1,80 @@
+[core] Incremental analysis mixes XPath rule violations
+**Affects PMD Version:** 6.17
+
+**Rule:** TooManyStaticImports (but maybe the problem is not related to the rule)
+
+**Description:**
+I updated my Gradle version to 5.6 and started to use incremental analysis flag.
+https://docs.gradle.org/5.6/release-notes.html#support-for-pmd-incremental-analysis
+It seems that the rule reference is wrong but the description is right.
+Also the priority field is from the wrong rule.
+Here 2 example of xml. Unfortunately I can't give you my project to test this issue, sorry.
+
+
+**Code Sample demonstrating the issue:**
+**right example**
+```
+<?xml version="1.0" encoding="UTF-8"?>
+<pmd xmlns="http://pmd.sourceforge.net/report/2.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://pmd.sourceforge.net/report/2.0.0 http://pmd.sourceforge.net/report_2_0_0.xsd"
+    version="6.17.0" timestamp="2019-08-26T11:46:19.393">
+<file name="MyFile.java">
+<violation beginline="1" endline="457" begincolumn="1" endcolumn="2" rule="TooManyStaticImports" ruleset="Code Style" package="my.package" class="MyFile" externalInfoUrl="https://pmd.github.io/pmd-6.17.0/pmd_rules_java_codestyle.html#toomanystaticimports" priority="5">
+Too many static imports may lead to messy code
+</violation>
+</file>
+</pmd>
+```
+**wrong example**
+```
+<?xml version="1.0" encoding="UTF-8"?>
+<pmd xmlns="http://pmd.sourceforge.net/report/2.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://pmd.sourceforge.net/report/2.0.0 http://pmd.sourceforge.net/report_2_0_0.xsd"
+    version="6.17.0" timestamp="2019-08-26T10:35:33.313">
+<file name="MyFile.java">
+<violation beginline="1" endline="457" begincolumn="1" endcolumn="2" rule="ByteInstantiation" ruleset="Performance" package="my.package" class="MyFile" externalInfoUrl="https://pmd.github.io/pmd-6.17.0/pmd_rules_java_performance.html#byteinstantiation" priority="2">
+Too many static imports may lead to messy code
+</violation>
+<violation beginline="1" endline="457" begincolumn="1" endcolumn="2" rule="ByteInstantiation" ruleset="Performance" package="my.package" class="MyFile" externalInfoUrl="https://pmd.github.io/pmd-6.17.0/pmd_rules_java_performance.html#byteinstantiation" priority="2">
+Too many static imports may lead to messy code
+</violation>
+<violation beginline="1" endline="457" begincolumn="1" endcolumn="2" rule="ByteInstantiation" ruleset="Performance" package="my.package" class="MyFile" externalInfoUrl="https://pmd.github.io/pmd-6.17.0/pmd_rules_java_performance.html#byteinstantiation" priority="2">
+Too many static imports may lead to messy code
+</violation>
+<violation beginline="1" endline="457" begincolumn="1" endcolumn="2" rule="ByteInstantiation" ruleset="Performance" package="my.package" class="MyFile" externalInfoUrl="https://pmd.github.io/pmd-6.17.0/pmd_rules_java_performance.html#byteinstantiation" priority="2">
+Too many static imports may lead to messy code
+</violation>
+</file>
+</pmd>
+```
+I also executed pmd different times:
+**first launch**
+```
+<file name="MyFile.java">
+<violation beginline="1" endline="442" begincolumn="1" endcolumn="2" rule="ByteInstantiation" ruleset="Performance" package="my.package" class="MyFile" externalInfoUrl="https://pmd.github.io/pmd-6.17.0/pmd_rules_java_performance.html#byteinstantiation" priority="2">
+Too many static imports may lead to messy code
+</violation>
+```
+**second launch**
+```
+<file name="MyFile.java">
+<violation beginline="1" endline="457" begincolumn="1" endcolumn="2" rule="ProperCloneImplementation" ruleset="Error Prone" package="my.package" class="MyFile" externalInfoUrl="https://pmd.github.io/pmd-6.17.0/pmd_rules_java_errorprone.html#propercloneimplementation" priority="2">
+Too many static imports may lead to messy code
+</violation>
+```
+**third launch after clean**
+```
+<file name="MyFile.java">
+<violation beginline="1" endline="457" begincolumn="1" endcolumn="2" rule="JUnitStaticSuite" ruleset="Error Prone" package="my.package" class="MyFile" externalInfoUrl="https://pmd.github.io/pmd-6.17.0/pmd_rules_java_errorprone.html#junitstaticsuite" priority="3">
+Too many static imports may lead to messy code
+</violation>
+```
+**fourth launch after clean**
+rule reference changed again: **WhileLoopWithLiteralBoolean**
+
+**Running PMD through:** Gradle 5.6
+
+O.S. both linux and windows
+JDK 1.8

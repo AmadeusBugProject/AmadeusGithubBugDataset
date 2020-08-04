@@ -1,0 +1,11 @@
+LocalCacheView.toCacheKey StackOverflowError
+```java
+public CacheKey toCacheKey(Object key) {
+    ByteBuf encoded = object.encodeMapKey(key);
+    try {
+        return toCacheKey(encoded);
+    } finally {
+        encoded.release();
+    }
+}
+```

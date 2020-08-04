@@ -1,0 +1,58 @@
+Spurious "LEAK: ByteBuf was GC'd before being released correctly" message?
+I have a server using ProtobufEncoder and ProtobufDecoder to encode and decode messages with Netty 4.0.2 (Linux, OpenJDK 7 64-bit).
+
+I'm finding when I have 50 client connections each sending 1000 messages/second and all connections are closed simultaneously, I often (but not always) see this error message in the server.  This error message only occurs when many client connections are shutdown quickly, not during normal steady state operation.
+
+```
+15:37:45,221 {nioEventLoopGroup-3-8} WARN  ResourceLeakDetector - LEAK: ByteBuf was GC'd before being released correctly.  The following stack trace shows where the leaked object was created, rather than who failed to release it where.
+io.netty.util.ResourceLeakException: io.netty.buffer.UnpooledUnsafeDirectByteBuf@286d15b6
+    at io.netty.util.ResourceLeakDetector$DefaultResourceLeak.<init>(ResourceLeakDetector.java:161)
+    at io.netty.util.ResourceLeakDetector.open(ResourceLeakDetector.java:103)
+    at io.netty.buffer.UnpooledUnsafeDirectByteBuf.<init>(UnpooledUnsafeDirectByteBuf.java:72)
+    at io.netty.buffer.UnpooledByteBufAllocator.newDirectBuffer(UnpooledByteBufAllocator.java:49)
+    at io.netty.buffer.AbstractByteBufAllocator.directBuffer(AbstractByteBufAllocator.java:130)
+    at io.netty.buffer.AbstractByteBufAllocator.directBuffer(AbstractByteBufAllocator.java:121)
+    at io.netty.buffer.AbstractByteBufAllocator.ioBuffer(AbstractByteBufAllocator.java:74)
+    at io.netty.handler.codec.MessageToByteEncoder.write(MessageToByteEncoder.java:107)
+    at io.netty.channel.DefaultChannelHandlerContext.invokeWrite0(DefaultChannelHandlerContext.java:698)
+    at io.netty.channel.DefaultChannelHandlerContext.invokeWrite(DefaultChannelHandlerContext.java:684)
+    at io.netty.channel.DefaultChannelHandlerContext.write(DefaultChannelHandlerContext.java:677)
+    at io.netty.handler.codec.MessageToMessageEncoder.write(MessageToMessageEncoder.java:114)
+    at io.netty.channel.DefaultChannelHandlerContext.invokeWrite0(DefaultChannelHandlerContext.java:698)
+    at io.netty.channel.DefaultChannelHandlerContext.access$1700(DefaultChannelHandlerContext.java:27)
+    at io.netty.channel.DefaultChannelHandlerContext$18.run(DefaultChannelHandlerContext.java:689)
+    at io.netty.util.concurrent.SingleThreadEventExecutor.runAllTasks(SingleThreadEventExecutor.java:353)
+    at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:366)
+    at io.netty.util.concurrent.SingleThreadEventExecutor$2.run(SingleThreadEventExecutor.java:101)
+    at java.lang.Thread.run(Thread.java:724)
+```
+
+My server code is here: https://github.com/aaronriekenberg/Simple-Message-Service/blob/master/sms-broker/src/main/java/org/aaron/sms/broker/SMSBrokerTCPServer.java
+
+The ChannelInitializer in the server is below.  ServerHandler extends SimpleChannelInboundHandler, so I believe all pooling/reference counting should be handled automatically.  The only writes I'm doing in the server use instances of protobuf objects.
+
+``` java
+    private class ServerChannelInitializer extends ChannelInitializer<Channel> {
+
+        @Override
+        protected void initChannel(Channel ch) throws Exception {
+            final ChannelPipeline p = ch.pipeline();
+            p.addLast("logger", new LoggingHandler(LogLevel.DEBUG));
+
+            p.addLast("frameEncoder", new LengthFieldPrepender(
+                    SMSProtocolConstants.MESSAGE_HEADER_LENGTH_BYTES));
+
+            p.addLast("frameDecoder", new LengthFieldBasedFrameDecoder(
+                    SMSProtocolConstants.MAX_MESSAGE_LENGTH_BYTES, 0,
+                    SMSProtocolConstants.MESSAGE_HEADER_LENGTH_BYTES, 0,
+                    SMSProtocolConstants.MESSAGE_HEADER_LENGTH_BYTES));
+
+            p.addLast("protobufEncoder", new ProtobufEncoder());
+
+            p.addLast("protobufDecoder", new ProtobufDecoder(
+                    SMSProtocol.ClientToBrokerMessage.getDefaultInstance()));
+
+            p.addLast("serverHandler", new ServerHandler());
+        }
+    }
+```

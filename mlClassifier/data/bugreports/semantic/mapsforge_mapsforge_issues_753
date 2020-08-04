@@ -1,0 +1,10 @@
+Multipolygons broken in latest Mapsforge
+As reported in [Atlas forum](https://groups.google.com/forum/#!topic/atlas-app/JMpKAAiXf7o) we have broken multipolygons in latest Mapsforge dev.
+(screenshot by Christian)
+
+I found that the issue arises at the change in closed way calculation from Euclidean distance to spherical distance (see [here](https://github.com/mapsforge/mapsforge/commit/f9b6059bb57ebe737eae32c3db4dc25a77338e66#diff-64dc68a7bd488ca2fd0f2124e1a5f8b8R126)).
+
+@ludwigb can you explain why the change?
+~~In a closed way the start and end points are extremely close (if not equal), so we can continue using the Pythagorean formula.~~
+
+![multipolygons](https://cloud.githubusercontent.com/assets/3484020/11742260/149bf7b0-a007-11e5-8eb3-4b7b81ce2fb6.png)

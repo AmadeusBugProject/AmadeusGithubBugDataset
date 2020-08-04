@@ -1,0 +1,17 @@
+NullPointer @     at io.netty.buffer.PoolChunk.initBufWithSubpage
+out of nowhere...
+
+Caused by: java.lang.NullPointerException
+    at io.netty.buffer.PoolChunk.initBufWithSubpage(PoolChunk.java:381)
+    at io.netty.buffer.PoolChunk.initBufWithSubpage(PoolChunk.java:369)
+    at io.netty.buffer.PoolArena.allocate(PoolArena.java:194)
+    at io.netty.buffer.PoolArena.allocate(PoolArena.java:132)
+    at io.netty.buffer.PooledByteBufAllocator.newDirectBuffer(PooledByteBufAllocator.java:262)
+    at io.netty.buffer.AbstractByteBufAllocator.directBuffer(AbstractByteBufAllocator.java:157)
+    at io.netty.buffer.AbstractByteBufAllocator.directBuffer(AbstractByteBufAllocator.java:148)
+    at io.netty.buffer.AbstractByteBufAllocator.ioBuffer(AbstractByteBufAllocator.java:101)
+    at io.netty.handler.codec.MessageToByteEncoder.allocateBuffer(MessageToByteEncoder.java:140)
+    at io.netty.handler.codec.MessageToByteEncoder.write(MessageToByteEncoder.java:105)
+    ... 39 more
+
+netty 4.1 beta 6

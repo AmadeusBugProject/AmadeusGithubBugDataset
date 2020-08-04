@@ -1,0 +1,2 @@
+Remove `ElasticsearchInterruptedException` and handle interrupt state  correctly.
+InterruptedExceptions should be handled by either rethrowing or restoring the interrupt state (i.e. calling `Thread.currentThread().interrupt()`). This is important since the caller of the is method or subequent method calls might also be interested in this exception. If we ignore the interrupt state the caller might be left unaware of the exception and blocks again on a subsequent method.

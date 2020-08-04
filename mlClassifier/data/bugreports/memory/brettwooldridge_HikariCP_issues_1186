@@ -1,0 +1,9 @@
+ConcurrentBag threadList OOM
+#### Environment
+```
+HikariCP version: x.x.x
+```
+when ThreadPoolA borrow an entry and ThreadPoolB requite that entry, ThreadPoolA just borrow but never requite，ThreadPoolB just requite but never borrow， then ThreadPoolB's threadList OOM.
+
+I think `ThreadLocal<List<Object>> threadList;` should be with a max size, 
+or just be `ThreadLocal<Object> threadList;`.

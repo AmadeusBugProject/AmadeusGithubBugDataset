@@ -1,0 +1,5 @@
+HonoConnection.shutdown() blocks for 5s if called on event loop thread
+`HonoConnection.shutdown()` blocks the current thread for 5s waiting for the close frame from the remote peer.
+If the current thread is the thread of the vertx context that the HonoConnection operates on, the response from the remote peer can't be processed while the thread is blocked, causing for the 5s timeout to occur.
+
+Same applies to the `disconnect` method.

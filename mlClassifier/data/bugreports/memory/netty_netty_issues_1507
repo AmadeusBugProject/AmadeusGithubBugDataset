@@ -1,0 +1,28 @@
+Resource leak in WebSocket08FrameDecoder
+tim@tim-laptop ~/projects/vert-x/vertx-examples/src/raw/java $ vertx run wsperf/PerfClient.java
+Starting perf client
+Received data on all conns
+LEAK: ByteBuf was GC'd before being released correctly. 
+io.netty.util.ResourceLeakException: io.netty.buffer.UnpooledUnsafeDirectByteBuf@6f83405
+at io.netty.util.ResourceLeakDetector$DefaultResourceLeak.(ResourceLeakDetector.java:158)
+at io.netty.util.ResourceLeakDetector.open(ResourceLeakDetector.java:103)
+at io.netty.buffer.UnpooledUnsafeDirectByteBuf.(UnpooledUnsafeDirectByteBuf.java:72)
+at io.netty.buffer.UnpooledByteBufAllocator.newDirectBuffer(UnpooledByteBufAllocator.java:49)
+at io.netty.buffer.AbstractByteBufAllocator.directBuffer(AbstractByteBufAllocator.java:130)
+at io.netty.buffer.AbstractByteBufAllocator.directBuffer(AbstractByteBufAllocator.java:121)
+at io.netty.buffer.AbstractByteBufAllocator.buffer(AbstractByteBufAllocator.java:58)
+at io.netty.handler.codec.http.websocketx.WebSocket08FrameDecoder.decode(WebSocket08FrameDecoder.java:259)
+at io.netty.handler.codec.ReplayingDecoder.callDecode(ReplayingDecoder.java:356)
+at io.netty.handler.codec.ByteToMessageDecoder.messageReceived(ByteToMessageDecoder.java:138)
+at io.netty.channel.DefaultChannelHandlerContext.invokeMessageReceived(DefaultChannelHandlerContext.java:379)
+at io.netty.channel.DefaultChannelHandlerContext.fireMessageReceived(DefaultChannelHandlerContext.java:364)
+at io.netty.channel.DefaultChannelPipeline.fireMessageReceived(DefaultChannelPipeline.java:786)
+at io.netty.channel.nio.AbstractNioByteChannel$NioByteUnsafe.read(AbstractNioByteChannel.java:120)
+at io.netty.channel.nio.NioEventLoop.processSelectedKey(NioEventLoop.java:489)
+at io.netty.channel.nio.NioEventLoop.processSelectedKeysOptimized(NioEventLoop.java:464)
+at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:358)
+at io.netty.util.concurrent.SingleThreadEventExecutor$2.run(SingleThreadEventExecutor.java:101)
+at java.lang.Thread.run(Thread.java:722)
+
+See also:
+https://github.com/vert-x/vert.x/issues/667

@@ -1,0 +1,258 @@
+NewVM: GC collecting static final string
+The GC seems to be collecting static final strings under certain conditions with the New VM
+Test case:
+
+```
+package com.codename1.issue1156;
+
+import com.codename1.io.FileSystemStorage;
+import java.io.IOException;
+
+import com.codename1.io.Log;
+import com.codename1.ui.Button;
+import com.codename1.ui.CheckBox;
+import com.codename1.ui.Command;
+import com.codename1.ui.Container;
+import com.codename1.ui.Display;
+import com.codename1.ui.Font;
+import com.codename1.ui.Form;
+import com.codename1.ui.TextArea;
+import com.codename1.ui.TextField;
+import com.codename1.ui.Transform;
+import com.codename1.ui.events.ActionEvent;
+import com.codename1.ui.layouts.BoxLayout;
+import com.codename1.ui.plaf.UIManager;
+import com.codename1.ui.util.Resources;
+import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+
+public class BadAccessTest {
+
+    private Form current;
+    private TextField input;
+    private TextField output;
+    private CheckBox lowerCaseCb;
+
+    public void init(Object context) {
+        try {
+            final Resources theme = Resources.openLayered("/theme");
+            UIManager.getInstance().setThemeProps(theme.getTheme(theme.getThemeResourceNames()[0]));
+        } catch (final IOException e) {
+            e.printStackTrace();
+        }
+    }
+ public static final String EDirFMapDef = "FMap" + FConnector.EFolderSepCh;
+
+    public void destroy() {
+
+    }
+
+    public void stop() {
+
+    }
+
+    public void start() {
+
+        Form f = new Form("Test Bad Access");
+        f.addComponent(new Button(new Command("Run Test") {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                Display.getInstance().invokeAndBlock(new Runnable() {
+                    @Override
+                    public void run() {
+                        for (int i = 0; i < 1000; i++) {
+                            String root = LogF.getRoot();
+                            /** EDirFMapDef every time should be FMap/ but sometimes is random text or unexpect data cause error
+                             * EXC_BAD_ACCESS in java_lang_String_getChars___int_int_char_1ARRAY_int
+                             */
+                            root += EDirFMapDef;
+                            LogF.p(i + " root:" + root);
+                        }
+                    }
+                });
+            }
+        }));
+        f.show();
+
+    }
+
+    public static final String EFolderSepSTR = "/"; //+FileSystemStorage.getInstance().getFileSystemSeparator(); //"/";  
+    /* separator character as defined by FC specification */
+    public static final char EFolderSepCh = EFolderSepSTR.charAt(0);
+
+   public static class LogF {
+
+    private static TextArea iText;
+    private static Container gLogCont;
+
+    public static void setContainer(Container aContainer) {
+        gLogCont = aContainer;
+    }
+
+    private static void add2LogContainer(final String aStr) {
+        if (aStr == null) {
+            return;
+        }
+
+//            Label label = new Label(str); //.substring(0, pos));
+//            sItem.setLabelForComponent(label);
+//          if(LogF.systemVer() == LogF.ESysSym2st||LogF.systemVer() == LogF.ESysSym1st)
+//            sItem.setPreferredSize(320, -1); //on N6300 form is show 1 font wide without this
+//          sItem.setFont(EFont);
+//          sItem.addCommand(EComOK);
+//          sItem.setDefaultCommand(LogF.EComOK);// new Command("OK",Command.OK, 0));
+//          sItem.setItemCommandListener(iLog);
+        // sItem.setPreferredSize(-1, EFont.getHeight());
+        if (gLogCont != null) {
+            Display.getInstance().callSeriallyAndWait(new Runnable() {
+                public void run() {
+                    Font f = Font.createSystemFont(Font.FACE_SYSTEM, Font.STYLE_PLAIN, Font.SIZE_SMALL);
+                    TextArea sItem = new TextArea(aStr); //(text.length() == 0 ? " " : text));
+                    sItem.setEditable(false);
+                    sItem.getStyle().setFont(f);
+                    sItem.getStyle().setMargin(0, 0, 0, 0);
+                    sItem.getStyle().setPadding(0, 0, 0, 0);
+                    sItem.setWidth(gLogCont.getWidth());
+                    sItem.setScrollVisible(false);
+                    sItem.getStyle().setBorder(null);
+                    sItem.setSelectedStyle(sItem.getStyle());
+                    gLogCont.addComponent(sItem);
+                    gLogCont.scrollComponentToVisible(sItem);
+                    //               gLogCont.repaint();
+                    gLogCont.revalidate();
+                }
+            });
+
+        }
+
+    }
+
+    static void e(String string, Throwable e) {
+        Log.p(string);
+        if (e != null) {
+            Log.e(e);
+            string = string + " error:" + e.toString();
+            e.printStackTrace();
+        }
+        add2LogContainer(string);
+    }
+
+    static void p(String string) {
+        e(string, null);
+    }
+
+    static void e(String string) {
+        e(string, null);
+    }
+
+    static void p2Dim(String eTest1, String[][] ETest) {
+        if (ETest == null) {
+            LogF.p(eTest1 + " is null");
+            return;
+        }
+        LogF.p("vvvvvvvvvvv " + eTest1 + " vvvvvvvv");
+        for (int i = 0; i < ETest.length; i++) {
+            if (ETest[i] == null) {
+                LogF.p(eTest1 + "[" + i + "] is null");
+            } else {
+                for (int j = 0; j < ETest[i].length; j++) {
+                    LogF.p(eTest1 + "[" + i + "][" + j + "]" + ETest[i][j]);
+                }
+            }
+        }
+        LogF.p("^^^^^^^^^^ " + eTest1 + " ^^^^^^^");
+    }
+
+    static String getRoot() {
+        String root = "";
+        try {
+            String[] rootEnum = FileSystemStorage.getInstance().getRoots();
+
+            //find last R/W root
+            for (String rootEnum1 : rootEnum) {
+                String folder = rootEnum1; 
+                if (folder.length() == 0 || !folder.endsWith(FConnector.EFolderSepSTR)) {
+                    folder = folder + FConnector.EFolderSepSTR;
+                }
+                boolean canWrite = canWrite(folder);
+
+                if (canWrite/*&&counter-->0*/) {
+                    root = folder;
+                }
+            }
+        } catch (Throwable e) {
+            LogF.e("[Log.getRoot]error:", e);
+        }
+        //    p("[Log.getRoot] new iRootCur:" + root);
+        return root;
+    }
+
+    /**
+     * check if root/path is read or read/write
+     *
+     * @param aRoot path with file:///
+     * @return false for error or read only folder or if free space is below 1MB
+     */
+    public static boolean canWrite(String aRoot) {
+
+        boolean canWrite = true;
+        try {
+            //test if we can write
+            FileSystemStorage.getInstance().mkdir(aRoot + "~t~t");
+            if (!FileSystemStorage.getInstance().exists(aRoot + "~t~t")) {
+                return false;
+            }
+            FileSystemStorage.getInstance().delete(aRoot + "~t~t");
+            OutputStream os = FileSystemStorage.getInstance().openOutputStream(aRoot + "~t~t~");
+            os.write(128);
+            os.close();
+            FileSystemStorage.getInstance().delete(aRoot + "~t~t~");
+//            long free = FileSystemStorage.getInstance().getRootAvailableSpace(aRoot);
+            p("[Log.canWrite]roots:" + aRoot + " " + (canWrite ? " R/W" : " R")); //+ ";free:" + free);
+//            if (free < 1024 * 1024) {
+//                canWrite = canWrite; //false;
+//            }
+        } catch (Throwable ee) {
+            canWrite = false;
+            LogF.e("[Log.canWrite] root(" + aRoot + ") error:", ee);
+        }
+        return canWrite;
+    }
+}
+
+static class FConnector {
+    /* separator string as defined by FC specification */
+    public static final String EFolderSepSTR = "/"; 
+    /* separator character as defined by FC specification */
+    public static final char EFolderSepCh = EFolderSepSTR.charAt(0);    
+}
+
+
+
+
+}
+
+```
+
+Open this and click "Run Test".  It will run for a couple of hundred iterations (on iPhone 4S) before you get an EXC_BAD_ACCESS trying to do `root += EDirFMapDef;`
+
+It seems that the char array inside the `EDirFMapDef` variable becomes invalid.
+
+If I change 
+
+```
+public static final String EDirFMapDef = "FMap" + FConnector.EFolderSepCh;
+```
+
+to
+
+```
+public static String EDirFMapDef = "FMap" + FConnector.EFolderSepCh;
+```
+
+It runs through to completion (999 iterations) without a problem
+
+This is related to this forum post:
+
+https://groups.google.com/d/msgid/codenameone-discussions/475473b7-268d-4b5a-9788-18ffe76002ce%40googlegroups.com?utm_medium=email&utm_source=footer

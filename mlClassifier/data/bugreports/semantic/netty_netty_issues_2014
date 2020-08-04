@@ -1,0 +1,2 @@
+JDKZlibEncoder hangs (fails to flush) on large messages
+If the message is great than 8k the message is not flushed.

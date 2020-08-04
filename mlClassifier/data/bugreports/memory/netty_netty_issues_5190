@@ -1,0 +1,4 @@
+Redis Buffer Leak
+RedisDecoder calls `ByteBuf.retain()` and the next line may throw an exception, but the buffer is never released [1]. More investigation is needed in this class whenever retain is called to ensure it is either written or released.
+
+[1] https://github.com/netty/netty/blob/4.1/codec-redis/src/main/java/io/netty/handler/codec/redis/RedisDecoder.java#L208

@@ -1,0 +1,2 @@
+Not all of the resources are cleared when destroying DurableExecutorService
+When destroying a `DurableExecutorService`, the `DurableExecutorPartitionContainer` instances are not cleared. This makes some of the resources such as `TaskRingBuffer` still left in the heap even the service itself is destroyed. 

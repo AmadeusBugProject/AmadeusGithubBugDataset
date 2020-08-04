@@ -1,0 +1,4 @@
+After upgrading HZC to 2.3 IPv6 is no longer working with TCP join. 
+See;
+
+https://groups.google.com/d/topic/hazelcast/6kTxlw1z148/discussion

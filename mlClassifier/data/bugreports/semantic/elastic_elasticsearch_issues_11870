@@ -1,0 +1,22 @@
+recovery state returns 1970s start/end time.
+It occurs only version >= 1.6.0.
+
+`GET /_recovery?pretty&human` returns something like:
+
+```
+   "index_name": {
+      "shards": [
+         {
+            "id": 0,
+            "type": "GATEWAY",
+            "stage": "DONE",
+            "primary": true,
+            "start_time": "1970-01-01T12:05:18.603Z",
+            "start_time_in_millis": 43518603,
+            "stop_time": "1970-01-01T12:05:18.681Z",
+            "stop_time_in_millis": 43518681,
+            "total_time": "78ms",
+            "total_time_in_millis": 78,
+```
+
+I believe it's because System.nanoTime() is used for wall clock time in RecoveryState like https://github.com/elastic/elasticsearch/blob/v1.6.0/src/main/java/org/elasticsearch/indices/recovery/RecoveryState.java#L405

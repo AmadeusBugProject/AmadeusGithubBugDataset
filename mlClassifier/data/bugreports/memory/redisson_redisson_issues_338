@@ -1,0 +1,2 @@
+New version 2.1.4 or greater performance is low.
+When I use redisson 2.1.3 the ubuntu's load average is 1.8 ~ 2.3; but I use 2.1.4 or greater, the load average is often greater than 3.00, my java application often overload.

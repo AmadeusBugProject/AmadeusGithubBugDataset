@@ -1,0 +1,14 @@
+[core] if, do, for package names
+**Checks before report**
+- [+] check [latest unstable build](https://bintray.com/skylot/jadx/unstable/_latestVersion#files) (maybe issue already fixed)
+- [+] search existing issues by exception message
+- [+] check [Troubleshooting Q&A](https://github.com/skylot/jadx/wiki/Troubleshooting-Q&A) section on wiki
+
+**Describe error**
+Please open the attached APK, and browse to sources. You will see reserved names in root package names e.g. ``` if ```, ``` for ```, ``` do ```
+
+```java
+         do.int.if.AffideliceauChablis.m35920a((java.lang.Object) settings, (java.lang.String) "webView.settings");
+```
+
+https://drive.google.com/file/d/1FezWyJKTexSoO4lFNDhnRvS7K4elD6bE/view?usp=sharing

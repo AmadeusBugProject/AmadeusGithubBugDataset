@@ -1,0 +1,58 @@
+Null pointer when connecting to RSocket
+I'm trying RSocket and I'm using:
+
+```xml
+<parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>2.2.2.BUILD-SNAPSHOT</version>
+        <relativePath/>
+</parent>
+```
+
+My client code looks like:
+
+```java
+requester
+        .route("test")
+        .retrieveFlow<Int>()
+        .collect({
+            println("Receiving $it")
+        })
+```
+
+Starting from today I'm facing this exception:
+
+```java.lang.NullPointerException: null
+	at java.util.Objects.requireNonNull(Objects.java:203) ~[na:1.8.0_202]
+	at reactor.core.publisher.FluxSource.<init>(FluxSource.java:46) ~[reactor-core-3.3.1.BUILD-SNAPSHOT.jar:3.3.1.BUILD-SNAPSHOT]
+	at reactor.core.publisher.Flux.wrap(Flux.java:9869) ~[reactor-core-3.3.1.BUILD-SNAPSHOT.jar:3.3.1.BUILD-SNAPSHOT]
+	at reactor.core.publisher.Flux.from(Flux.java:961) ~[reactor-core-3.3.1.BUILD-SNAPSHOT.jar:3.3.1.BUILD-SNAPSHOT]
+	at io.rsocket.RSocketRequester.requestChannel(RSocketRequester.java:174) ~[rsocket-core-1.0.0-RC5.jar:na]
+	at io.rsocket.util.RSocketProxy.requestChannel(RSocketProxy.java:50) ~[rsocket-core-1.0.0-RC5.jar:na]
+	at io.rsocket.util.MultiSubscriberRSocket.lambda$requestChannel$3(MultiSubscriberRSocket.java:47) ~[rsocket-core-1.0.0-RC5.jar:na]
+	at reactor.core.publisher.FluxDefer.subscribe(FluxDefer.java:46) ~[reactor-core-3.3.1.BUILD-SNAPSHOT.jar:3.3.1.BUILD-SNAPSHOT]
+	at reactor.core.publisher.Flux.subscribe(Flux.java:8128) ~[reactor-core-3.3.1.BUILD-SNAPSHOT.jar:3.3.1.BUILD-SNAPSHOT]
+	at kotlinx.coroutines.reactive.PublisherAsFlow.collect(ReactiveFlow.kt:77) ~[kotlinx-coroutines-reactive-1.3.2.jar:na]
+	at kotlinx.coroutines.flow.FlowKt__TransformKt$onEach$$inlined$unsafeTransform$1.collect(SafeCollector.kt:127) ~[kotlinx-coroutines-core-1.3.2.jar:na]
+	at kotlinx.coroutines.flow.FlowKt__CollectKt.collect(Collect.kt:30) ~[kotlinx-coroutines-core-1.3.2.jar:na]
+	at kotlinx.coroutines.flow.FlowKt.collect(Unknown Source) ~[kotlinx-coroutines-core-1.3.2.jar:na]
+```
+
+Some days ago everything works as expected, after replacing 2.2.2.BUILD-SNAPSHOT with 2.2.1.BUILD-SNAPSHOT, everything works again.
+
+After debugging the problem seems to be in:
+
+```
+Flux<Payload> payloadFlux = this.payloadMono != null ?
+					this.payloadMono.flatMapMany(rsocket::requestStream) :
+					rsocket.requestChannel(this.payloadFlux);
+```
+With 2.2.1.BUILD-SNAPSHOT the null check returns true, while with 2.2.2.BUILD-SNAPSHOT the null check returns false.
+
+I think that this happens because on [this commit](https://github.com/spring-projects/spring-framework/commit/996f7290cf97df2938287630ca956fe5ac35fdc8#diff-194716dad2f2306d0e70620b51d1779a) someone remove `emptyPayload()`:
+
+```java
+@Nullable
+private Mono<Payload> payloadMono = emptyPayload();
+```

@@ -1,0 +1,16 @@
+Invalid Hispanic display name
+In the following snippet we try to display Hispanic name in English:
+```
+for (TextWidth textWidth : TextWidth.values()) {
+    System.out.print(textWidth + ": ");
+    System.out.println(HistoricEra.HISPANIC.getDisplayName(Locale.ENGLISH, textWidth));
+}
+```
+Output:
+```
+WIDE: Era de César
+ABBREVIATED: Era
+SHORT: Era
+NARROW: Era
+```
+As shown in the output, the display name in` WIDE` width is in different language than English. In addition, in other width formats the display name (`Era`) is generic and doesn't seem to have Hispanic meaning.

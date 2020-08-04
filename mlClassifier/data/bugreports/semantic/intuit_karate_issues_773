@@ -1,0 +1,2 @@
+karate.options scenario name not honored when using suite / parallel runner
+the `--name` option works for IDE (IntelliJ) but nowhere else. it should be honored when running something like `mvn test -Dkarate.options="classpath:myfeature.feature --name ^first$"`

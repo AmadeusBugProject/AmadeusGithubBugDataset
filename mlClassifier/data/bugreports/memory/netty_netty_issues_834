@@ -1,0 +1,10 @@
+MessageToByteEncoder's output ByteBuf runs out of space
+The MessageToByteEncoder's ByteBuf passed into the encode method quickly runs out of space when a lot (about 100K) of messages are sent in short bursts. See below:
+
+![netty runs out runs out of space](https://f.cloud.github.com/assets/692396/21046/f8820a72-497b-11e2-99d7-950bf066e06b.png)
+
+It is also not possible to increase the buffer's capacity since the capacity(int) method throws an "IllegalArgumentException" if this is attempted.
+
+Before I was simply doing out.writeBytes(...), I started using out.writebytes() followed by ctx.flush() but this only delayed it as the buffer still got backed up.
+
+This only started happening recently after pulling all the latest changes from master

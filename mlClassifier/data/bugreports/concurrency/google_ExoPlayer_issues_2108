@@ -1,0 +1,26 @@
+Unhandled exception IllegalStateException during playback live HLS (media index)
+Caught by Crashlytics (most recent dev-v2, 2.0.4). No steps to reproduce — cannot reproduce by myself. Issue doesn't depend on device or OS version. 
+
+Stacktrace:
+```
+com.google.android.exoplayer2.util.Assertions.checkState (Assertions.java:79)
+com.google.android.exoplayer2.upstream.Loader$LoadTask.start (Loader.java:258)
+com.google.android.exoplayer2.upstream.Loader$LoadTask.handleMessage (Loader.java:364)
+android.os.Handler.dispatchMessage (Handler.java:102)
+android.os.Looper.loop (Looper.java:146)
+android.app.ActivityThread.main (ActivityThread.java:5603)
+java.lang.reflect.Method.invokeNative (Method.java)
+java.lang.reflect.Method.invoke (Method.java:515)
+com.android.internal.os.ZygoteInit$MethodAndArgsCaller.run (ZygoteInit.java:1283)
+com.android.internal.os.ZygoteInit.main (ZygoteInit.java:1099)
+dalvik.system.NativeStart.main (NativeStart.java)
+```
+
+The step discovered from logs:
+1. Exoplayerv2.prepare
+2. Exoplayer state changes to STATE_BUFFERING
+3. onVideoDecoderInitialized, onAudioDecoderInitialized methods called
+4. Exoplayer state changes to STATE_READY
+5. ...
+6. Unhandled exception thrown
+

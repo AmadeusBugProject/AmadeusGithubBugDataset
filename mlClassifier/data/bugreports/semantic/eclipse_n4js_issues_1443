@@ -1,0 +1,4 @@
+On Windows some imports cannot be resolved
+This issue happens only on the windows platform when compiling N4JS code which compiles fine on MacOS platform.
+
+`@issue: ERROR:Cannot resolve import target :: resolving simple module import : found no matching modules (file:///C:/.../node_modules/n4js-runtime-ecma402/src/n4js/Date.n4jsd line : 13 column : 37)`

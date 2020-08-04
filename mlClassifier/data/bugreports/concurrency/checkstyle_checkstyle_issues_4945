@@ -1,0 +1,4 @@
+JavadocPackageCheck should be thread-safe
+The [`JavadocPackageCheck`](https://github.com/checkstyle/checkstyle/blob/master/src/main/java/com/puppycrawl/tools/checkstyle/checks/javadoc/JavadocPackageCheck.java) contains a field `directoriesChecked`, which contains all processed directories. 
+
+This field should be updated across the application lifetime (https://github.com/checkstyle/checkstyle/blob/master/src/main/java/com/puppycrawl/tools/checkstyle/checks/javadoc/JavadocPackageCheck.java#L73), therefore it should be thread-safe

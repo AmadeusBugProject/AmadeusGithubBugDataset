@@ -1,0 +1,6 @@
+Pool leaks connections open if customization/initSql fails
+There seems to be slight a possibility to connection leak in the pool between acquiring a connection and adding it to the pool. Connection state reset has similar problem as well.
+
+Steps to fix the issue (HikariPool.addConnection):
+1. Obtaining of a datasource connection should be closed (try/catch) in case of a failure prior it has been added to the pool
+2. initSql block should be followed by resetConnectionState in any case (try/finally)

@@ -1,0 +1,30 @@
+Got following exception when i try upload large file(25MB) using netty HttpUpload example. 
+4 Jul, 2013 12:06:47 PM io.netty.util.ResourceLeakDetector reportLeak
+WARNING: LEAK: ByteBuf was GC'd before being released correctly.
+io.netty.util.ResourceLeakException: io.netty.buffer.DefaultCompositeByteBuf@b82368
+    at io.netty.util.ResourceLeakDetector$DefaultResourceLeak.<init>(ResourceLeakDetector.java:158)
+    at io.netty.util.ResourceLeakDetector.open(ResourceLeakDetector.java:103)
+    at io.netty.buffer.DefaultCompositeByteBuf.<init>(DefaultCompositeByteBuf.java:80)
+    at io.netty.buffer.Unpooled.wrappedBuffer(Unpooled.java:301)
+    at io.netty.buffer.Unpooled.wrappedBuffer(Unpooled.java:238)
+    at io.netty.handler.codec.http.multipart.HttpPostRequestDecoder.offer(HttpPostRequestDecoder.java:363)
+    at io.netty.example.http.upload.HttpUploadServerHandler.messageReceived(HttpUploadServerHandler.java:185)
+    at io.netty.example.http.upload.HttpUploadServerHandler.messageReceived(HttpUploadServerHandler.java:1)
+    at io.netty.channel.SimpleChannelInboundHandler.messageReceived(SimpleChannelInboundHandler.java:84)
+    at io.netty.channel.DefaultChannelHandlerContext.invokeMessageReceived(DefaultChannelHandlerContext.java:379)
+    at io.netty.channel.DefaultChannelHandlerContext.fireMessageReceived(DefaultChannelHandlerContext.java:364)
+    at io.netty.handler.codec.ByteToMessageDecoder.messageReceived(ByteToMessageDecoder.java:178)
+    at io.netty.channel.DefaultChannelHandlerContext.invokeMessageReceived(DefaultChannelHandlerContext.java:379)
+    at io.netty.channel.DefaultChannelHandlerContext.fireMessageReceived(DefaultChannelHandlerContext.java:364)
+    at io.netty.channel.DefaultChannelHandlerContext.fireMessageReceived(DefaultChannelHandlerContext.java:347)
+    at io.netty.channel.DefaultChannelPipeline.fireMessageReceived(DefaultChannelPipeline.java:780)
+    at io.netty.channel.nio.AbstractNioByteChannel$NioByteUnsafe.read(AbstractNioByteChannel.java:92)
+    at io.netty.channel.nio.NioEventLoop.processSelectedKey(NioEventLoop.java:489)
+    at io.netty.channel.nio.NioEventLoop.processSelectedKeysOptimized(NioEventLoop.java:464)
+    at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:358)
+    at io.netty.util.concurrent.SingleThreadEventExecutor$2.run(SingleThreadEventExecutor.java:101)
+    at java.lang.Thread.run(Unknown Source)
+
+I forgot to mention one more result that i got with the same example.
+I configured the HttpDataFectory to useDisk = false;
+I didn't get any exception but received file have size less than the actual file size(in case of media file but worked correctly with text file with size of around 7MB).

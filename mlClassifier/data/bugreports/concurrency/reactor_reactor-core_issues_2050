@@ -1,0 +1,13 @@
+Context.putAll can fail with a *custom* Context with parallel stream
+## Expected Behavior
+`Context.putAll(Context)` should work with custom implementations of `Context`.
+
+## Actual Behavior
+Let's imagine a project using `reactor-core` rolls its own `Context` implementation. The `stream()` method could in that case return a parallel `Stream`. However, if the default `putAll` method in `Context` isn't overridden, there is an issue: it combines both contexts by iterating their `stream()` and putting entries in a new `ContextN`, which is a (non-thread-safe) `LinkedHashMap`.
+This can result in arbitrary loss of data due to concurrent writes.
+
+## Steps to Reproduce
+Run the [ContextTest#defaultPutAllWorksWithParallelStream](https://github.com/reactor/reactor-core/blob/master/reactor-core/src/test/java/reactor/util/context/ContextTest.java#L467) test several times until it fails.
+
+## Possible Solution
+The iteration-in-insertion-order aspect of `LinkedHashMap` is important, so one can either make the `ContextN#accept(Object, Object)` `synchronized`, or ensure all the `putAll` implementations that rely on `.stream().forEach(...)` force stream sequentiality with `.stream().sequential().forEach(...)`. The later seems to be slightly more performant, perhaps because most of the time the `Stream`s will already be sequential.

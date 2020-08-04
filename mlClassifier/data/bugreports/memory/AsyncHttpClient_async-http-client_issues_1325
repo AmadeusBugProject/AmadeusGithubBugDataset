@@ -1,0 +1,2 @@
+Utf8ByteBufCharsetDecoder BufferOverflowException
+Utf8ByteBufCharsetDecoder doesn't reset splitCharBuffer' capacity between runs.

@@ -1,0 +1,46 @@
+PermGen OutOfMemoryError when reloading scripts too often
+ENV:
+- ES = 1.4.4
+- OS = SmartOS
+- JDK = OpenJDK 7
+- RAM = 16GB
+
+We are running into a system failure because the PermGen cache is filling up.  Our systems are deployed with Chef and the chef-client runs about every thirty minutes.  The errors are happening after sitting for a few days.  Every time Chef runs it will copy the scripts from a repo to the scripts folder, changed or not.  ES will always recompile these scripts because the timestamp on the files has changed.  Eventually the PermGen will fill up and crash the system (even with no indexing or searching happening).
+
+```
+[2015-07-12 02:31:33,382][INFO ][script                   ] [S-10.129.22.15] compiling script file [/opt/local/etc/elasticsearch/scripts/dateFormat.groovy]
+[2015-07-12 02:31:33,385][INFO ][script                   ] [S-10.129.22.15] compiling script file [/opt/local/etc/elasticsearch/scripts/inbound_group_duration.groovy]
+[2015-07-12 02:31:33,388][INFO ][script                   ] [S-10.129.22.15] compiling script file [/opt/local/etc/elasticsearch/scripts/inbound_group_duration_doesNotEqualFilter.groovy]
+[2015-07-12 02:31:33,391][INFO ][script                   ] [S-10.129.22.15] compiling script file [/opt/local/etc/elasticsearch/scripts/inbound_group_duration_equalsFilter.groovy]
+[2015-07-12 02:31:33,394][INFO ][script                   ] [S-10.129.22.15] compiling script file [/opt/local/etc/elasticsearch/scripts/inbound_group_duration_greaterThanEqualFilter.groovy]
+[2015-07-12 02:31:35,718][INFO ][script                   ] [S-10.129.22.15] compiling script file [/opt/local/etc/elasticsearch/scripts/inbound_group_duration_greaterThanFilter.groovy]
+[2015-07-12 02:32:12,053][WARN ][script                   ] [S-10.129.22.15] failed to load/compile script [inbound_group_duration_greaterThanFilter]
+org.elasticsearch.script.groovy.GroovyScriptCompilationException: OutOfMemoryError[PermGen space]
+        at org.elasticsearch.script.groovy.GroovyScriptEngineService.compile(GroovyScriptEngineService.java:153)
+        at org.elasticsearch.script.ScriptService$ScriptChangesListener.onFileInit(ScriptService.java:588)
+        at org.elasticsearch.script.ScriptService$ScriptChangesListener.onFileChanged(ScriptService.java:621)
+        at org.elasticsearch.watcher.FileWatcher$FileObserver.onFileChanged(FileWatcher.java:271)
+        at org.elasticsearch.watcher.FileWatcher$FileObserver.checkAndNotify(FileWatcher.java:122)
+        at org.elasticsearch.watcher.FileWatcher$FileObserver.updateChildren(FileWatcher.java:207)
+        at org.elasticsearch.watcher.FileWatcher$FileObserver.checkAndNotify(FileWatcher.java:108)
+        at org.elasticsearch.watcher.FileWatcher.doCheckAndNotify(FileWatcher.java:62)
+        at org.elasticsearch.watcher.AbstractResourceWatcher.checkAndNotify(AbstractResourceWatcher.java:43)
+        at org.elasticsearch.watcher.ResourceWatcherService$ResourceMonitor.run(ResourceWatcherService.java:180)
+        at org.elasticsearch.threadpool.ThreadPool$LoggingRunnable.run(ThreadPool.java:490)
+        at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:471)
+        at java.util.concurrent.FutureTask.runAndReset(FutureTask.java:304)
+        at java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.access$301(ScheduledThreadPoolExecutor.java:178)
+        at java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.run(ScheduledThreadPoolExecutor.java:293)
+        at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+        at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:615)
+        at java.lang.Thread.run(Thread.java:745)
+```
+
+This is the GC that was performed just before the crash:
+
+```
+[2015-07-12 02:00:18,361][INFO ][monitor.jvm              ] [S-10.129.22.15] [gc][old][204306][1] duration [5.2s], collections [1]/[6s], total [5.2s]/[5.2s], memory [5.2gb]->[1.8g
+b]/[7.6gb], all_pools {[young] [2.5gb]->[20.2mb]/[2.5gb]}{[survivor] [2mb]->[0b]/[42.5mb]}{[old] [2.6gb]->[1.8gb]/[5.3gb]}
+```
+
+If we stop copying the scripts with Chef then the issue doesn't happen.  Somewhere there is an issue with the JVM not letting go of memory related to the scripts being recompiled.

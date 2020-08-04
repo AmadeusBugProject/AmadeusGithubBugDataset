@@ -1,0 +1,43 @@
+File upload
+
+
+•OS and version used: Windows 7 
+
+
+•Java runtime used: JSE 1.8
+
+
+•SDK version used: iot-device-client-1.3.29-with-deps.jar
+
+
+
+# Description of the issue:
+This is the copy of defect 107 of Beppuc86
+
+I'm using the DeviceClient to send an uploadToBlobAsync request. Every time i call that api, the response is 11 error, and the following log.
+
+I've looked at the code, and I can't understand how can I do like suggested, because in the class FileUploadResponseParser is not exposed the GsonBuilder.
+
+# Code sample exhibiting the issue:
+client.uploadToBlobAsync(file.getName(), new FileInputStream(file), file.length(), callback,
+                    callbackContext);
+
+# Console log of the issue:
+File upload failed to upload the stream to the blob. java.lang.IllegalArgumentException: Malformed json:java.lang.RuntimeException: Unable to invoke no-args constructor for class com.microsoft.azure.sdk.iot.deps.serializer.FileUploadResponseParser. Register an InstanceCreator with Gson for this type may fix this problem.
+
+**I **resolved the issue adding a costructor into the class: FileUploadResponseParser****
+
+like this
+
+    public FileUploadResponseParser() {
+    	this.hostName = "";
+        this.containerName = "";
+        this.correlationId = "";
+        this.blobName = "";
+        this.sasToken = "";
+   
+	}
+
+If you think the fix is valid can you insert this costructor in the next release.
+
+

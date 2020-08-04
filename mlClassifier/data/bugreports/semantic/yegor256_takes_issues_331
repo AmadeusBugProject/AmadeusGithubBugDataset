@@ -1,0 +1,24 @@
+RqMultipart.Base incorrect handles non-printable ASCII characters
+RqMultipart.Base incorrect handles non-printable ASCII characters
+to reproduce it just make a small changes in `RqMultipartTest.handlesRequestInTime()`
+https://github.com/yegor256/takes/blob/master/src/test/java/org/takes/rq/RqMultipartTest.java#L357
+
+change 
+
+```
+for (int ind = 0; ind < length; ++ind) {
+            bwr.write("X");
+}
+```
+
+to
+
+```
+Random rnd = new Random();
+for (int ind = 0; ind < length; ++ind) {
+    bwr.write(String.format("%c", rnd.nextInt(128)));         
+}
+```
+
+`bwr.write(String.format("%c", rnd.nextInt(108)+20));` will work fine.
+so problem in the non-printable characters from 0 to 19

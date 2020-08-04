@@ -1,0 +1,21 @@
+Negative total cpu time reported by the node stats REST API
+We came across this little issue in using the node stats API, where the total CPU time values are reported as negative 1 while the user and kernel CPU times are non-zero.  The command used was:
+
+  curl -XGET http://<host>:9200/_cluster/nodes/stats
+  ...
+        "process": {
+        "timestamp": 1314943670627,
+        "open_file_descriptors": 112,
+        "cpu": {
+          "percent": 1,
+          "sys": "343 milliseconds",
+          "sys_in_millis": 343,
+          "user": "3 seconds and 226 milliseconds",
+          "user_in_millis": 3226,
+          "total": "-1 milliseconds",
+          "total_in_millis": -1
+        },
+
+This is on the 0.18 series of elasticsearch, running on a Mac OS X 10.6.8 machine with multiple CPUs.
+
+cheers.

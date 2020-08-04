@@ -1,0 +1,2 @@
+Video duration is not accurate with FFmpegFrameRecorder
+I have 264 frames. I have recorded those with FFmpegFrameRecorder at 60 frame rate. The video length should be 4.4(264/60) seconds but the video length is 4.38. what is the problem???

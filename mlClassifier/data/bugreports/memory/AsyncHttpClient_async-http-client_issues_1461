@@ -1,0 +1,2 @@
+DefaultChannelPool leaks IdleChannels
+`DefaultChannelPool#removeAll` fails to properly remove entry from partition as it tries to remove a `Channel` instead of an `IdleChannel`.

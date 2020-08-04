@@ -1,0 +1,8 @@
+karate.tagValues can be wrong when running scenarios in parallel
+I have observed that if you have multiple scenarios in a feature and you run the scenarios in parallel then you can (quite reliably) get a wrong karate.tagValues in your scenario.
+
+I have attached a minimal project where this issue can be reproduced: [paralleltags.zip](https://github.com/intuit/karate/files/2782951/paralleltags.zip).
+
+If you execute the SequentialRunner then all tests pass as expected, but with the ParallelRunner they don't. Sometimes tests run fine with the ParallelRunner, so I suspect there is a race condition somewhere.
+
+Please let me know should you need any more information.

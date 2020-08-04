@@ -1,0 +1,7 @@
+CH Preparation sometimes not complete for tests
+I've stumbled over this problem only in the tests so far and it happens very rarely (maybe only on slow virtual computers?):
+
+```
+java.lang.AssertionError: Properties for fastest_mtb should NOT contain error CH preparation incomplete [5]
+    at com.graphhopper.GraphHopperTest.testMultipleCHPreparationsInParallel(GraphHopperTest.java:894)
+```

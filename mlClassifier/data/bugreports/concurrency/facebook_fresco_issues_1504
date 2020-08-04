@@ -1,0 +1,25 @@
+Race-condition leads to OutOfBounds in ForwardingControllerListener
+Hello. I'm getting a strange crash when loading a simple local gif.
+
+10-18 18:00:57.522 8284-8284/com.goodrun.android.debug D/AndroidRuntime: Shutting down VM
+
+```
+FATAL EXCEPTION: main
+ Process: com.goodrun.android.debug, PID: 8284
+ java.lang.IndexOutOfBoundsException: Invalid index 1, size is 1
+     at java.util.ArrayList.throwIndexOutOfBoundsException(ArrayList.java:255)
+     at java.util.ArrayList.get(ArrayList.java:308)
+     at com.facebook.drawee.controller.ForwardingControllerListener.onFinalImageSet(ForwardingControllerListener.java:91)
+     at com.facebook.drawee.controller.AbstractDraweeController.onNewResultInternal(AbstractDraweeController.java:524)
+     at com.facebook.drawee.controller.AbstractDraweeController.access$000(AbstractDraweeController.java:47)
+     at com.facebook.drawee.controller.AbstractDraweeController$1.onNewResultImpl(AbstractDraweeController.java:469)
+     at com.facebook.datasource.BaseDataSubscriber.onNewResult(BaseDataSubscriber.java:48)
+     at com.facebook.datasource.AbstractDataSource$1.run(AbstractDataSource.java:181)
+     at android.os.Handler.handleCallback(Handler.java:739)
+     at android.os.Handler.dispatchMessage(Handler.java:95)
+     at android.os.Looper.loop(Looper.java:148)
+     at android.app.ActivityThread.main(ActivityThread.java:5417)
+     at java.lang.reflect.Method.invoke(Native Method)
+     at com.android.internal.os.ZygoteInit$MethodAndArgsCaller.run(ZygoteInit.java:726)
+     at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:616)
+```

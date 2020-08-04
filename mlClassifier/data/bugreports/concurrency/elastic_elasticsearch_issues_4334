@@ -1,0 +1,294 @@
+Node deadlock on shutdown
+ES Version: 0.90.7, Java version: 1.7 update 45 64 bit Server VM.
+
+I have a 7 node cluster with 5 master nodes and 2 client nodes. 
+When I was shutting down all nodes to do a full cluster restart, one node did not die and looks there is a deadlock.
+
+Stack Trace:
+
+2013-12-03 22:07:50
+Full thread dump Java HotSpot(TM) 64-Bit Server VM (24.45-b08 mixed mode):
+
+"Attach Listener" daemon prio=10 tid=0x00007f8ed4028000 nid=0x5d32 waiting on condition [0x0000000000000000]
+   java.lang.Thread.State: RUNNABLE
+
+"Thread-1" prio=10 tid=0x00007f8e88698000 nid=0x5c6e waiting on condition [0x00007f8e7e861000]
+   java.lang.Thread.State: WAITING (parking)
+    at sun.misc.Unsafe.park(Native Method)
+    - parking to wait for  <0x00000005fdba9278> (a java.util.concurrent.locks.ReentrantLock$NonfairSync)
+    at java.util.concurrent.locks.LockSupport.park(LockSupport.java:186)
+    at java.util.concurrent.locks.AbstractQueuedSynchronizer.parkAndCheckInterrupt(AbstractQueuedSynchronizer.java:834)
+    at java.util.concurrent.locks.AbstractQueuedSynchronizer.acquireQueued(AbstractQueuedSynchronizer.java:867)
+    at java.util.concurrent.locks.AbstractQueuedSynchronizer.acquire(AbstractQueuedSynchronizer.java:1197)
+    at java.util.concurrent.locks.ReentrantLock$NonfairSync.lock(ReentrantLock.java:214)
+    at java.util.concurrent.locks.ReentrantLock.lock(ReentrantLock.java:290)
+    at java.util.concurrent.ThreadPoolExecutor.awaitTermination(ThreadPoolExecutor.java:1461)
+    at org.elasticsearch.threadpool.ThreadPool.awaitTermination(ThreadPool.java:249)
+    at org.elasticsearch.node.internal.InternalNode.close(InternalNode.java:342)
+    at org.elasticsearch.bootstrap.Bootstrap$1.run(Bootstrap.java:73)
+
+"SIGTERM handler" daemon prio=10 tid=0x00007f8ed4042000 nid=0x5c6b in Object.wait() [0x00007f8ee7915000]
+   java.lang.Thread.State: WAITING (on object monitor)
+    at java.lang.Object.wait(Native Method)
+    - waiting on <0x00000005fd3d76c8> (a org.elasticsearch.bootstrap.Bootstrap$1)
+    at java.lang.Thread.join(Thread.java:1280)
+    - locked <0x00000005fd3d76c8> (a org.elasticsearch.bootstrap.Bootstrap$1)
+    at java.lang.Thread.join(Thread.java:1354)
+    at java.lang.ApplicationShutdownHooks.runHooks(ApplicationShutdownHooks.java:106)
+    at java.lang.ApplicationShutdownHooks$1.run(ApplicationShutdownHooks.java:46)
+    at java.lang.Shutdown.runHooks(Shutdown.java:123)
+    at java.lang.Shutdown.sequence(Shutdown.java:167)
+    at java.lang.Shutdown.exit(Shutdown.java:212)
+    - locked <0x00000005fd340058> (a java.lang.Class for java.lang.Shutdown)
+    at java.lang.Terminator$1.handle(Terminator.java:52)
+    at sun.misc.Signal$1.run(Signal.java:212)
+    at java.lang.Thread.run(Thread.java:744)
+
+"elasticsearch[AG 8][search][T#7]" daemon prio=10 tid=0x00007f8e84112800 nid=0x799a waiting on condition [0x00007f8ee7c62000]
+   java.lang.Thread.State: WAITING (parking)
+    at sun.misc.Unsafe.park(Native Method)
+    - parking to wait for  <0x00000005fdba9278> (a java.util.concurrent.locks.ReentrantLock$NonfairSync)
+    at java.util.concurrent.locks.LockSupport.park(LockSupport.java:186)
+    at java.util.concurrent.locks.AbstractQueuedSynchronizer.parkAndCheckInterrupt(AbstractQueuedSynchronizer.java:834)
+    at java.util.concurrent.locks.AbstractQueuedSynchronizer.acquireQueued(AbstractQueuedSynchronizer.java:867)
+    at java.util.concurrent.locks.AbstractQueuedSynchronizer.acquire(AbstractQueuedSynchronizer.java:1197)
+    at java.util.concurrent.locks.ReentrantLock$NonfairSync.lock(ReentrantLock.java:214)
+    at java.util.concurrent.locks.ReentrantLock.lock(ReentrantLock.java:290)
+    at java.util.concurrent.ThreadPoolExecutor.processWorkerExit(ThreadPoolExecutor.java:998)
+    at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1163)
+    at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:615)
+    at java.lang.Thread.run(Thread.java:744)
+
+"elasticsearch[AG 8][search][T#12]" daemon prio=10 tid=0x00007f8e8c11f800 nid=0x7999 waiting on condition [0x00007f8ee7ca3000]
+   java.lang.Thread.State: WAITING (parking)
+    at sun.misc.Unsafe.park(Native Method)
+    - parking to wait for  <0x00000005fdba9278> (a java.util.concurrent.locks.ReentrantLock$NonfairSync)
+    at java.util.concurrent.locks.LockSupport.park(LockSupport.java:186)
+    at java.util.concurrent.locks.AbstractQueuedSynchronizer.parkAndCheckInterrupt(AbstractQueuedSynchronizer.java:834)
+    at java.util.concurrent.locks.AbstractQueuedSynchronizer.acquireQueued(AbstractQueuedSynchronizer.java:867)
+    at java.util.concurrent.locks.AbstractQueuedSynchronizer.acquire(AbstractQueuedSynchronizer.java:1197)
+    at java.util.concurrent.locks.ReentrantLock$NonfairSync.lock(ReentrantLock.java:214)
+    at java.util.concurrent.locks.ReentrantLock.lock(ReentrantLock.java:290)
+    at java.util.concurrent.ThreadPoolExecutor.processWorkerExit(ThreadPoolExecutor.java:998)
+    at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1163)
+    at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:615)
+    at java.lang.Thread.run(Thread.java:744)
+
+"elasticsearch[AG 8][search][T#3]" daemon prio=10 tid=0x00007f8e8011e000 nid=0x7997 waiting on condition [0x00007f8ee7d25000]
+   java.lang.Thread.State: WAITING (parking)
+    at sun.misc.Unsafe.park(Native Method)
+    - parking to wait for  <0x00000005fdba9278> (a java.util.concurrent.locks.ReentrantLock$NonfairSync)
+    at java.util.concurrent.locks.LockSupport.park(LockSupport.java:186)
+    at java.util.concurrent.locks.AbstractQueuedSynchronizer.parkAndCheckInterrupt(AbstractQueuedSynchronizer.java:834)
+    at java.util.concurrent.locks.AbstractQueuedSynchronizer.acquireQueued(AbstractQueuedSynchronizer.java:867)
+    at java.util.concurrent.locks.AbstractQueuedSynchronizer.acquire(AbstractQueuedSynchronizer.java:1197)
+    at java.util.concurrent.locks.ReentrantLock$NonfairSync.lock(ReentrantLock.java:214)
+    at java.util.concurrent.locks.ReentrantLock.lock(ReentrantLock.java:290)
+    at java.util.concurrent.ThreadPoolExecutor.processWorkerExit(ThreadPoolExecutor.java:998)
+    at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1163)
+    at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:615)
+    at java.lang.Thread.run(Thread.java:744)
+
+"elasticsearch[AG 8][search][T#2]" daemon prio=10 tid=0x00007f8e8c11d800 nid=0x7996 waiting on condition [0x00007f8ee7d66000]
+   java.lang.Thread.State: WAITING (parking)
+    at sun.misc.Unsafe.park(Native Method)
+    - parking to wait for  <0x00000005fdba9278> (a java.util.concurrent.locks.ReentrantLock$NonfairSync)
+    at java.util.concurrent.locks.LockSupport.park(LockSupport.java:186)
+    at java.util.concurrent.locks.AbstractQueuedSynchronizer.parkAndCheckInterrupt(AbstractQueuedSynchronizer.java:834)
+    at java.util.concurrent.locks.AbstractQueuedSynchronizer.acquireQueued(AbstractQueuedSynchronizer.java:867)
+    at java.util.concurrent.locks.AbstractQueuedSynchronizer.acquire(AbstractQueuedSynchronizer.java:1197)
+    at java.util.concurrent.locks.ReentrantLock$NonfairSync.lock(ReentrantLock.java:214)
+    at java.util.concurrent.locks.ReentrantLock.lock(ReentrantLock.java:290)
+    at java.util.concurrent.ThreadPoolExecutor.processWorkerExit(ThreadPoolExecutor.java:998)
+    at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1163)
+    at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:615)
+    at java.lang.Thread.run(Thread.java:744)
+
+"elasticsearch[AG 8][search][T#4]" daemon prio=10 tid=0x00007f8e84111000 nid=0x7995 waiting on condition [0x00007f8ee7da7000]
+   java.lang.Thread.State: WAITING (parking)
+    at sun.misc.Unsafe.park(Native Method)
+    - parking to wait for  <0x00000005fdba9278> (a java.util.concurrent.locks.ReentrantLock$NonfairSync)
+    at java.util.concurrent.locks.LockSupport.park(LockSupport.java:186)
+    at java.util.concurrent.locks.AbstractQueuedSynchronizer.parkAndCheckInterrupt(AbstractQueuedSynchronizer.java:834)
+    at java.util.concurrent.locks.AbstractQueuedSynchronizer.acquireQueued(AbstractQueuedSynchronizer.java:867)
+    at java.util.concurrent.locks.AbstractQueuedSynchronizer.acquire(AbstractQueuedSynchronizer.java:1197)
+    at java.util.concurrent.locks.ReentrantLock$NonfairSync.lock(ReentrantLock.java:214)
+    at java.util.concurrent.locks.ReentrantLock.lock(ReentrantLock.java:290)
+    at java.util.concurrent.ThreadPoolExecutor.processWorkerExit(ThreadPoolExecutor.java:998)
+    at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1163)
+    at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:615)
+    at java.lang.Thread.run(Thread.java:744)
+
+"elasticsearch[AG 8][search][T#8]" daemon prio=10 tid=0x0000000001fa0800 nid=0x7991 waiting for monitor entry [0x00007f8ee7f7c000]
+   java.lang.Thread.State: BLOCKED (on object monitor)
+    at org.elasticsearch.common.util.concurrent.EsThreadPoolExecutor.terminated(EsThreadPoolExecutor.java:64)
+    - waiting to lock <0x00000005fdbaaf50> (a java.lang.Object)
+    - locked <0x00000005fae03ef0> (a org.elasticsearch.common.util.concurrent.EsThreadPoolExecutor)
+    at java.util.concurrent.ThreadPoolExecutor.tryTerminate(ThreadPoolExecutor.java:704)
+    at java.util.concurrent.ThreadPoolExecutor.processWorkerExit(ThreadPoolExecutor.java:1006)
+    at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1163)
+    at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:615)
+    at java.lang.Thread.run(Thread.java:744)
+
+"elasticsearch[AG 8][search][T#6]" daemon prio=10 tid=0x0000000001f9f000 nid=0x7990 waiting on condition [0x00007f8ee7fbd000]
+   java.lang.Thread.State: WAITING (parking)
+    at sun.misc.Unsafe.park(Native Method)
+    - parking to wait for  <0x00000005fdba9278> (a java.util.concurrent.locks.ReentrantLock$NonfairSync)
+    at java.util.concurrent.locks.LockSupport.park(LockSupport.java:186)
+    at java.util.concurrent.locks.AbstractQueuedSynchronizer.parkAndCheckInterrupt(AbstractQueuedSynchronizer.java:834)
+    at java.util.concurrent.locks.AbstractQueuedSynchronizer.acquireQueued(AbstractQueuedSynchronizer.java:867)
+    at java.util.concurrent.locks.AbstractQueuedSynchronizer.acquire(AbstractQueuedSynchronizer.java:1197)
+    at java.util.concurrent.locks.ReentrantLock$NonfairSync.lock(ReentrantLock.java:214)
+    at java.util.concurrent.locks.ReentrantLock.lock(ReentrantLock.java:290)
+    at java.util.concurrent.ThreadPoolExecutor.processWorkerExit(ThreadPoolExecutor.java:998)
+    at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1163)
+    at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:615)
+    at java.lang.Thread.run(Thread.java:744)
+
+"elasticsearch[AG 8][search][T#1]" daemon prio=10 tid=0x00007f8e8410f000 nid=0x798f waiting on condition [0x00007f8ee7ffe000]
+   java.lang.Thread.State: WAITING (parking)
+    at sun.misc.Unsafe.park(Native Method)
+    - parking to wait for  <0x00000005fdba9278> (a java.util.concurrent.locks.ReentrantLock$NonfairSync)
+    at java.util.concurrent.locks.LockSupport.park(LockSupport.java:186)
+    at java.util.concurrent.locks.AbstractQueuedSynchronizer.parkAndCheckInterrupt(AbstractQueuedSynchronizer.java:834)
+    at java.util.concurrent.locks.AbstractQueuedSynchronizer.acquireQueued(AbstractQueuedSynchronizer.java:867)
+    at java.util.concurrent.locks.AbstractQueuedSynchronizer.acquire(AbstractQueuedSynchronizer.java:1197)
+    at java.util.concurrent.locks.ReentrantLock$NonfairSync.lock(ReentrantLock.java:214)
+    at java.util.concurrent.locks.ReentrantLock.lock(ReentrantLock.java:290)
+    at java.util.concurrent.ThreadPoolExecutor.processWorkerExit(ThreadPoolExecutor.java:998)
+    at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1163)
+    at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:615)
+    at java.lang.Thread.run(Thread.java:744)
+
+"DestroyJavaVM" prio=10 tid=0x00007f8f1000a800 nid=0x775c waiting on condition [0x0000000000000000]
+   java.lang.Thread.State: RUNNABLE
+
+"elasticsearch[AG 8][clusterService#updateTask][T#1]" daemon prio=10 tid=0x00007f8e84107800 nid=0x7798 waiting on condition [0x00007f8eee056000]
+   java.lang.Thread.State: WAITING (parking)
+    at sun.misc.Unsafe.park(Native Method)
+    - parking to wait for  <0x00000005fdba9278> (a java.util.concurrent.locks.ReentrantLock$NonfairSync)
+    at java.util.concurrent.locks.LockSupport.park(LockSupport.java:186)
+    at java.util.concurrent.locks.AbstractQueuedSynchronizer.parkAndCheckInterrupt(AbstractQueuedSynchronizer.java:834)
+    at java.util.concurrent.locks.AbstractQueuedSynchronizer.acquireQueued(AbstractQueuedSynchronizer.java:867)
+    at java.util.concurrent.locks.AbstractQueuedSynchronizer.acquire(AbstractQueuedSynchronizer.java:1197)
+    at java.util.concurrent.locks.ReentrantLock$NonfairSync.lock(ReentrantLock.java:214)
+    at java.util.concurrent.locks.ReentrantLock.lock(ReentrantLock.java:290)
+    at java.util.concurrent.ThreadPoolExecutor.interruptIdleWorkers(ThreadPoolExecutor.java:781)
+    at java.util.concurrent.ThreadPoolExecutor.tryTerminate(ThreadPoolExecutor.java:695)
+    at java.util.concurrent.ThreadPoolExecutor.shutdown(ThreadPoolExecutor.java:1397)
+    at org.elasticsearch.common.util.concurrent.EsThreadPoolExecutor.shutdown(EsThreadPoolExecutor.java:56)
+    - locked <0x00000005fdbaaf50> (a java.lang.Object)
+    at org.elasticsearch.threadpool.ThreadPool.updateSettings(ThreadPool.java:395)
+    at org.elasticsearch.threadpool.ThreadPool$ApplySettings.onRefreshSettings(ThreadPool.java:656)
+    at org.elasticsearch.node.settings.NodeSettingsService.clusterChanged(NodeSettingsService.java:84)
+    at org.elasticsearch.cluster.service.InternalClusterService$UpdateTask.run(InternalClusterService.java:417)
+    at org.elasticsearch.common.util.concurrent.PrioritizedEsThreadPoolExecutor$TieBreakingPrioritizedRunnable.run(PrioritizedEsThreadPoolExecutor.java:135)
+    at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+    at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:615)
+    at java.lang.Thread.run(Thread.java:744)
+
+"Service Thread" daemon prio=10 tid=0x00007f8f10113800 nid=0x7769 runnable [0x0000000000000000]
+   java.lang.Thread.State: RUNNABLE
+
+"C2 CompilerThread1" daemon prio=10 tid=0x00007f8f10111000 nid=0x7768 waiting on condition [0x0000000000000000]
+   java.lang.Thread.State: RUNNABLE
+
+"C2 CompilerThread0" daemon prio=10 tid=0x00007f8f1010e800 nid=0x7767 waiting on condition [0x0000000000000000]
+   java.lang.Thread.State: RUNNABLE
+
+"Signal Dispatcher" daemon prio=10 tid=0x00007f8f1010c800 nid=0x7766 runnable [0x0000000000000000]
+   java.lang.Thread.State: RUNNABLE
+
+"Surrogate Locker Thread (Concurrent GC)" daemon prio=10 tid=0x00007f8f10102000 nid=0x7765 waiting on condition [0x0000000000000000]
+   java.lang.Thread.State: RUNNABLE
+
+"Finalizer" daemon prio=10 tid=0x00007f8f100eb800 nid=0x7764 in Object.wait() [0x00007f8f0c1bd000]
+   java.lang.Thread.State: WAITING (on object monitor)
+    at java.lang.Object.wait(Native Method)
+    - waiting on <0x00000005fce11a08> (a java.lang.ref.ReferenceQueue$Lock)
+    at java.lang.ref.ReferenceQueue.remove(ReferenceQueue.java:135)
+    - locked <0x00000005fce11a08> (a java.lang.ref.ReferenceQueue$Lock)
+    at java.lang.ref.ReferenceQueue.remove(ReferenceQueue.java:151)
+    at java.lang.ref.Finalizer$FinalizerThread.run(Finalizer.java:189)
+
+"Reference Handler" daemon prio=10 tid=0x00007f8f100e7800 nid=0x7763 in Object.wait() [0x00007f8f0c1fe000]
+   java.lang.Thread.State: WAITING (on object monitor)
+    at java.lang.Object.wait(Native Method)
+    - waiting on <0x00000005fce13cb0> (a java.lang.ref.Reference$Lock)
+    at java.lang.Object.wait(Object.java:503)
+    at java.lang.ref.Reference$ReferenceHandler.run(Reference.java:133)
+    - locked <0x00000005fce13cb0> (a java.lang.ref.Reference$Lock)
+
+"VM Thread" prio=10 tid=0x00007f8f100e5000 nid=0x7762 runnable 
+
+"Gang worker#0 (Parallel GC Threads)" prio=10 tid=0x00007f8f1001c000 nid=0x775d runnable 
+
+"Gang worker#1 (Parallel GC Threads)" prio=10 tid=0x00007f8f1001e000 nid=0x775e runnable 
+
+"Gang worker#2 (Parallel GC Threads)" prio=10 tid=0x00007f8f1001f800 nid=0x775f runnable 
+
+"Gang worker#3 (Parallel GC Threads)" prio=10 tid=0x00007f8f10021800 nid=0x7760 runnable 
+
+"Concurrent Mark-Sweep GC Thread" prio=10 tid=0x00007f8f100a2000 nid=0x7761 runnable 
+"VM Periodic Task Thread" prio=10 tid=0x00007f8f1011e800 nid=0x776a waiting on condition 
+
+JNI global references: 284
+# Found one Java-level deadlock:
+
+"Thread-1":
+  waiting for ownable synchronizer 0x00000005fdba9278, (a java.util.concurrent.locks.ReentrantLock$NonfairSync),
+  which is held by "elasticsearch[AG 8][search][T#8]"
+"elasticsearch[AG 8][search][T#8]":
+  waiting to lock monitor 0x00007f8e980a33a8 (object 0x00000005fdbaaf50, a java.lang.Object),
+  which is held by "elasticsearch[AG 8][clusterService#updateTask][T#1]"
+"elasticsearch[AG 8][clusterService#updateTask][T#1]":
+  waiting for ownable synchronizer 0x00000005fdba9278, (a java.util.concurrent.locks.ReentrantLock$NonfairSync),
+  which is held by "elasticsearch[AG 8][search][T#8]"
+# Java stack information for the threads listed above:
+
+"Thread-1":
+    at sun.misc.Unsafe.park(Native Method)
+    - parking to wait for  <0x00000005fdba9278> (a java.util.concurrent.locks.ReentrantLock$NonfairSync)
+    at java.util.concurrent.locks.LockSupport.park(LockSupport.java:186)
+    at java.util.concurrent.locks.AbstractQueuedSynchronizer.parkAndCheckInterrupt(AbstractQueuedSynchronizer.java:834)
+    at java.util.concurrent.locks.AbstractQueuedSynchronizer.acquireQueued(AbstractQueuedSynchronizer.java:867)
+    at java.util.concurrent.locks.AbstractQueuedSynchronizer.acquire(AbstractQueuedSynchronizer.java:1197)
+    at java.util.concurrent.locks.ReentrantLock$NonfairSync.lock(ReentrantLock.java:214)
+    at java.util.concurrent.locks.ReentrantLock.lock(ReentrantLock.java:290)
+    at java.util.concurrent.ThreadPoolExecutor.awaitTermination(ThreadPoolExecutor.java:1461)
+    at org.elasticsearch.threadpool.ThreadPool.awaitTermination(ThreadPool.java:249)
+    at org.elasticsearch.node.internal.InternalNode.close(InternalNode.java:342)
+    at org.elasticsearch.bootstrap.Bootstrap$1.run(Bootstrap.java:73)
+"elasticsearch[AG 8][search][T#8]":
+    at org.elasticsearch.common.util.concurrent.EsThreadPoolExecutor.terminated(EsThreadPoolExecutor.java:64)
+    - waiting to lock <0x00000005fdbaaf50> (a java.lang.Object)
+    - locked <0x00000005fae03ef0> (a org.elasticsearch.common.util.concurrent.EsThreadPoolExecutor)
+    at java.util.concurrent.ThreadPoolExecutor.tryTerminate(ThreadPoolExecutor.java:704)
+    at java.util.concurrent.ThreadPoolExecutor.processWorkerExit(ThreadPoolExecutor.java:1006)
+    at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1163)
+    at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:615)
+    at java.lang.Thread.run(Thread.java:744)
+"elasticsearch[AG 8][clusterService#updateTask][T#1]":
+    at sun.misc.Unsafe.park(Native Method)
+    - parking to wait for  <0x00000005fdba9278> (a java.util.concurrent.locks.ReentrantLock$NonfairSync)
+    at java.util.concurrent.locks.LockSupport.park(LockSupport.java:186)
+    at java.util.concurrent.locks.AbstractQueuedSynchronizer.parkAndCheckInterrupt(AbstractQueuedSynchronizer.java:834)
+    at java.util.concurrent.locks.AbstractQueuedSynchronizer.acquireQueued(AbstractQueuedSynchronizer.java:867)
+    at java.util.concurrent.locks.AbstractQueuedSynchronizer.acquire(AbstractQueuedSynchronizer.java:1197)
+    at java.util.concurrent.locks.ReentrantLock$NonfairSync.lock(ReentrantLock.java:214)
+    at java.util.concurrent.locks.ReentrantLock.lock(ReentrantLock.java:290)
+    at java.util.concurrent.ThreadPoolExecutor.interruptIdleWorkers(ThreadPoolExecutor.java:781)
+    at java.util.concurrent.ThreadPoolExecutor.tryTerminate(ThreadPoolExecutor.java:695)
+    at java.util.concurrent.ThreadPoolExecutor.shutdown(ThreadPoolExecutor.java:1397)
+    at org.elasticsearch.common.util.concurrent.EsThreadPoolExecutor.shutdown(EsThreadPoolExecutor.java:56)
+    - locked <0x00000005fdbaaf50> (a java.lang.Object)
+    at org.elasticsearch.threadpool.ThreadPool.updateSettings(ThreadPool.java:395)
+    at org.elasticsearch.threadpool.ThreadPool$ApplySettings.onRefreshSettings(ThreadPool.java:656)
+    at org.elasticsearch.node.settings.NodeSettingsService.clusterChanged(NodeSettingsService.java:84)
+    at org.elasticsearch.cluster.service.InternalClusterService$UpdateTask.run(InternalClusterService.java:417)
+    at org.elasticsearch.common.util.concurrent.PrioritizedEsThreadPoolExecutor$TieBreakingPrioritizedRunnable.run(PrioritizedEsThreadPoolExecutor.java:135)
+    at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+    at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:615)
+    at java.lang.Thread.run(Thread.java:744)
+
+Found 1 deadlock.

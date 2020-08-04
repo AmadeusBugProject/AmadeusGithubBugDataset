@@ -1,0 +1,7 @@
+Duplicate JoinTable mapping on OfferCodeImpl.orders
+In the 3.0.x source there is currently a @JoinTable annotation on both OrderImpl.addedOfferCodes and OfferCodeImpl.orders which I believe is invalid according to the hibernate documentation:
+
+"As seen previously, the other side don't have to (must not) describe the physical mapping: a simple mappedBy argument containing the owner side property name bind the two." -
+http://docs.jboss.org/hibernate/core/4.1/manual/en-US/html/ch07.html#d5e5537
+
+This seems to be the cause of some strange behavior I have been seeing where duplicate records are intermittently being added to this mapping table.  You may want to remove one of them.

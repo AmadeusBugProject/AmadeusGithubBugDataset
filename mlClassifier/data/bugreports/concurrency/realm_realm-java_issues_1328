@@ -1,0 +1,20 @@
+Dead lock happens when calling  Runtime.getRuntime().exit(0);
+Issue first reported on SO http://stackoverflow.com/questions/31583359/realm-and-runtime-getruntime-exit0 .
+
+When calling `Runtime.getRuntime().exit(0);` with Realm opened before, finalizer won't stop running. Lock is waiting forever, process cannot exist.
+
+Below code to reproduce this error:
+
+```
+Realm realm = Realm.getInstance(this);
+realm.close();
+Runtime.getRuntime().exit(0);
+```
+
+And in the logcat, infinity logs comes as below:
+
+```
+D/dalvikvm( 5070): GC_EXPLICIT freed 0K, 6% free 6379K/6716K, paused 2ms+3ms, total 19ms
+D/dalvikvm( 5070): GC_EXPLICIT freed 0K, 6% free 6379K/6716K, paused 2ms+2ms, total 19ms
+D/dalvikvm( 5070): GC_EXPLICIT freed 0K, 6% free 6379K/6716K, paused 2ms+2ms, total 18ms
+```

@@ -1,0 +1,41 @@
+IllegalStateException in the selector loop when a connection attempt is cancelled.
+`io.netty.testsuite.transport.socket.SocketConnectionAttemptTest.testConnectCancellation`
+### Error Message
+
+```
+Expected: is <true>
+     but: was <false>
+```
+### Stacktrace
+
+```
+java.lang.AssertionError: 
+Expected: is <true>
+     but: was <false>
+    at org.hamcrest.MatcherAssert.assertThat(MatcherAssert.java:20)
+    at org.junit.Assert.assertThat(Assert.java:865)
+    at org.junit.Assert.assertThat(Assert.java:832)
+    at io.netty.testsuite.transport.socket.SocketConnectionAttemptTest.testConnectCancellation(SocketConnectionAttemptTest.java:94)
+```
+### Standard Output
+
+```
+01:40:58.760 [main] DEBUG i.n.t.t.s.SocketConnectionAttemptTest - -Dio.netty.testsuite.badHost: 255.255.255.0
+01:40:58.771 [main] INFO  i.n.t.t.s.SocketConnectionAttemptTest - Running: testConnectCancellation 1 of 2 with UnpooledByteBufAllocator
+01:40:59.774 [testsuite-nio-worker-3-3] WARN  io.netty.channel.nio.NioEventLoop - Unexpected exception in the selector loop.
+java.lang.IllegalStateException: complete already: DefaultChannelPromise@3f0cf5cb(failure(java.util.concurrent.CancellationException)
+    at io.netty.util.concurrent.DefaultPromise.setFailure(DefaultPromise.java:401) ~[netty-common-4.0.13.Final-SNAPSHOT.jar:na]
+    at io.netty.channel.DefaultChannelPromise.setFailure(DefaultChannelPromise.java:87) ~[netty-transport-4.0.13.Final-SNAPSHOT.jar:na]
+    at io.netty.channel.nio.AbstractNioChannel$AbstractNioUnsafe.finishConnect(AbstractNioChannel.java:240) ~[netty-transport-4.0.13.Final-SNAPSHOT.jar:na]
+    at io.netty.channel.nio.NioEventLoop.processSelectedKey(NioEventLoop.java:502) ~[netty-transport-4.0.13.Final-SNAPSHOT.jar:na]
+    at io.netty.channel.nio.NioEventLoop.processSelectedKeysOptimized(NioEventLoop.java:452) ~[netty-transport-4.0.13.Final-SNAPSHOT.jar:na]
+    at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:346) ~[netty-transport-4.0.13.Final-SNAPSHOT.jar:na]
+    at io.netty.util.concurrent.SingleThreadEventExecutor$2.run(SingleThreadEventExecutor.java:101) [netty-common-4.0.13.Final-SNAPSHOT.jar:na]
+    at java.lang.Thread.run(Thread.java:744) [na:1.7.0_45]
+Caused by: java.net.SocketException: Network is unreachable
+    at sun.nio.ch.SocketChannelImpl.checkConnect(Native Method) ~[na:1.7.0_45]
+    at sun.nio.ch.SocketChannelImpl.finishConnect(SocketChannelImpl.java:735) ~[na:1.7.0_45]
+    at io.netty.channel.socket.nio.NioSocketChannel.doFinishConnect(NioSocketChannel.java:191) ~[netty-transport-4.0.13.Final-SNAPSHOT.jar:na]
+    at io.netty.channel.nio.AbstractNioChannel$AbstractNioUnsafe.finishConnect(AbstractNioChannel.java:228) ~[netty-transport-4.0.13.Final-SNAPSHOT.jar:na]
+    ... 5 common frames omitted
+```

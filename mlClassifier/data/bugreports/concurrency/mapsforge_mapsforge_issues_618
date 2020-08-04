@@ -1,0 +1,2 @@
+SVG Salamander synchronization
+Fixing #513 I see we have synchronization issues with SVG internal cache handled by Salamander library in case of multiple concurrent maps.

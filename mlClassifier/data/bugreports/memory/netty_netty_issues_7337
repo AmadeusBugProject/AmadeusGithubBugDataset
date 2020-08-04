@@ -1,0 +1,4 @@
+Possible buffer leak in SslHandler?
+Excuse me if I'm missing something obvious, but it seems to me that in SslHandler.java, "buf" removed from "pendingUnencryptedWrites" on line 751 may leak if "wrap(alloc, engine, buf, out)" called on line 762 throws. The wrap function on line 912 is marked as "throws SSLException", which I assume is something that could possibly happen and not be a fatal error for the entire server. So it seems like the aforementioned buffer had ought to be released if such an exception occurs, perhaps in the finally block on line 803.
+
+I only noticed this randomly while helping a coworker to track down an unrelated issue, so it's not like I've actually seen this leak happen.

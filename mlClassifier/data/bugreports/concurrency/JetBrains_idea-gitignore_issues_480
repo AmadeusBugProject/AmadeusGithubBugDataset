@@ -1,0 +1,150 @@
+IDE Fatal Error: Accessing 'IgnoreFilesIndex' during processing 'FilenameIndex'
+### Prerequisites
+
+<!-- Put an X between the brackets on this line if you have done all of the following: -->
+
+* [X] Plugin is in the latest version
+* [X]  Issue was not reported yet
+* [X] Stack trace (if provided) contains `mobi.hsz.idea.gitignore` package name
+
+
+### Description
+
+IDE Fatal error "Accessing 'IgnoreFilesIndex' during processing 'FilenameIndex'. Nested different indices processing may cause deadlock" on startup.
+
+```
+Accessing 'IgnoreFilesIndex' during processing 'FilenameIndex'. Nested different indices processing may cause deadlock
+java.lang.Throwable
+	at com.intellij.openapi.diagnostic.Logger.error(Logger.java:127)
+	at com.intellij.util.indexing.IndexAccessValidator.checkAccessingIndexDuringOtherIndexProcessing(IndexAccessValidator.java:37)
+	at com.intellij.util.indexing.FileBasedIndexImpl.a(FileBasedIndexImpl.java:829)
+	at com.intellij.util.indexing.FileBasedIndexImpl.a(FileBasedIndexImpl.java:905)
+	at com.intellij.util.indexing.FileBasedIndexImpl.getValues(FileBasedIndexImpl.java:771)
+	at mobi.hsz.idea.gitignore.indexing.IgnoreFilesIndex.getEntries(IgnoreFilesIndex.java:233)
+	at mobi.hsz.idea.gitignore.indexing.IgnoreFilesIndex.getFiles(IgnoreFilesIndex.java:249)
+	at mobi.hsz.idea.gitignore.lang.kind.GitLanguage.getOuterFiles(GitLanguage.java:119)
+	at mobi.hsz.idea.gitignore.lang.IgnoreLanguage.getOuterFiles(IgnoreLanguage.java:221)
+	at mobi.hsz.idea.gitignore.indexing.ExternalIndexableSetContributor.getAdditionalFiles(ExternalIndexableSetContributor.java:77)
+	at mobi.hsz.idea.gitignore.indexing.ExternalIndexableSetContributor.getAdditionalProjectRootsToIndex(ExternalIndexableSetContributor.java:102)
+	at com.intellij.util.indexing.IndexableSetContributor.getProjectRootsToIndex(IndexableSetContributor.java:38)
+	at com.intellij.util.indexing.FileBasedIndexImpl.a(FileBasedIndexImpl.java:2258)
+	at com.intellij.util.indexing.FileBasedIndexImpl.iterateIndexableFiles(FileBasedIndexImpl.java:2222)
+	at com.intellij.util.indexing.FileBasedIndexImpl.projectIndexableFiles(FileBasedIndexImpl.java:1012)
+	at com.intellij.util.indexing.FileBasedIndexImpl.a(FileBasedIndexImpl.java:883)
+	at com.intellij.util.indexing.FileBasedIndexImpl.a(FileBasedIndexImpl.java:834)
+	at com.intellij.util.indexing.FileBasedIndexImpl.a(FileBasedIndexImpl.java:905)
+	at com.intellij.util.indexing.FileBasedIndexImpl.getContainingFiles(FileBasedIndexImpl.java:787)
+	at com.intellij.psi.search.FilenameIndex.getVirtualFilesByName(FilenameIndex.java:92)
+	at com.intellij.docker.DockerDeploymentRuntimeProvider$2.compute(DockerDeploymentRuntimeProvider.java:63)
+	at com.intellij.docker.DockerDeploymentRuntimeProvider$2.compute(DockerDeploymentRuntimeProvider.java:61)
+	at com.intellij.openapi.application.impl.ApplicationImpl.runReadAction(ApplicationImpl.java:859)
+	at com.intellij.docker.DockerDeploymentRuntimeProvider.getDockerFiles(DockerDeploymentRuntimeProvider.java:61)
+	at com.intellij.docker.DockerFileDetector.initNotifiers(DockerFileDetector.java:86)
+	at com.intellij.docker.DockerFileDetector.projectOpened(DockerFileDetector.java:60)
+	at com.intellij.openapi.project.impl.ProjectImpl.c(ProjectImpl.java:383)
+	at com.intellij.openapi.project.impl.ProjectImpl.access$200(ProjectImpl.java:68)
+	at com.intellij.openapi.project.impl.ProjectImpl$MyProjectManagerListener.projectOpened(ProjectImpl.java:418)
+	at com.intellij.openapi.project.impl.ProjectManagerImpl$1.projectOpened(ProjectManagerImpl.java:91)
+	at com.intellij.openapi.project.impl.ProjectManagerImpl.h(ProjectManagerImpl.java:655)
+	at com.intellij.openapi.project.impl.ProjectManagerImpl.i(ProjectManagerImpl.java:329)
+	at com.intellij.openapi.application.TransactionGuardImpl$3.run(TransactionGuardImpl.java:168)
+	at com.intellij.openapi.application.TransactionGuardImpl.a(TransactionGuardImpl.java:88)
+	at com.intellij.openapi.application.TransactionGuardImpl.access$300(TransactionGuardImpl.java:40)
+	at com.intellij.openapi.application.TransactionGuardImpl$2.run(TransactionGuardImpl.java:113)
+	at com.intellij.openapi.application.impl.LaterInvocator$FlushQueue.a(LaterInvocator.java:326)
+	at com.intellij.openapi.application.impl.LaterInvocator$FlushQueue.run(LaterInvocator.java:310)
+	at java.awt.event.InvocationEvent.dispatch(InvocationEvent.java:311)
+	at java.awt.EventQueue.dispatchEventImpl(EventQueue.java:756)
+	at java.awt.EventQueue.access$500(EventQueue.java:97)
+	at java.awt.EventQueue$3.run(EventQueue.java:709)
+	at java.awt.EventQueue$3.run(EventQueue.java:703)
+	at java.security.AccessController.doPrivileged(Native Method)
+	at java.security.ProtectionDomain$JavaSecurityAccessImpl.doIntersectionPrivilege(ProtectionDomain.java:80)
+	at java.awt.EventQueue.dispatchEvent(EventQueue.java:726)
+	at com.intellij.ide.IdeEventQueue.c(IdeEventQueue.java:795)
+	at com.intellij.ide.IdeEventQueue._dispatchEvent(IdeEventQueue.java:631)
+	at com.intellij.ide.IdeEventQueue.dispatchEvent(IdeEventQueue.java:387)
+	at com.intellij.ide.IdeEventQueue.pumpEventsForHierarchy(IdeEventQueue.java:882)
+	at com.intellij.openapi.progress.util.ProgressWindow.startBlocking(ProgressWindow.java:207)
+	at com.intellij.openapi.progress.util.ProgressWindow.startBlocking(ProgressWindow.java:194)
+	at com.intellij.openapi.application.impl.ApplicationImpl.runProcessWithProgressSynchronously(ApplicationImpl.java:562)
+	at com.intellij.openapi.progress.impl.CoreProgressManager.runProcessWithProgressSynchronously(CoreProgressManager.java:396)
+	at com.intellij.openapi.progress.impl.ProgressManagerImpl.runProcessWithProgressSynchronously(ProgressManagerImpl.java:76)
+	at com.intellij.openapi.progress.impl.CoreProgressManager.runProcessWithProgressSynchronously(CoreProgressManager.java:259)
+	at com.intellij.openapi.progress.impl.CoreProgressManager.runProcessWithProgressSynchronously(CoreProgressManager.java:211)
+	at com.intellij.openapi.project.impl.ProjectManagerImpl.openProject(ProjectManagerImpl.java:357)
+	at com.intellij.platform.PlatformProjectOpenProcessor.doOpenProject(PlatformProjectOpenProcessor.java:217)
+	at com.intellij.ide.RecentDirectoryProjectsManager.doOpenProject(RecentDirectoryProjectsManager.java:55)
+	at com.intellij.ide.ReopenProjectAction.actionPerformed(ReopenProjectAction.java:68)
+	at com.intellij.openapi.wm.impl.welcomeScreen.RecentProjectPanel$2.onClick(RecentProjectPanel.java:126)
+	at com.intellij.ui.ClickListener$1.mouseReleased(ClickListener.java:73)
+	at java.awt.AWTEventMulticaster.mouseReleased(AWTEventMulticaster.java:290)
+	at java.awt.AWTEventMulticaster.mouseReleased(AWTEventMulticaster.java:289)
+	at java.awt.AWTEventMulticaster.mouseReleased(AWTEventMulticaster.java:289)
+	at java.awt.Component.processMouseEvent(Component.java:6533)
+	at javax.swing.JComponent.processMouseEvent(JComponent.java:3324)
+	at com.intellij.openapi.wm.impl.welcomeScreen.RecentProjectPanel$MyList.processMouseEvent(RecentProjectPanel.java:347)
+	at java.awt.Component.processEvent(Component.java:6298)
+	at java.awt.Container.processEvent(Container.java:2236)
+	at java.awt.Component.dispatchEventImpl(Component.java:4889)
+	at java.awt.Container.dispatchEventImpl(Container.java:2294)
+	at java.awt.Component.dispatchEvent(Component.java:4711)
+	at java.awt.LightweightDispatcher.retargetMouseEvent(Container.java:4888)
+	at java.awt.LightweightDispatcher.processMouseEvent(Container.java:4525)
+	at java.awt.LightweightDispatcher.dispatchEvent(Container.java:4466)
+	at java.awt.Container.dispatchEventImpl(Container.java:2280)
+	at java.awt.Window.dispatchEventImpl(Window.java:2746)
+	at java.awt.Component.dispatchEvent(Component.java:4711)
+	at java.awt.EventQueue.dispatchEventImpl(EventQueue.java:758)
+	at java.awt.EventQueue.access$500(EventQueue.java:97)
+	at java.awt.EventQueue$3.run(EventQueue.java:709)
+	at java.awt.EventQueue$3.run(EventQueue.java:703)
+	at java.security.AccessController.doPrivileged(Native Method)
+	at java.security.ProtectionDomain$JavaSecurityAccessImpl.doIntersectionPrivilege(ProtectionDomain.java:80)
+	at java.security.ProtectionDomain$JavaSecurityAccessImpl.doIntersectionPrivilege(ProtectionDomain.java:90)
+	at java.awt.EventQueue$4.run(EventQueue.java:731)
+	at java.awt.EventQueue$4.run(EventQueue.java:729)
+	at java.security.AccessController.doPrivileged(Native Method)
+	at java.security.ProtectionDomain$JavaSecurityAccessImpl.doIntersectionPrivilege(ProtectionDomain.java:80)
+	at java.awt.EventQueue.dispatchEvent(EventQueue.java:728)
+	at com.intellij.ide.IdeEventQueue.c(IdeEventQueue.java:795)
+	at com.intellij.ide.IdeEventQueue._dispatchEvent(IdeEventQueue.java:627)
+	at com.intellij.ide.IdeEventQueue.dispatchEvent(IdeEventQueue.java:387)
+	at java.awt.EventDispatchThread.pumpOneEventForFilters(EventDispatchThread.java:201)
+	at java.awt.EventDispatchThread.pumpEventsForFilter(EventDispatchThread.java:116)
+	at java.awt.EventDispatchThread.pumpEventsForHierarchy(EventDispatchThread.java:105)
+	at java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:101)
+	at java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:93)
+	at java.awt.EventDispatchThread.run(EventDispatchThread.java:82)
+```
+
+
+### Steps to Reproduce
+
+Cannot reproduce currently, did not happen before. Triggered on PHPStorm startup during project load.
+
+**Expected behavior:** no errors :)
+
+**Actual behavior:** IDE Fatal error
+
+**Reproduces how often:** unknown
+
+
+### Versions
+
+**Plugin:** 2.2.1
+
+
+**IDE:** 
+```
+ PhpStorm 2016.2.2
+Build #PS-162.2380.11, built on October 24, 2016
+JRE: 1.8.0_112-b15 amd64
+JVM: Java HotSpot(TM) 64-Bit Server VM by Oracle Corporation
+```
+
+**OS:** 
+
+```
+Windows 10 Pro x64
+```

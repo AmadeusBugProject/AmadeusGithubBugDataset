@@ -1,0 +1,74 @@
+Deadlock in BuildEventServiceTransport.java
+### Description of the problem / feature request:
+
+Bazel can deadlock while writing to the BES. The issue is that sendBuildEvent() is reentrant, which in turn can cause multiple lock orderings. One such ordering pair is PrintStream causing a BuildEvent to be sent, and a BuildEvent being sent causing a file digest to be computed, causing a PrintStream to be called if it is slow.
+
+The first path:
+
+	at com.google.devtools.build.lib.buildeventservice.BuildEventServiceTransport.sendBuildEvent(BuildEventServiceTransport.java:289)
+	- waiting to lock <0x000000070139db90> (a com.google.devtools.build.lib.buildeventservice.BuildEventServiceTransport)
+	at com.google.devtools.build.lib.runtime.BuildEventStreamer.flush(BuildEventStreamer.java:540)
+	at com.google.devtools.build.lib.runtime.SynchronizedOutputStream.write(SynchronizedOutputStream.java:129)
+	at com.google.devtools.build.lib.util.io.DelegatingOutErr$DelegatingOutputStream.write(DelegatingOutErr.java:103)
+	at com.google.devtools.build.lib.util.AnsiStrippingOutputStream.write(AnsiStrippingOutputStream.java:67)
+	- locked <0x000000070139fdd0> (a com.google.devtools.build.lib.util.AnsiStrippingOutputStream)
+	at java.io.BufferedOutputStream.flushBuffer(BufferedOutputStream.java:82)
+	at java.io.BufferedOutputStream.flush(BufferedOutputStream.java:140)
+	- locked <0x000000070139fdb8> (a java.io.BufferedOutputStream)
+	at com.google.devtools.build.lib.runtime.ExperimentalEventHandler.handle(ExperimentalEventHandler.java:365)
+	- locked <0x000000070139fd20> (a com.google.devtools.build.lib.runtime.ExperimentalEventHandler)
+	at com.google.devtools.build.lib.events.Reporter.handle(Reporter.java:113)
+	- locked <0x000000070139fca8> (a com.google.devtools.build.lib.events.Reporter)
+	at com.google.devtools.build.lib.events.ReporterStream.write(ReporterStream.java:55)
+	at java.io.PrintStream.write(PrintStream.java:480)
+	- locked <0x00000007019ca958> (a java.io.PrintStream)
+	at sun.nio.cs.StreamEncoder.writeBytes(StreamEncoder.java:221)
+	at sun.nio.cs.StreamEncoder.implFlushBuffer(StreamEncoder.java:291)
+	at sun.nio.cs.StreamEncoder.flushBuffer(StreamEncoder.java:104)
+	- locked <0x00000007019ca9a0> (a java.io.OutputStreamWriter)
+	at java.io.OutputStreamWriter.flushBuffer(OutputStreamWriter.java:185)
+	at java.io.PrintStream.newLine(PrintStream.java:546)
+	- locked <0x00000007019ca958> (a java.io.PrintStream)
+	at java.io.PrintStream.println(PrintStream.java:807)
+	- locked <0x00000007019ca958> (a java.io.PrintStream)
+	at com.google.devtools.build.lib.actions.cache.DigestUtils.getDigestInternal(DigestUtils.java:162)
+
+The second path:
+
+	at java.io.PrintStream.println(PrintStream.java:805)
+	- waiting to lock <0x00000007019ca958> (a java.io.PrintStream)
+	at com.google.devtools.build.lib.actions.cache.DigestUtils.getDigestInternal(DigestUtils.java:162)
+	at com.google.devtools.build.lib.actions.cache.DigestUtils.getDigestOrFail(DigestUtils.java:249)
+	at com.google.devtools.build.lib.remote.util.DigestUtil.compute(DigestUtil.java:64)
+	at com.google.devtools.build.lib.remote.RemoteModule$CasPathConverter.apply(RemoteModule.java:69)
+	at com.google.devtools.build.lib.runtime.ServerBuilder$1.apply(ServerBuilder.java:101)
+	at com.google.devtools.build.lib.runtime.NamedArtifactGroup.asStreamProto(NamedArtifactGroup.java:63)
+	at com.google.devtools.build.lib.buildeventservice.BuildEventServiceTransport.sendBuildEvent(BuildEventServiceTransport.java:289)
+	- locked <0x000000070139db90> (a com.google.devtools.build.lib.buildeventservice.BuildEventServiceTransport)
+	at com.google.devtools.build.lib.runtime.BuildEventStreamer.post(BuildEventStreamer.java:273)
+	at com.google.devtools.build.lib.runtime.BuildEventStreamer.maybeReportArtifactSet(BuildEventStreamer.java:407)
+	at com.google.devtools.build.lib.runtime.BuildEventStreamer.maybeReportArtifactSet(BuildEventStreamer.java:405)
+	at com.google.devtools.build.lib.runtime.BuildEventStreamer.maybeReportArtifactSet(BuildEventStreamer.java:411)
+	at com.google.devtools.build.lib.runtime.BuildEventStreamer.buildEvent(BuildEventStreamer.java:479)
+
+I'm unsure what the correct fix is. This specific scenario can be avoided by removing the log from getDigestInternal, but that may not be the only path in which different lock orderings can arise. Probably better would be for BuildEventServiceTransport to not call anything that might produce a log line while in synchronized code, and then also handle the case of new build events being produced while preparing one to be sent.
+
+### Bugs: what's the simplest, easiest way to reproduce this bug? Please provide a minimal example if possible.
+
+At a guess: do a build with many large input files, high --jobs, on a machine with a slow disk and/or severely CPU constrained, to trigger that specific log message to be hit a lot. Then hope you get lucky.
+
+### What operating system are you running Bazel on?
+
+Linux.
+
+### What's the output of `bazel info release`?
+
+Pulled from java.log instead: 0.13.1-201805171359+f41dd9a
+
+###  Have you found anything relevant by searching the web?
+
+Nope.
+
+### Any other information, logs, or outputs that you want to share?
+
+I have copies of the java.log and jstack output if need be, but I'm not at liberty to publically share them. Googlers: poke me if you want to see them, or more context on the exact scenario in which this was found. The person who actually found this bug (I'm just reporting it) encounters it with enough regularity that more details from a hung bazel can probably be extracted if necessary.

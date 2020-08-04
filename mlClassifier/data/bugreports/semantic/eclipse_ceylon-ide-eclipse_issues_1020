@@ -1,0 +1,22 @@
+Rename produces double name in shortcut refinement syntax
+``` ceylon
+interface Sup {
+    shared formal Anything f;
+}
+class Sub() satisfies Sup {
+    f => 0;
+}
+```
+
+If you Rename (Alt+Shift+R, at least on my system) `f` to, say, `g`, you get
+
+``` ceylon
+interface Sup {
+    shared formal Anything g;
+}
+class Sub() satisfies Sup {
+    gg => 0;
+}
+```
+
+`Sub.f` got changed to `gg` rather than `g`.

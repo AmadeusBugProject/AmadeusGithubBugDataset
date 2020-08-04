@@ -1,0 +1,23 @@
+Race in PoolArena.allocate
+It appears there might be a race in `io.netty.buffer.PoolArena.allocate`, where `allocationsTiny` is incremented.  While the value is incremented under a lock, it also appears to be mutated elsewhere in the file without a lock.  A race detector suggested the two places where the class accesses this field in an unsynchronized way:
+
+```
+  Read of size 8 at 0x7f2f7be16108 by thread T53 (mutexes: write M95278):
+    #0 io.netty.buffer.PoolArena.allocate(Lio/netty/buffer/PoolThreadCache;Lio/netty/buffer/PooledByteBuf;I)V (PoolArena.java:198)  
+    #1 io.netty.buffer.PoolArena.reallocate(Lio/netty/buffer/PooledByteBuf;IZ)V (PoolArena.java:359)  
+    #2 io.netty.buffer.PooledByteBuf.capacity(I)Lio/netty/buffer/ByteBuf; (PooledByteBuf.java:120)  
+    #3 io.netty.buffer.AbstractByteBuf.ensureWritable0(I)V (AbstractByteBuf.java:269)  
+    #4 io.netty.buffer.AbstractByteBuf.ensureWritable(I)Lio/netty/buffer/ByteBuf; (AbstractByteBuf.java:250)  
+```
+
+and
+
+```
+    #0 io.netty.buffer.PoolArena.allocate(Lio/netty/buffer/PoolThreadCache;Lio/netty/buffer/PooledByteBuf;I)V (PoolArena.java:198)  
+    #1 io.netty.buffer.PoolArena.allocate(Lio/netty/buffer/PoolThreadCache;II)Lio/netty/buffer/PooledByteBuf; (PoolArena.java:133)  
+    #2 io.netty.buffer.PooledByteBufAllocator.newDirectBuffer(II)Lio/netty/buffer/ByteBuf; (PooledByteBufAllocator.java:262)  
+    #3 io.netty.buffer.AbstractByteBufAllocator.directBuffer(II)Lio/netty/buffer/ByteBuf; (AbstractByteBufAllocator.java:157)  
+    #4 io.netty.buffer.AbstractByteBufAllocator.directBuffer(I)Lio/netty/buffer/ByteBuf; (AbstractByteBufAllocator.java:148)  
+```
+
+cc: @nmittler & @normanmaurer 

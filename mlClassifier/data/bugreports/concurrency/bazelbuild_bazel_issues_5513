@@ -1,0 +1,12 @@
+Bazel server: race condition in JavaIoFileSystem.delete()
+### Description of the problem / feature request:
+
+There's a race condition in: https://github.com/bazelbuild/bazel/blob/a320e4460f35767da7fc8eb824ce1f4b304b5e0f/src/main/java/com/google/devtools/build/lib/vfs/JavaIoFileSystem.java#L353
+
+If the directory is deleted or replaced by a file between the `file.isDirectory()` check and the `file.list()` call, then `file.list()` returns null and throws an NPE.
+
+There may be other such race conditions in Bazel's VFS library.
+
+### What's the output of `bazel info release`?
+
+release 0.15.0

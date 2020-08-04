@@ -1,0 +1,36 @@
+Use of new DefaultResourceLoader() is dangerous as it captures the thread context classloader at the time of the call
+Hi,
+
+recently the following tests started to fail sporadically:
+
+- `LogFileWebEndpointAutoConfigurationTests.logFileWebEndpointIsAutoConfiguredWhenExternalFileIsSet `
+- `DiskSpaceHealthContributorAutoConfigurationTests.runWhenPathDoesNotExistShouldCreateIndicator `
+
+Both seem to be throwing similar errors like this:
+
+```
+Caused by: org.springframework.core.convert.ConversionFailedException: Failed to convert from type [java.lang.String] to type [java.io.File] for value 'external.log'; nested exception is java.lang.IllegalStateException: Illegal access: this web application instance has been stopped already. Could not load [external.log]. The following stack trace is thrown for debugging purposes as well as to attempt to terminate the thread which caused the illegal access.
+ 	at org.springframework.core.convert.support.ConversionUtils.invokeConverter(ConversionUtils.java:47)
+ 	at org.springframework.core.convert.support.GenericConversionService.convert(GenericConversionService.java:191)
+ 	at org.springframework.boot.context.properties.bind.BindConverter$CompositeConversionService.convert(BindConverter.java:170)
+ 	at org.springframework.boot.context.properties.bind.BindConverter.convert(BindConverter.java:96)
+ 	at org.springframework.boot.context.properties.bind.BindConverter.convert(BindConverter.java:88)
+ 	at org.springframework.boot.context.properties.bind.Binder.bindProperty(Binder.java:434)
+ 	at org.springframework.boot.context.properties.bind.Binder.bindObject(Binder.java:379)
+ 	at org.springframework.boot.context.properties.bind.Binder.bind(Binder.java:319)
+ 	... 142 more
+ Caused by: java.lang.IllegalStateException: Illegal access: this web application instance has been stopped already. Could not load [external.log]. The following stack trace is thrown for debugging purposes as well as to attempt to terminate the thread which caused the illegal access.
+ 	at org.apache.catalina.loader.WebappClassLoaderBase.checkStateForResourceLoading(WebappClassLoaderBase.java:1385)
+ 	at org.apache.catalina.loader.WebappClassLoaderBase.getResource(WebappClassLoaderBase.java:1038)
+ 	at org.springframework.core.io.ClassPathResource.resolveURL(ClassPathResource.java:155)
+ 	at org.springframework.core.io.ClassPathResource.exists(ClassPathResource.java:142)
+ 	at org.springframework.boot.convert.StringToFileConverter.convert(StringToFileConverter.java:48)
+ 	at org.springframework.boot.convert.StringToFileConverter.convert(StringToFileConverter.java:34)
+ 	at org.springframework.core.convert.support.GenericConversionService$ConverterAdapter.convert(GenericConversionService.java:385)
+ 	at org.springframework.core.convert.support.ConversionUtils.invokeConverter(ConversionUtils.java:41)
+```
+
+I tried fixing it directly, but I can't see what's going wrong in these cases.
+
+Cheers,
+Christoph

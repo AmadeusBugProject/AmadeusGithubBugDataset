@@ -1,0 +1,6 @@
+TIFFReader: ASCII fields are incorrectly parsed as single string
+According to the TIFF specification:
+
+> Any ASCII field can contain multiple strings, each terminated with a NUL. A single string is preferred whenever possible. The Count for multi-string fields is the number of bytes in all the strings in that field plus their terminating NUL bytes. Only one NUL is allowed between strings, so that the strings following the first string will often begin on an odd byte.
+
+The current implementation parses the whole field as one string, with NULL-terminations inside...

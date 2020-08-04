@@ -1,0 +1,24 @@
+ExoPlayer Looper.myLooper() internal crash on dev-2 branch with DASH Live stream WV L3
+
+### [REQUIRED] Issue description
+Regarding an already filed issue (https://github.com/google/ExoPlayer/issues/6348) what is happening also with the streams and devices we are working with, we have done some testing with the **dev-2** branch (checked out on 12 of April 2020). It turned out that the playback of live stream is not starting. Looking into the logs the issue was identified in SampleQueue.java function onFormatResult line 800.
+The crash was because the assertion have failed for Looper.myLooper().
+Replacing it with Looper.getMainLooper() didn't crash and playback works nicely.
+
+### [REQUIRED] Reproduction steps
+This is an application what we develop for one of our clients.
+There are Live DASH streams with protected with WideVine L3.
+
+
+### [REQUIRED] Link to test content
+A test stream and additional will be shared separately in an e-mail.
+
+### [REQUIRED] A full bug report captured from the device
+
+### [REQUIRED] Version of ExoPlayer being used
+[ExoPlayerLib/2.11.4] from **dev-2** branch, checked out on 18 of April 2020.
+
+
+### [REQUIRED] Device(s) and version(s) of Android being used
+Samsung Galaxy S10 with Android 10.
+Crash happened in 100%

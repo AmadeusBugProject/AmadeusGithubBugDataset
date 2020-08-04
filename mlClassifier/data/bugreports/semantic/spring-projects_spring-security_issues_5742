@@ -1,0 +1,8 @@
+BearerTokenServerAuthenticationEntryPoint should delay work
+<!--
+For Security Vulnerabilities, please use https://pivotal.io/security#reporting
+-->
+
+### Summary
+
+BearerTokenServerAuthenticationEntryPoint should not do any work until something subscribes

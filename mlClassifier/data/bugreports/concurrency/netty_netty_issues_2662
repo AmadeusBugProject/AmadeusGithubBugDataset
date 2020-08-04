@@ -1,0 +1,6 @@
+exception in hashedwheelTimer
+Exception in thread "pool-2-thread-1" java.lang.NullPointerException
+        at io.netty.util.HashedWheelTimer$HashedWheelBucket.addTimeout(HashedWheelTimer.java:625)
+        at io.netty.util.HashedWheelTimer$Worker.transferTimeoutsToBuckets(HashedWheelTimer.java:411)
+        at io.netty.util.HashedWheelTimer$Worker.run(HashedWheelTimer.java:368)
+        at java.lang.Thread.run(Thread.java:744)

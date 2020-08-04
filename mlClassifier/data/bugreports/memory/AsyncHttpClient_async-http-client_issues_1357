@@ -1,0 +1,4 @@
+Utf8ByteBufCharsetDecoder BufferOverflowException when several non US-ASCII chars are split
+When multiple non US-ASCII chars are split over several chunks, Utf8ByteBufCharsetDecoder crashes with BufferOverflowException.
+
+This happens because we don't clear the `splitCharBuffer` in-between and only do so once decoding is done.

@@ -1,0 +1,2 @@
+Potential direct memory leak in HttpContentEn/Decoder
+If `HttpContentEncoder` or `HttpContentDecoder` encodes or decodes a new `HttpMessage` before handling the previous message's last chunk, zlib's native memory is not freed, causing direct memory leak.

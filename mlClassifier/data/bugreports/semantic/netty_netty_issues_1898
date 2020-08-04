@@ -1,0 +1,2 @@
+ChunkedWriteHandler should not call fireExceptionCaught
+ChunkedWriteHandler should not call fireExceptionCaught(..) but just fail the ChannelPromise

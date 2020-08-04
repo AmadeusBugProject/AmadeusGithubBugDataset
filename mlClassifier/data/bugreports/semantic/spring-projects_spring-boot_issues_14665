@@ -1,0 +1,12 @@
+ConfigurationPropertyName equals method fails when values start the same
+Raised by @spencergibb in a Spring Cloud originally but ultimately the problem is in `ConfigurationPropertyName` as shown by the following test:
+
+```java
+    @Test
+    public void equalsWhenStartsWith() {
+        ConfigurationPropertyName n1 = ConfigurationPropertyName.of("my.sources[0].xame");
+        ConfigurationPropertyName n2 = ConfigurationPropertyName
+                .of("my.sources[0].xamespace");
+        assertThat(n1).isNotEqualTo(n2);
+    }
+```

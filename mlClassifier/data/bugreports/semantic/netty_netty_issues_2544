@@ -1,0 +1,19 @@
+Netty has error when parses Multipart-mixed POST HTTP request in case of entity ends with odd number of 0x0D 
+In case when multipart entity ends with odd number of '0x0D' bytes, Netty HttpPostRequestDecoder append one more '0x0D' byte.
+
+Multipart POST decodes as follow:
+
+<pre>
+HttpDataFactory factory = new DefaultHttpDataFactory(DefaultHttpDataFactory.MINSIZE);
+HttpPostRequestDecoder decoder = new HttpPostRequestDecoder(factory, request);
+InterfaceHttpData data = decoder.getBodyHttpData(HTTP_TEST_ATTRIBUTE);
+Attribute attribute = (Attribute) data;
+requestData = attribute.get();
+</pre>
+
+
+Problem seems in _HttpPostMultipartRequestDecoder.java_
+There is how packet looks in wireshark:
+![nettycrcrbugwiresharksnapshot](https://cloud.githubusercontent.com/assets/7781410/3198180/aa80af20-ed55-11e3-87b9-ab0558a38e48.png)
+
+and _attribute.get()_ return 17 bytes with 0x0D additional in end.

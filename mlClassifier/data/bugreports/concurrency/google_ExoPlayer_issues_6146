@@ -1,0 +1,37 @@
+DownloadHelperTest Failed
+### [REQUIRED] Issue description
+When I try to run ExoPlayer library core test cases keep failing
+
+### [REQUIRED] Reproduction steps
+When try to Run `DownloadHelperTest.java` is keep failing 
+
+### [REQUIRED] Link to test content
+N/A
+
+### [REQUIRED] A full bug report captured from the device
+```
+[Robolectric] com.google.android.exoplayer2.offline.DownloadHelperTest.getTrackSelections_afterReplaceTrackSelections_returnsNewSelections: sdk=28; resources=BINARY
+Exception in thread "DownloadHelper" java.lang.NullPointerException
+	at com.google.android.exoplayer2.offline.DownloadHelper$MediaPreparer.onSourceInfoRefreshed(DownloadHelper.java:918)
+	at com.google.android.exoplayer2.source.BaseMediaSource.refreshSourceInfo(BaseMediaSource.java:74)
+	at com.google.android.exoplayer2.testutil.FakeMediaSource.finishSourcePreparation(FakeMediaSource.java:215)
+	at com.google.android.exoplayer2.testutil.FakeMediaSource.prepareSourceInternal(FakeMediaSource.java:105)
+	at com.google.android.exoplayer2.source.BaseMediaSource.prepareSource(BaseMediaSource.java:140)
+	at com.google.android.exoplayer2.offline.DownloadHelper$MediaPreparer.handleMessage(DownloadHelper.java:858)
+	at android.os.Handler.dispatchMessage(Handler.java:102)
+	at com.google.android.exoplayer2.testutil.RobolectricUtil$CustomLooper.doLoop(RobolectricUtil.java:129)
+	at com.google.android.exoplayer2.testutil.RobolectricUtil$CustomLooper.loop(RobolectricUtil.java:67)
+	at android.os.Looper.loop(Looper.java)
+	at android.os.HandlerThread.run(HandlerThread.java:65)
+```
+
+### [REQUIRED] Version of ExoPlayer being used
+### 2.10.2 ###
+
+### [REQUIRED] Device(s) and version(s) of Android being used
+N/A
+
+<!-- DO NOT DELETE
+validate_template=true
+template_path=.github/ISSUE_TEMPLATE/bug.md
+-->

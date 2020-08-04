@@ -1,0 +1,2 @@
+Creating a tenant or device with a generated ID refuses an empty body
+When I want to ceate a tenant or a device using the ID generation feature from the device registry, i would expect it to work even if the request body is empty. A workaround is to provide an empty JsonObject in the request body.

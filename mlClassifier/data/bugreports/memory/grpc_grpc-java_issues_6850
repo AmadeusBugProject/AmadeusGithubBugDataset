@@ -1,0 +1,109 @@
+Port is bound if start is Interrupted
+### What version of gRPC-Java are you using?
+
+GRPC 1.25.0, but the problem can be found also in master
+Netty 4.1.43.Final
+
+### What is your environment?
+
+Linux, OpenJDK 11
+
+### What did you expect to see?
+
+I expected GRPC server not to keep a bound port if the start fails due to interruption.
+
+### What did you see instead?
+
+When I interrupt the start of server during binding to a port (https://github.com/grpc/grpc-java/blob/74cde7e8b4d4b8e59d6b8383b1557dddbada9f67/netty/src/main/java/io/grpc/netty/NettyServer.java#L248), the server fails correctly but the port is still bound.
+
+When the server is starting for the second time, the port is still bound which leads to a failure.
+
+### Steps to reproduce the bug
+
+A little background story: I have nothing to do with GRPC, I am trying to implement restarting Spring Application Context on a signal (HTTP REST call) due to reloading the whole app (the main reason is that the database structures have changed). The signal can come at any point when the web server is alive, which can be even before the application context is fully refreshed. If the signal comes and there is a thread creating an application context, we interrupt it, discard its result, and start a new context. I hope this explains the role of interruption in my use case.
+
+One of the beans is a GRpcServerStarter which encloses Server (NettyServer). If the initialization of this bean is interrupted at the wrong stage (server is binding to a port), then the future.await() is interrupted, server crashes, bean is not created, application context is closed. This however still leads to the port being bound, and the binding leaking.
+
+```
+java.lang.RuntimeException: Interrupted waiting for bind
+        at io.grpc.netty.NettyServer.start(NettyServer.java:244) ~[grpc-netty-1.25.0.jar:1.25.0]
+        at io.grpc.internal.ServerImpl.start(ServerImpl.java:184) ~[grpc-core-1.25.0.jar:1.25.0]
+        at io.grpc.internal.ServerImpl.start(ServerImpl.java:90) ~[grpc-core-1.25.0.jar:1.25.0]
+        at com.ataccama.dpe.grpc.GRpcServerStarter.init(GRpcServerStarter.java:76) ~[grpc-0.2.1.jar:0.2.1]
+        at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method) ~[na:na]
+        at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62) ~[na:na]
+        at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43) ~[na:na]
+        at java.base/java.lang.reflect.Method.invoke(Method.java:566) ~[na:na]
+        at org.springframework.context.event.ApplicationListenerMethodAdapter.doInvoke(ApplicationListenerMethodAdapter.java:300) ~[spring-context-5.2.1.RELEASE.jar:5.2.1.RELEASE]
+        at org.springframework.context.event.ApplicationListenerMethodAdapter.processEvent(ApplicationListenerMethodAdapter.java:190) ~[spring-context-5.2.1.RELEASE.jar:5.2.1.RELEASE]
+        at org.springframework.context.event.ApplicationListenerMethodAdapter.onApplicationEvent(ApplicationListenerMethodAdapter.java:153) ~[spring-context-5.2.1.RELEASE.jar:5.2.1.RELEASE]
+        at org.springframework.context.event.SimpleApplicationEventMulticaster.doInvokeListener(SimpleApplicationEventMulticaster.java:172) ~[spring-context-5.2.1.RELEASE.jar:5.2.1.RELEASE]
+        at org.springframework.context.event.SimpleApplicationEventMulticaster.invokeListener(SimpleApplicationEventMulticaster.java:165) ~[spring-context-5.2.1.RELEASE.jar:5.2.1.RELEASE]
+        at org.springframework.context.event.SimpleApplicationEventMulticaster.multicastEvent(SimpleApplicationEventMulticaster.java:139) ~[spring-context-5.2.1.RELEASE.jar:5.2.1.RELEASE]
+        at org.springframework.context.support.AbstractApplicationContext.publishEvent(AbstractApplicationContext.java:403) ~[spring-context-5.2.1.RELEASE.jar:5.2.1.RELEASE]
+        at org.springframework.context.support.AbstractApplicationContext.publishEvent(AbstractApplicationContext.java:360) ~[spring-context-5.2.1.RELEASE.jar:5.2.1.RELEASE]
+        at org.springframework.boot.context.event.EventPublishingRunListener.started(EventPublishingRunListener.java:98) ~[spring-boot-2.2.1.RELEASE.jar:2.2.1.RELEASE]
+        at org.springframework.boot.SpringApplicationRunListeners.started(SpringApplicationRunListeners.java:71) ~[spring-boot-2.2.1.RELEASE.jar:2.2.1.RELEASE]
+        at org.springframework.boot.SpringApplication.run(SpringApplication.java:321) ~[spring-boot-2.2.1.RELEASE.jar:2.2.1.RELEASE]
+        at org.springframework.boot.builder.SpringApplicationBuilder.run(SpringApplicationBuilder.java:140) ~[spring-boot-2.2.1.RELEASE.jar:2.2.1.RELEASE]
+        at com.ataccama.one.metadata.MetadataServerApplication.restartApplicationContext(MetadataServerApplication.java:78) ~[app-0.0.0-restart-app-context-SNAPSHOT.jar:0.0.0-restart-app-context-SNAPSHOT]
+        at java.base/java.lang.Thread.run(Thread.java:834) ~[na:na]
+```
+
+After this interruption, there is no way to create a new server as the port is used.
+
+```
+java.lang.reflect.UndeclaredThrowableException: Failed to invoke event listener method
+HandlerMethod details: 
+Bean [com.ataccama.dpe.grpc.GRpcServerStarter]
+Method [public void com.ataccama.dpe.grpc.GRpcServerStarter.init() throws java.lang.Exception]
+Resolved arguments: 
+
+        at org.springframework.context.event.ApplicationListenerMethodAdapter.doInvoke(ApplicationListenerMethodAdapter.java:317) ~[spring-context-5.2.1.RELEASE.jar:5.2.1.RELEASE]
+        at org.springframework.context.event.ApplicationListenerMethodAdapter.processEvent(ApplicationListenerMethodAdapter.java:190) ~[spring-context-5.2.1.RELEASE.jar:5.2.1.RELEASE]
+        at org.springframework.context.event.ApplicationListenerMethodAdapter.onApplicationEvent(ApplicationListenerMethodAdapter.java:153) ~[spring-context-5.2.1.RELEASE.jar:5.2.1.RELEASE]
+        at org.springframework.context.event.SimpleApplicationEventMulticaster.doInvokeListener(SimpleApplicationEventMulticaster.java:172) ~[spring-context-5.2.1.RELEASE.jar:5.2.1.RELEASE]
+        at org.springframework.context.event.SimpleApplicationEventMulticaster.invokeListener(SimpleApplicationEventMulticaster.java:165) ~[spring-context-5.2.1.RELEASE.jar:5.2.1.RELEASE]
+        at org.springframework.context.event.SimpleApplicationEventMulticaster.multicastEvent(SimpleApplicationEventMulticaster.java:139) ~[spring-context-5.2.1.RELEASE.jar:5.2.1.RELEASE]
+        at org.springframework.context.support.AbstractApplicationContext.publishEvent(AbstractApplicationContext.java:403) ~[spring-context-5.2.1.RELEASE.jar:5.2.1.RELEASE]
+        at org.springframework.context.support.AbstractApplicationContext.publishEvent(AbstractApplicationContext.java:360) ~[spring-context-5.2.1.RELEASE.jar:5.2.1.RELEASE]
+        at org.springframework.boot.context.event.EventPublishingRunListener.started(EventPublishingRunListener.java:98) ~[spring-boot-2.2.1.RELEASE.jar:2.2.1.RELEASE]
+        at org.springframework.boot.SpringApplicationRunListeners.started(SpringApplicationRunListeners.java:71) ~[spring-boot-2.2.1.RELEASE.jar:2.2.1.RELEASE]
+        at org.springframework.boot.SpringApplication.run(SpringApplication.java:321) ~[spring-boot-2.2.1.RELEASE.jar:2.2.1.RELEASE]
+        at org.springframework.boot.builder.SpringApplicationBuilder.run(SpringApplicationBuilder.java:140) ~[spring-boot-2.2.1.RELEASE.jar:2.2.1.RELEASE]
+        at com.ataccama.one.metadata.MetadataServerApplication.restartApplicationContext(MetadataServerApplication.java:78) ~[app-0.0.0-restart-app-context-SNAPSHOT.jar:0.0.0-restart-app-context-SNAPSHOT]
+        at java.base/java.lang.Thread.run(Thread.java:834) ~[na:na]
+Caused by: java.io.IOException: Failed to bind
+        at io.grpc.netty.NettyServer.start(NettyServer.java:247) ~[grpc-netty-1.25.0.jar:1.25.0]
+        at io.grpc.internal.ServerImpl.start(ServerImpl.java:184) ~[grpc-core-1.25.0.jar:1.25.0]
+        at io.grpc.internal.ServerImpl.start(ServerImpl.java:90) ~[grpc-core-1.25.0.jar:1.25.0]
+        at com.ataccama.dpe.grpc.GRpcServerStarter.init(GRpcServerStarter.java:76) ~[grpc-0.2.1.jar:0.2.1]
+        at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method) ~[na:na]
+        at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62) ~[na:na]
+        at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43) ~[na:na]
+        at java.base/java.lang.reflect.Method.invoke(Method.java:566) ~[na:na]
+        at org.springframework.context.event.ApplicationListenerMethodAdapter.doInvoke(ApplicationListenerMethodAdapter.java:300) ~[spring-context-5.2.1.RELEASE.jar:5.2.1.RELEASE]
+        ... 13 common frames omitted
+Caused by: java.net.BindException: Address already in use
+        at java.base/sun.nio.ch.Net.bind0(Native Method) ~[na:na]
+        at java.base/sun.nio.ch.Net.bind(Net.java:461) ~[na:na]
+        at java.base/sun.nio.ch.Net.bind(Net.java:453) ~[na:na]
+        at java.base/sun.nio.ch.ServerSocketChannelImpl.bind(ServerSocketChannelImpl.java:227) ~[na:na]
+        at io.netty.channel.socket.nio.NioServerSocketChannel.doBind(NioServerSocketChannel.java:134) ~[netty-transport-4.1.43.Final.jar:4.1.43.Final]
+        at io.netty.channel.AbstractChannel$AbstractUnsafe.bind(AbstractChannel.java:551) ~[netty-transport-4.1.43.Final.jar:4.1.43.Final]
+        at io.netty.channel.DefaultChannelPipeline$HeadContext.bind(DefaultChannelPipeline.java:1346) ~[netty-transport-4.1.43.Final.jar:4.1.43.Final]
+        at io.netty.channel.AbstractChannelHandlerContext.invokeBind(AbstractChannelHandlerContext.java:503) ~[netty-transport-4.1.43.Final.jar:4.1.43.Final]
+        at io.netty.channel.AbstractChannelHandlerContext.bind(AbstractChannelHandlerContext.java:488) ~[netty-transport-4.1.43.Final.jar:4.1.43.Final]
+        at io.netty.channel.DefaultChannelPipeline.bind(DefaultChannelPipeline.java:985) ~[netty-transport-4.1.43.Final.jar:4.1.43.Final]
+        at io.netty.channel.AbstractChannel.bind(AbstractChannel.java:247) ~[netty-transport-4.1.43.Final.jar:4.1.43.Final]
+        at io.netty.bootstrap.AbstractBootstrap$2.run(AbstractBootstrap.java:344) ~[netty-transport-4.1.43.Final.jar:4.1.43.Final]
+        at io.netty.util.concurrent.AbstractEventExecutor.safeExecute(AbstractEventExecutor.java:163) ~[netty-common-4.1.43.Final.jar:4.1.43.Final]
+        at io.netty.util.concurrent.SingleThreadEventExecutor.runAllTasks(SingleThreadEventExecutor.java:510) ~[netty-common-4.1.43.Final.jar:4.1.43.Final]
+        at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:518) ~[netty-transport-4.1.43.Final.jar:4.1.43.Final]
+        at io.netty.util.concurrent.SingleThreadEventExecutor$6.run(SingleThreadEventExecutor.java:1050) ~[netty-common-4.1.43.Final.jar:4.1.43.Final]
+        at io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74) ~[netty-common-4.1.43.Final.jar:4.1.43.Final]
+        at io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30) ~[netty-common-4.1.43.Final.jar:4.1.43.Final]
+        ... 1 common frames omitted
+```
+
+I assume that a fix should handle better the InterruptedException by trying to unbind the port. I guess that this bug could be fixed in Netty, however from theit point of view, the binding can still succeed; you were just not patient enough to wait for the result, and it is your problem that you crash.

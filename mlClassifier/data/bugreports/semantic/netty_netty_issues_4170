@@ -1,0 +1,13 @@
+epoll force closes connection
+a small (visual) regression when doing nio vs epoll: 
+
+When _proxy_ is running on epoll, and the connection to backend is disconnected, the backend server shows a message:
+Player lost connection: Internal Exception: java.io.IOException: Error while read(...): Connection reset by peer
+
+instead of "Player lost connection: disconnected"
+
+Any idea of what could be the cause?
+(I'll update when I find the piece of code in epoll that could cause this regression)
+
+random guess: there should be a shutdown() syscall before close().
+where to look for comparsion: java nio socketchannel.close()

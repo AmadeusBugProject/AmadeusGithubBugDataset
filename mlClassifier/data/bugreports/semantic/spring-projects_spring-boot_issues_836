@@ -1,0 +1,37 @@
+spring-boot-tools LaunchedURLClassLoader getUrls() returns invalid jar:file: urls on windows
+I have a spring boot (1.0.0.RC3) application with an embedded jetty (9.1.0.v20131115). 
+
+When trying to start on windows, while on Linux works normally, I get this exception on jetty WebAppContext startup:
+
+```
+java.net.URISyntaxException: Illegal character in opaque part at index 11: 
+```
+
+While debugging I noticed that the urls returned from LaunchedURLClassLoader.getUrls() on line 97 of org.eclipse.jetty.webapp.WebInfConfiguration are in this format (note the single backslash):
+
+```
+jar:file:C:\path_to_jar.jar!/webapp
+```
+
+I could workaround the problem by extending WebInfConfiguration changing line 110 from:
+
+```
+containerUris[i] = new URI(u.toString().replaceAll(" ", "%20"));
+```
+
+to
+
+```
+containerUris[i] = new URI(u.toString().replaceAll(" ", "%20").replace('\\', '/'));
+```
+
+and:
+
+```
+WebAppContext ctx = new WebAppContext();
+ctx.setConfigurationClasses(new String[] {   
+    "au.com......MyEmbeddedWebInfConfiguration",  [... default classes ...] });
+```
+
+Is  jar:file:C:\path_to_jar.jar!/webapp a valid URL at all? 
+Shouldn't it be with escaped backslashes or forward slashes?

@@ -1,0 +1,285 @@
+StackOverFlow exception with SnappyFrameDecoder / Encoder - 4.0.0.CR2
+I get a StackOverFlow exception when trying to make a simple program that uses the SnappyFrameEncoder / Decoder. I posted the problem here: http://stackoverflow.com/questions/16659555/stackoverflow-exception-when-using-nettys-snappyframedecoder/16663160#16663160
+
+I get the same error when I use JZlibDecoder and JZlibEncoder instead of Snappy.
+
+Here is my full example:
+
+``` java
+import io.netty.bootstrap.Bootstrap;
+import io.netty.bootstrap.ServerBootstrap;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundMessageHandlerAdapter;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.local.LocalAddress;
+import io.netty.channel.local.LocalChannel;
+import io.netty.channel.local.LocalEventLoopGroup;
+import io.netty.channel.local.LocalServerChannel;
+import io.netty.handler.codec.compression.SnappyFramedDecoder;
+import io.netty.handler.codec.compression.SnappyFramedEncoder;
+import io.netty.handler.codec.string.StringDecoder;
+import io.netty.handler.codec.string.StringEncoder;
+import io.netty.handler.logging.LogLevel;
+import io.netty.handler.logging.LoggingHandler;
+
+public class LocalNettyTest {
+  private static String LOCAL_ID = "localtest";
+  private static String TEST_STRING = "Test message longer than 18 bytes";
+
+  public void run() throws Exception {
+    final LocalAddress addr = new LocalAddress(LOCAL_ID);
+    Bootstrap cb = new Bootstrap();
+    ServerBootstrap sb = new ServerBootstrap();
+    EventLoopGroup serverGroup = new LocalEventLoopGroup();
+    EventLoopGroup clientGroup = new LocalEventLoopGroup();
+    try {
+      sb.group(serverGroup)
+      .channel(LocalServerChannel.class)
+      .handler(new ChannelInitializer<LocalServerChannel>(){
+        @Override
+        public void initChannel(LocalServerChannel ch) throws Exception {
+          ch.pipeline().addLast(new LoggingHandler(LogLevel.INFO));
+        }
+      })
+      .childHandler(new ChannelInitializer<LocalChannel>() {
+        @Override
+        public void initChannel(LocalChannel ch) throws Exception {
+          // comment the next line out for it to work
+          ch.pipeline().addLast(new SnappyFramedDecoder());
+          ch.pipeline().addLast(new StringDecoder());
+          ch.pipeline().addLast(new ChannelInboundMessageHandlerAdapter<String>() {
+            @Override
+            public void messageReceived(ChannelHandlerContext ctx,
+                String msg) throws Exception {
+              System.out.println ("RECEIVED: " + msg);
+            }
+          });
+        }
+      });
+
+      cb.group(clientGroup)
+      .channel(LocalChannel.class)
+      .handler(new ChannelInitializer<LocalChannel>() {
+        @Override
+        public void initChannel(LocalChannel ch) throws Exception {
+          ch.pipeline().addLast(new StringEncoder ());
+          // comment the next line out for it to work
+          ch.pipeline().addLast(new SnappyFramedEncoder ());
+        }
+      });
+      // Start the server.
+      sb.bind(addr).sync();
+
+      // Start the client.
+      Channel ch = cb.connect(addr).sync().channel();
+
+      ChannelFuture lastWriteFuture = ch.write(TEST_STRING);
+
+      // Wait until all messages are flushed before closing the channel.
+      if (lastWriteFuture != null) {
+        System.out.println ("Waiting");
+        lastWriteFuture.awaitUninterruptibly();
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+    } finally {
+      serverGroup.shutdownGracefully();
+      clientGroup.shutdownGracefully();
+    }
+    System.out.println ("Done");
+  }
+
+  public static void main(String[] args) throws Exception {
+    new LocalNettyTest().run();
+  }
+}
+```
+
+The exception that I get is very long (longer than GitHub lets me post in a single message). Here is the first part of my console output, before the exception:
+
+```
+ INFO [main] [io.netty.util.internal.logging.Slf4JLogger] 10:25:29,948 You don't have Javassist in your class path or you don't have enough permission to load dynamically generated classes.  Please check the configuration for better performance.
+ INFO [localEventLoopGroup-1-1] [io.netty.util.internal.logging.Slf4JLogger] 10:25:30,025 [id: 0xe9ece3a1] REGISTERED
+ INFO [localEventLoopGroup-1-1] [io.netty.util.internal.logging.Slf4JLogger] 10:25:30,026 [id: 0xe9ece3a1] BIND(local:localtest)
+ INFO [localEventLoopGroup-1-1] [io.netty.util.internal.logging.Slf4JLogger] 10:25:30,028 [id: 0xe9ece3a1, local:localtest] ACTIVE
+Waiting
+Done
+ INFO [localEventLoopGroup-1-1] [io.netty.util.internal.logging.Slf4JLogger] 10:25:30,080 [id: 0xe9ece3a1, local:localtest] INACTIVE
+ INFO [localEventLoopGroup-1-1] [io.netty.util.internal.logging.Slf4JLogger] 10:25:30,081 [id: 0xe9ece3a1, local:localtest] UNREGISTERED
+ WARN [localEventLoopGroup-1-2] [io.netty.util.internal.logging.Slf4JLogger] 10:25:30,117 An exception was thrown by a user handler's exceptionCaught() method while handling the following exception:
+ WARN [localEventLoopGroup-1-2] [io.netty.util.internal.logging.Slf4JLogger] 10:25:30,119 An exception was thrown by a user handler's exceptionCaught() method while handling the following exception:
+ WARN [localEventLoopGroup-1-2] [io.netty.util.internal.logging.Slf4JLogger] 10:25:30,122 An exceptionCaught() event was fired, and it reached at the tail of the pipeline. It usually means the last handler in the pipeline did not handle the exception.
+ WARN [localEventLoopGroup-1-2] [io.netty.util.internal.logging.Slf4JLogger] 10:25:30,124 An exception was thrown by a user handler's exceptionCaught() method while handling the following exception:
+ WARN [localEventLoopGroup-1-2] [io.netty.util.internal.logging.Slf4JLogger] 10:25:30,126 An exception was thrown by a user handler's exceptionCaught() method while handling the following exception:
+ WARN [localEventLoopGroup-1-2] [io.netty.util.internal.logging.Slf4JLogger] 10:25:30,128 An exception was thrown by a user handler's exceptionCaught() method while handling the following exception:
+ WARN [localEventLoopGroup-1-2] [io.netty.util.internal.logging.Slf4JLogger] 10:25:30,130 An exception was thrown by a user handler's exceptionCaught() method while handling the following exception:
+ WARN [localEventLoopGroup-1-2] [io.netty.util.internal.logging.Slf4JLogger] 10:25:30,132 An exception was thrown by a user handler's exceptionCaught() method while handling the following exception:
+ WARN [localEventLoopGroup-1-2] [io.netty.util.internal.logging.Slf4JLogger] 10:25:30,135 An exceptionCaught() event was fired, and it reached at the tail of the pipeline. It usually means the last handler in the pipeline did not handle the exception.
+```
+
+The previous 7 lines repeats about 20 times, then here is part of my exception.
+
+```
+java.lang.StackOverflowError
+  at java.lang.ThreadLocal$ThreadLocalMap.getEntry(ThreadLocal.java:376)
+  at java.lang.ThreadLocal$ThreadLocalMap.access$000(ThreadLocal.java:261)
+  at java.lang.ThreadLocal.get(ThreadLocal.java:146)
+  at java.lang.StringCoding.deref(StringCoding.java:63)
+  at java.lang.StringCoding.encode(StringCoding.java:330)
+  at java.lang.String.getBytes(String.java:916)
+  at java.io.UnixFileSystem.getBooleanAttributes0(Native Method)
+  at java.io.UnixFileSystem.getBooleanAttributes(UnixFileSystem.java:242)
+  at java.io.File.exists(File.java:772)
+  at sun.misc.URLClassPath$FileLoader.getResource(URLClassPath.java:1057)
+  at sun.misc.URLClassPath.getResource(URLClassPath.java:195)
+  at java.net.URLClassLoader$1.run(URLClassLoader.java:358)
+  at java.net.URLClassLoader$1.run(URLClassLoader.java:355)
+  at java.security.AccessController.doPrivileged(Native Method)
+  at java.net.URLClassLoader.findClass(URLClassLoader.java:354)
+  at java.lang.ClassLoader.loadClass(ClassLoader.java:423)
+  at sun.misc.Launcher$AppClassLoader.loadClass(Launcher.java:308)
+  at java.lang.ClassLoader.loadClass(ClassLoader.java:356)
+  at java.lang.ClassLoader.defineClass1(Native Method)
+  at java.lang.ClassLoader.defineClass(ClassLoader.java:791)
+  at java.security.SecureClassLoader.defineClass(SecureClassLoader.java:142)
+  at java.net.URLClassLoader.defineClass(URLClassLoader.java:449)
+  at java.net.URLClassLoader.access$100(URLClassLoader.java:71)
+  at java.net.URLClassLoader$1.run(URLClassLoader.java:361)
+  at java.net.URLClassLoader$1.run(URLClassLoader.java:355)
+  at java.security.AccessController.doPrivileged(Native Method)
+  at java.net.URLClassLoader.findClass(URLClassLoader.java:354)
+  at java.lang.ClassLoader.loadClass(ClassLoader.java:423)
+  at sun.misc.Launcher$AppClassLoader.loadClass(Launcher.java:308)
+  at java.lang.ClassLoader.loadClass(ClassLoader.java:356)
+  at org.apache.log4j.spi.ThrowableInformation.getThrowableStrRep(ThrowableInformation.java:87)
+  at org.apache.log4j.spi.LoggingEvent.getThrowableStrRep(LoggingEvent.java:413)
+  at org.apache.log4j.WriterAppender.subAppend(WriterAppender.java:313)
+  at org.apache.log4j.WriterAppender.append(WriterAppender.java:162)
+  at org.apache.log4j.AppenderSkeleton.doAppend(AppenderSkeleton.java:251)
+  at org.apache.log4j.helpers.AppenderAttachableImpl.appendLoopOnAppenders(AppenderAttachableImpl.java:66)
+  at org.apache.log4j.Category.callAppenders(Category.java:206)
+  at org.apache.log4j.Category.forcedLog(Category.java:391)
+  at org.apache.log4j.Category.log(Category.java:856)
+  at org.slf4j.impl.Log4jLoggerAdapter.warn(Log4jLoggerAdapter.java:478)
+  at io.netty.util.internal.logging.Slf4JLogger.warn(Slf4JLogger.java:151)
+  at io.netty.channel.DefaultChannelHandlerContext.invokeExceptionCaught0(DefaultChannelHandlerContext.java:846)
+  at io.netty.channel.DefaultChannelHandlerContext.invokeExceptionCaught(DefaultChannelHandlerContext.java:822)
+  at io.netty.channel.DefaultChannelHandlerContext.notifyHandlerException(DefaultChannelHandlerContext.java:1546)
+  at io.netty.channel.DefaultChannelHandlerContext.invokeRead0(DefaultChannelHandlerContext.java:1247)
+  at io.netty.channel.DefaultChannelHandlerContext.invokeRead(DefaultChannelHandlerContext.java:1228)
+  at io.netty.channel.DefaultChannelHandlerContext.read(DefaultChannelHandlerContext.java:1222)
+  at io.netty.channel.DefaultChannelPipeline.read(DefaultChannelPipeline.java:911)
+  at io.netty.channel.DefaultChannelPipeline.fireChannelReadSuspended(DefaultChannelPipeline.java:834)
+  at io.netty.channel.local.LocalChannel.doBeginRead(LocalChannel.java:229)
+  at io.netty.channel.AbstractChannel$AbstractUnsafe.beginRead(AbstractChannel.java:806)
+  at io.netty.channel.DefaultChannelPipeline$HeadHandler.read(DefaultChannelPipeline.java:1108)
+  at io.netty.channel.DefaultChannelHandlerContext.invokeRead0(DefaultChannelHandlerContext.java:1245)
+  at io.netty.channel.DefaultChannelHandlerContext.invokeRead(DefaultChannelHandlerContext.java:1228)
+  at io.netty.channel.DefaultChannelHandlerContext.read(DefaultChannelHandlerContext.java:1222)
+  at io.netty.channel.DefaultChannelPipeline.read(DefaultChannelPipeline.java:911)
+  at io.netty.channel.DefaultChannelPipeline.fireChannelReadSuspended(DefaultChannelPipeline.java:834)
+  at io.netty.channel.local.LocalChannel.doBeginRead(LocalChannel.java:229)
+  at io.netty.channel.AbstractChannel$AbstractUnsafe.beginRead(AbstractChannel.java:806)
+  at io.netty.channel.DefaultChannelPipeline$HeadHandler.read(DefaultChannelPipeline.java:1108)
+  at io.netty.channel.DefaultChannelHandlerContext.invokeRead0(DefaultChannelHandlerContext.java:1245)
+  at io.netty.channel.DefaultChannelHandlerContext.invokeRead(DefaultChannelHandlerContext.java:1228)
+  at io.netty.channel.DefaultChannelHandlerContext.read(DefaultChannelHandlerContext.java:1222)
+  at io.netty.channel.DefaultChannelPipeline.read(DefaultChannelPipeline.java:911)
+  at io.netty.channel.DefaultChannelPipeline.fireChannelReadSuspended(DefaultChannelPipeline.java:834)
+  at io.netty.channel.local.LocalChannel.doBeginRead(LocalChannel.java:229)
+  at io.netty.channel.AbstractChannel$AbstractUnsafe.beginRead(AbstractChannel.java:806)
+  at io.netty.channel.DefaultChannelPipeline$HeadHandler.read(DefaultChannelPipeline.java:1108)
+  at io.netty.channel.DefaultChannelHandlerContext.invokeRead0(DefaultChannelHandlerContext.java:1245)
+  at io.netty.channel.DefaultChannelHandlerContext.invokeRead(DefaultChannelHandlerContext.java:1228)
+  at io.netty.channel.DefaultChannelHandlerContext.read(DefaultChannelHandlerContext.java:1222)
+  at io.netty.channel.DefaultChannelPipeline.read(DefaultChannelPipeline.java:911)
+  at io.netty.channel.DefaultChannelPipeline.fireChannelReadSuspended(DefaultChannelPipeline.java:834)
+  at io.netty.channel.local.LocalChannel.doBeginRead(LocalChannel.java:229)
+  at io.netty.channel.AbstractChannel$AbstractUnsafe.beginRead(AbstractChannel.java:806)
+  at io.netty.channel.DefaultChannelPipeline$HeadHandler.read(DefaultChannelPipeline.java:1108)
+  at io.netty.channel.DefaultChannelHandlerContext.invokeRead0(DefaultChannelHandlerContext.java:1245)
+  at io.netty.channel.DefaultChannelHandlerContext.invokeRead(DefaultChannelHandlerContext.java:1228)
+  at io.netty.channel.DefaultChannelHandlerContext.read(DefaultChannelHandlerContext.java:1222)
+  at io.netty.channel.DefaultChannelPipeline.read(DefaultChannelPipeline.java:911)
+  at io.netty.channel.DefaultChannelPipeline.fireChannelReadSuspended(DefaultChannelPipeline.java:834)
+  at io.netty.channel.local.LocalChannel.doBeginRead(LocalChannel.java:229)
+  at io.netty.channel.AbstractChannel$AbstractUnsafe.beginRead(AbstractChannel.java:806)
+  at io.netty.channel.DefaultChannelPipeline$HeadHandler.read(DefaultChannelPipeline.java:1108)
+  at io.netty.channel.DefaultChannelHandlerContext.invokeRead0(DefaultChannelHandlerContext.java:1245)
+  at io.netty.channel.DefaultChannelHandlerContext.invokeRead(DefaultChannelHandlerContext.java:1228)
+  at io.netty.channel.DefaultChannelHandlerContext.read(DefaultChannelHandlerContext.java:1222)
+  at io.netty.channel.DefaultChannelPipeline.read(DefaultChannelPipeline.java:911)
+  at io.netty.channel.DefaultChannelPipeline.fireChannelReadSuspended(DefaultChannelPipeline.java:834)
+  at io.netty.channel.local.LocalChannel.doBeginRead(LocalChannel.java:229)
+  at io.netty.channel.AbstractChannel$AbstractUnsafe.beginRead(AbstractChannel.java:806)
+  at io.netty.channel.DefaultChannelPipeline$HeadHandler.read(DefaultChannelPipeline.java:1108)
+  at io.netty.channel.DefaultChannelHandlerContext.invokeRead0(DefaultChannelHandlerContext.java:1245)
+  at io.netty.channel.DefaultChannelHandlerContext.invokeRead(DefaultChannelHandlerContext.java:1228)
+  at io.netty.channel.DefaultChannelHandlerContext.read(DefaultChannelHandlerContext.java:1222)
+  at io.netty.channel.DefaultChannelPipeline.read(DefaultChannelPipeline.java:911)
+  at io.netty.channel.DefaultChannelPipeline.fireChannelReadSuspended(DefaultChannelPipeline.java:834)
+  at io.netty.channel.local.LocalChannel.doBeginRead(LocalChannel.java:229)
+  at io.netty.channel.AbstractChannel$AbstractUnsafe.beginRead(AbstractChannel.java:806)
+  at io.netty.channel.DefaultChannelPipeline$HeadHandler.read(DefaultChannelPipeline.java:1108)
+  at io.netty.channel.DefaultChannelHandlerContext.invokeRead0(DefaultChannelHandlerContext.java:1245)
+  at io.netty.channel.DefaultChannelHandlerContext.invokeRead(DefaultChannelHandlerContext.java:1228)
+  at io.netty.channel.DefaultChannelHandlerContext.read(DefaultChannelHandlerContext.java:1222)
+  at io.netty.channel.DefaultChannelPipeline.read(DefaultChannelPipeline.java:911)
+  at io.netty.channel.DefaultChannelPipeline.fireChannelReadSuspended(DefaultChannelPipeline.java:834)
+  at io.netty.channel.local.LocalChannel.doBeginRead(LocalChannel.java:229)
+  at io.netty.channel.AbstractChannel$AbstractUnsafe.beginRead(AbstractChannel.java:806)
+  at io.netty.channel.DefaultChannelPipeline$HeadHandler.read(DefaultChannelPipeline.java:1108)
+  at io.netty.channel.DefaultChannelHandlerContext.invokeRead0(DefaultChannelHandlerContext.java:1245)
+  at io.netty.channel.DefaultChannelHandlerContext.invokeRead(DefaultChannelHandlerContext.java:1228)
+  at io.netty.channel.DefaultChannelHandlerContext.read(DefaultChannelHandlerContext.java:1222)
+  at io.netty.channel.DefaultChannelPipeline.read(DefaultChannelPipeline.java:911)
+  at io.netty.channel.DefaultChannelPipeline.fireChannelReadSuspended(DefaultChannelPipeline.java:834)
+  at io.netty.channel.local.LocalChannel.doBeginRead(LocalChannel.java:229)
+  at io.netty.channel.AbstractChannel$AbstractUnsafe.beginRead(AbstractChannel.java:806)
+  at io.netty.channel.DefaultChannelPipeline$HeadHandler.read(DefaultChannelPipeline.java:1108)
+  at io.netty.channel.DefaultChannelHandlerContext.invokeRead0(DefaultChannelHandlerContext.java:1245)
+  at io.netty.channel.DefaultChannelHandlerContext.invokeRead(DefaultChannelHandlerContext.java:1228)
+  at io.netty.channel.DefaultChannelHandlerContext.read(DefaultChannelHandlerContext.java:1222)
+  at io.netty.channel.DefaultChannelPipeline.read(DefaultChannelPipeline.java:911)
+  at io.netty.channel.DefaultChannelPipeline.fireChannelReadSuspended(DefaultChannelPipeline.java:834)
+  at io.netty.channel.local.LocalChannel.doBeginRead(LocalChannel.java:229)
+```
+
+These are the last lines of the exception:
+
+```
+  at io.netty.channel.local.LocalChannel.doBeginRead(LocalChannel.java:229)
+  at io.netty.channel.AbstractChannel$AbstractUnsafe.beginRead(AbstractChannel.java:806)
+  at io.netty.channel.DefaultChannelPipeline$HeadHandler.read(DefaultChannelPipeline.java:1108)
+  at io.netty.channel.DefaultChannelHandlerContext.invokeRead0(DefaultChannelHandlerContext.java:1245)
+  at io.netty.channel.DefaultChannelHandlerContext.invokeRead(DefaultChannelHandlerContext.java:1228)
+  at io.netty.channel.DefaultChannelHandlerContext.read(DefaultChannelHandlerContext.java:1222)
+  at io.netty.channel.DefaultChannelPipeline.read(DefaultChannelPipeline.java:911)
+  at io.netty.channel.DefaultChannelPipeline.fireChannelReadSuspended(DefaultChannelPipeline.java:834)
+  at io.netty.channel.local.LocalChannel.doBeginRead(LocalChannel.java:229)
+  at io.netty.channel.AbstractChannel$AbstractUnsafe.beginRead(AbstractChannel.java:806)
+  at io.netty.channel.DefaultChannelPipeline$HeadHandler.read(DefaultChannelPipeline.java:1108)
+  at io.netty.channel.DefaultChannelHandlerContext.invokeRead0(DefaultChannelHandlerContext.java:1245)
+  at io.netty.channel.DefaultChannelHandlerContext.invokeRead(DefaultChannelHandlerContext.java:1228)
+  at io.netty.channel.DefaultChannelHandlerContext.read(DefaultChannelHandlerContext.java:1222)
+  at io.netty.channel.DefaultChannelPipeline.read(DefaultChannelPipeline.java:911)
+  at io.netty.channel.DefaultChannelPipeline.fireChannelReadSuspended(DefaultChannelPipeline.java:834)
+  at io.netty.channel.local.LocalChannel.doBeginRead(LocalChannel.java:229)
+  at io.netty.channel.AbstractChannel$AbstractUnsafe.beginRead(AbstractChannel.java:806)
+  at io.netty.channel.DefaultChannelPipeline$HeadHandler.read(DefaultChannelPipeline.java:1108)
+  at io.netty.channel.DefaultChannelHandlerContext.invokeRead0(DefaultChannelHandlerContext.java:1245)
+  at io.netty.channel.DefaultChannelHandlerContext.invokeRead(DefaultChannelHandlerContext.java:1228)
+  at io.netty.channel.DefaultChannelHandlerContext.read(DefaultChannelHandlerContext.java:1222)
+  at io.netty.channel.DefaultChannelPipeline.read(DefaultChannelPipeline.java:911)
+  at io.netty.channel.DefaultChannelPipeline.fireChannelReadSuspended(DefaultChannelPipeline.java:834)
+  at io.netty.channel.local.LocalChannel.doBeginRead(LocalChannel.java:229)
+  at io.netty.channel.AbstractChannel$AbstractUnsafe.beginRead(AbstractChannel.java:806)
+  at io.netty.channel.DefaultChannelPipeline$HeadHandler.read(DefaultChannelPipeline.java:1108)
+  at io.netty.channel.DefaultChannelHandlerContext.invokeRead0(DefaultChannelHandlerContext.java:1245)
+  at io.netty.channel.DefaultChannelHandlerContext.invokeRead(DefaultChannelHandlerContext.java:1228)
+  at io.netty.channel.DefaultChannelHandlerContext.read(DefaultChannelHandlerContext.java:1222)
+  at io.netty.channel.DefaultChannelPipeline.read(DefaultChannelPipeline.java:911)
+```

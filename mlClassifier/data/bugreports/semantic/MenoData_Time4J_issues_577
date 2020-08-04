@@ -1,0 +1,19 @@
+Ambivalence parsing check sometimes faulty
+If the elements `PlainDate.MONTH_OF_YEAR` and `PlainDate.MONTH_AS_NUMBER` are simultaneously used in format pattern and default values then the ambivalence check can go wrong. Example:
+
+		ChronoFormatter<Moment> ff =
+			ChronoFormatter.setUp(Moment.axis(), Locale.ROOT).addFixedInteger(PlainDate.YEAR, 4)
+			.startOptionalSection().addFixedNumerical(PlainDate.MONTH_OF_YEAR, 2).addPattern(
+				"[dd[HH[mm[ss]]]]]",
+				PatternType.CLDR_24
+			).build().withTimezone(ZonalOffset.UTC);
+		ff =
+			ff.withDefault(PlainDate.MONTH_AS_NUMBER, 4).withDefault(PlainDate.DAY_OF_MONTH, 1)
+			.withDefault(PlainTime.ISO_HOUR, 0).with(Leniency.STRICT);
+		System.out.println(ff.parse("201605041636"));
+
+Observed behaviour:
+
+> java.text.ParseException: Conflict found: Text {201605041636} with element MONTH_OF_YEAR {MAY}, but parsed entity has element value {APRIL}.
+
+Solution: The parser should recognize that both elements have finally the same meaning (although different in value type).

@@ -1,0 +1,4 @@
+Using DatagramChannel.write(...) without bind the channel fails.
+It's completely legal to use DatagramChannel.write(new DatagramPacket) even if its not bound. At the moment this fails with NotYetConnectedException in doFlush(..). 
+
+This is because NioDatagramChannel.isActive() returns false if its not bound. The same is true for OioDatagramChannel. I think isActive should return true as long as it was not closed yet.

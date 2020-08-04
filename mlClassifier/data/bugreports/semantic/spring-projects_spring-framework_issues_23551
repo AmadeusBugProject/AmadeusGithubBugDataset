@@ -1,0 +1,6 @@
+Entry set of read-only HttpHeaders loses original headers' ordering
+**Affects:** 5.1.9.RELEASE
+
+The entry set returned from the result of calling `HttpHeaders.readOnlyHttpHeaders(HttpHeaders)` does not maintain the original headers' ordering. This is a regression from 5.1.0 that I think was introduced in 5.1.1 in https://github.com/spring-projects/spring-framework/commit/ce7278aaf4f20348862267c2081c20dc5bd77128. I believe the set is unordered due to the use of `Collectors.toSet()` which creats an unordered `Set`:
+
+https://github.com/spring-projects/spring-framework/blob/1ea6ce72bb3b1139abc370f6dc32c51fc27ae90b/spring-web/src/main/java/org/springframework/http/ReadOnlyHttpHeaders.java#L146

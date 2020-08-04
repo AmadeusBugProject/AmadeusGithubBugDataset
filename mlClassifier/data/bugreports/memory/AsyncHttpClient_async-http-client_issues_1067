@@ -1,0 +1,61 @@
+GrizzlyResponse object reachable from SelectorRunner thread local
+Hi,
+
+We are using grizzly through AHC to perform some HTTP requests. After those requests have finished, in a thread dump i can still see the response objects being referenced, and not being garbage collected. Attached is a screenshot of there references from a heap dump:
+
+![screen shot 2015-12-22 at 9 37 37 am](https://cloud.githubusercontent.com/assets/8010105/11955732/211f42b4-a893-11e5-8885-4c7eb7553764.png)
+
+In a case where the size of the transferred data is big, i see some heavy memory usage.
+
+The problem seems to be with the reference chain TCPNIOConnection -> IndexedAttributeHolder -> $Snapshot -> HttpTransactionContext. Perhaps at least one of those references should be discarded after the request has completed, or provide a way to an app to clear that.
+
+The following test can reproduce this issue.
+
+```
+    @Test
+    public void referencedResponseHC() throws InterruptedException
+    {
+        AsyncHttpClientConfig config = new AsyncHttpClientConfig.Builder().build();
+        AsyncHttpClient client = new AsyncHttpClient(new GrizzlyAsyncHttpProvider(config), config);
+
+        final CountDownLatch responseLatch = new CountDownLatch(1);
+        final AtomicReference<Response> responseRef = new AtomicReference<>();
+
+        client.prepareGet("http://www.ning.com/").execute(new AsyncCompletionHandler<Response>()
+        {
+
+            @Override
+            public Response onCompleted(Response response) throws Exception
+            {
+                responseLatch.countDown();
+                responseRef.set(response);
+                return response;
+            }
+
+            @Override
+            public void onThrowable(Throwable t)
+            {
+                // Something wrong happened.
+            }
+        });
+
+        responseLatch.await(5, TimeUnit.SECONDS);
+        verifyNotLeaked(new PhantomReference<>(responseRef.getAndSet(null), new ReferenceQueue<>()));
+    }
+
+    private void verifyNotLeaked(PhantomReference possibleLeakPhantomRef) throws InterruptedException
+    {
+        for (int i = 0; i < 10; ++i)
+        {
+            System.gc();
+            Thread.sleep(100);
+            if (possibleLeakPhantomRef.isEnqueued())
+            {
+                break;
+            }
+        }
+        assertTrue(possibleLeakPhantomRef.isEnqueued());
+    }
+```
+
+Thanks in advance,

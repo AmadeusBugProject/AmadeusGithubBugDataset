@@ -1,0 +1,79 @@
+Java Netty 3.3.1.Final, DynamicChannelBuffer.java:75, infinite loop, a bug?
+I am using Netty 3.3.1.Final for our needs of a custom server. Our execution is blocked in an infinite loop at: org.jboss.netty.buffer.DynamicChannelBuffer.ensureWritableBytes(DynamicChannelBuffer.java:75)
+
+Going into the code with the debuger will show an infinite loop starting with the initial values: minNewCapacity=2147483647 newCapacity=256
+(Binary 1111111111111111111111111111111)
+(Binary 0000000000000000000000100000000)
+
+The reason is <<= operator will cause newCapacity to reach a maximum value of 1000000000000000000000000000000 and at the next step newCapacity will become 0 for ever.
+
+This part of the code lacks documentation so I cannot go deeper in my analyzis, but I would like to know if this is a known issue, and if I can use another version of netty?
+
+``` java
+    @Override
+    public void ensureWritableBytes(int minWritableBytes) {
+        if (minWritableBytes <= writableBytes()) {
+            return;
+        }
+
+        int newCapacity;
+        if (capacity() == 0) {
+            newCapacity = 1;
+        } else {
+            newCapacity = capacity();
+        }
+        int minNewCapacity = writerIndex() + minWritableBytes;
+        //INFINITE LOOP HERE
+        while (newCapacity < minNewCapacity) {
+            newCapacity <<= 1;
+        }
+
+        ChannelBuffer newBuffer = factory().getBuffer(order(), newCapacity);
+        newBuffer.writeBytes(buffer, 0, writerIndex());
+        buffer = newBuffer;
+    }
+```
+
+Thanks for your help,
+
+Renaud
+
+Added comment:
+
+This is method causing the minNewCapacity to be so high wich seems not good because it will lead to a huge memory buffer... org.jboss.netty.ReplayingDecoderBuffer.readableBytes(ReplayingDecoderBuffer.java:301)
+
+``` java
+public int readableBytes() {
+        if (terminated) {
+            return buffer.readableBytes();
+        } else {
+            return Integer.MAX_VALUE - buffer.readerIndex();
+        }
+    }
+```
+
+Added comment 2012/04/13
+
+I finally decided to not use the ReplayingDecoder because it leads to some very strange behaviour. In particular, it looks like it is not safe to use the mark() and reset() methods of the ChannelBuffer argument in the decode() method. When I tried to use buffer.slice() to wrap the ChannelBuffer in a "private" container, I got an exception, something like "Slice is not a replayable method...".
+
+Below is what I do right now: I am using a custom FrameDecoder as a ReplayingDecoder, but I am loosing the Checkpoint facilities. Codec is an interface I introduced to be able to combine different Protocol layer:
+
+``` java
+public static ChannelUpstreamHandler decoder(final Codec codec) {
+        return new FrameDecoder() {
+
+            @Override
+            protected Object decode(ChannelHandlerContext ctx, Channel channel, ChannelBuffer buffer) throws Exception {
+                try {
+                    //Wrap the argument buffer inside a private buffer with other readerIndex and writerIndex.
+                    ChannelBuffer privateBuffer = ChannelBuffers.wrappedBuffer(buffer);
+                    Object result = codec.decode(privateBuffer);
+                    buffer.skipBytes(privateBuffer.readerIndex());
+                    return result;
+                } catch (Exception e) {
+                    return null;
+                }
+            }
+        };
+    }
+```

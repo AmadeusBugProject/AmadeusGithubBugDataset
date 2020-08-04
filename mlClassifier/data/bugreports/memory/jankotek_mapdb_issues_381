@@ -1,0 +1,52 @@
+Map.clear() causes corruption of Database.
+If you run the test below TWICE on mapdb-1.0.6 it throws a nasty Exception on the second run. If it is run a third time, it gets worse.
+If the clear() method is removed, then it can be run as many times as one wants.
+
+```
+@Test
+public void testCorruption()
+    throws Exception
+{
+    final int INSTANCES = 100000;
+    File applicationDbFile = new File( databaseDir, "testing" );
+    DBMaker maker = DBMaker.newFileDB( applicationDbFile );
+    TxMaker txMaker = maker.makeTxMaker();
+    DB tx = txMaker.makeTx();
+    byte[] data = new byte[128];
+    try
+    {
+        ConcurrentMap<Long, byte[]> map = tx.getHashMap( "persons" );
+        map.clear();
+        for( int i = 0; i < INSTANCES; i++ )
+        {
+            map.put( (long) i, data );
+        }
+        tx.commit();
+    }
+    catch( RuntimeException ex )
+    {
+        tx.rollback();
+        throw ex;
+    }
+    finally
+    {
+        tx.close();
+    }
+}
+```
+
+And the Excepiton is;
+
+```
+java.lang.AssertionError: unknown trans log instruction '0' at log offset: 5111834
+    at org.mapdb.StoreWAL.replayLogFile(StoreWAL.java:858)
+    at org.mapdb.StoreWAL.commit(StoreWAL.java:637)
+    at org.mapdb.EngineWrapper.commit(EngineWrapper.java:94)
+    at org.mapdb.EngineWrapper.commit(EngineWrapper.java:94)
+    at org.mapdb.TxEngine.superCommit(TxEngine.java:310)
+    at org.mapdb.TxEngine$Tx.commit(TxEngine.java:558)
+    at org.mapdb.EngineWrapper.commit(EngineWrapper.java:94)
+    at org.mapdb.TxEngine.commit(TxEngine.java:287)
+    at org.mapdb.DB.commit(DB.java:1595)
+    at org.mapdb.CorruptionTest.testCorruption(CorruptionTest.java:50)
+```

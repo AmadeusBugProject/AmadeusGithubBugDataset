@@ -1,0 +1,14 @@
+EdgeRouterFactory yields memory leak
+The `GraphConfigurator` creates a new `EdgeRouterFactory` for every layout run:
+```
+algorithmAssembler.setPhase(LayeredPhases.P5_EDGE_ROUTING,
+        EdgeRouterFactory.factoryFor(lgraph.getProperty(LayeredOptions.EDGE_ROUTING)));
+```
+
+The created edge router instance, say `SplineEdgeRouter`, is then cached within the `AlgorithmAssembler`. Since it's a new factory every time, caching is broken in `AlgorithmAssembler#retrieveProcessor`. 
+
+```
+if (enableCaching) {
+            if (cache.containsKey(factory)) {
+[...]
+```

@@ -1,0 +1,45 @@
+NoSuchElementException coming from RouteSelector after upgrading 3.12 -> 3.14
+After upgrading our android app from okhttp 3.12.2 to 3.14.0, we started seeing this error (stacktrace below) coming through Crashlytics in production at a very high rate. Because we upgraded directly from 3.12 to 3.14, I'm not sure if this error was introduced in 3.13 or 3.14.
+
+With an admittedly small sample size, the crash was affecting over 10% of sessions and over 20% of users, so we were forced to roll back. It appeared across Android versions 7, 8, 9, and Q.
+
+Unfortunately, I wasn't able to reproduce it locally. However, it seems very similar to this issue from 2 years ago, which appears to have been re-introduced to the library: https://github.com/square/okhttp/issues/3308
+
+I am not sure if this is related but we are compiling our app with R8 version 1.4.72
+
+Our app uses Java 8, min SDK 21, and the latest version of retrofit (2.5.0).
+
+Hopefully this information and the stack trace below is enough to be helpful, apologies for not being able to include a reproducible case outside of production.
+
+Thank you for the amazing library and everything you do for android open source!
+
+```
+Fatal Exception: java.util.NoSuchElementException
+       at okhttp3.internal.connection.RouteSelector.next(RouteSelector.java:75)
+       at okhttp3.internal.connection.ExchangeFinder.findConnection(ExchangeFinder.java:187)
+       at okhttp3.internal.connection.ExchangeFinder.findHealthyConnection(ExchangeFinder.java:107)
+       at okhttp3.internal.connection.ExchangeFinder.find(ExchangeFinder.java:87)
+       at okhttp3.internal.connection.Transmitter.newExchange(Transmitter.java:162)
+       at okhttp3.internal.connection.ConnectInterceptor.intercept(ConnectInterceptor.java:41)
+       at okhttp3.internal.http.RealInterceptorChain.proceed(RealInterceptorChain.java:142)
+       at okhttp3.internal.http.RealInterceptorChain.proceed(RealInterceptorChain.java:117)
+       at okhttp3.internal.cache.CacheInterceptor.intercept(CacheInterceptor.java:94)
+       at okhttp3.internal.http.RealInterceptorChain.proceed(RealInterceptorChain.java:142)
+       at okhttp3.internal.http.RealInterceptorChain.proceed(RealInterceptorChain.java:117)
+       at okhttp3.internal.http.BridgeInterceptor.intercept(BridgeInterceptor.java:93)
+       at okhttp3.internal.http.RealInterceptorChain.proceed(RealInterceptorChain.java:142)
+       at okhttp3.internal.http.RetryAndFollowUpInterceptor.intercept(RetryAndFollowUpInterceptor.java:88)
+       at okhttp3.internal.http.RealInterceptorChain.proceed(RealInterceptorChain.java:142)
+       at okhttp3.internal.http.RealInterceptorChain.proceed(RealInterceptorChain.java:117)
+       at com.redacted.myapp.MyNetworkingModule.doRequestWithExceptionCatching(MyNetworkingModule.java:150)
+       at com.redacted.myapp.MyNetworkingModule.lambda$provideOkhttpClient$0(MyNetworkingModule.java:99)
+       at com.redacted.myapp.-$$Lambda$MyNetworkingModule$f9YhFuxMEYBUFTv_jyu3YSQWZX8.intercept(-.java:2)
+       at okhttp3.internal.http.RealInterceptorChain.proceed(RealInterceptorChain.java:142)
+       at okhttp3.internal.http.RealInterceptorChain.proceed(RealInterceptorChain.java:117)
+       at okhttp3.RealCall.getResponseWithInterceptorChain(RealCall.java:221)
+       at okhttp3.RealCall$AsyncCall.execute(RealCall.java:172)
+       at okhttp3.internal.NamedRunnable.run(NamedRunnable.java:32)
+       at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1167)
+       at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:641)
+       at java.lang.Thread.run(Thread.java:764)
+```

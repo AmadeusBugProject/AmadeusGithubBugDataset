@@ -1,0 +1,2 @@
+JarResourceManager leaks an InputStream when asked for a Resource for the root of a jar
+Due to how Undertow's `URLResource` and the JDK's `JarURLConnection` work, if `JarResourceManager` is asked for an entry for the root of a jar (a path of `""` or `"/"`), it will open an `InputStream` and never close it. To avoid this, we need to avoid asking the `URLResource` for its content length for such resources.

@@ -1,0 +1,61 @@
+Javadoc: Column number of DetailNode is always 0 for first line
+While transforming ANTRL4 ParseTree to our Checkstyle DetailNode tree, column number is copied as is. However, if DetailNode object matches an object in first line of Javadoc comment, there is no any offset appended.
+https://github.com/checkstyle/checkstyle/blob/master/src/main/java/com/puppycrawl/tools/checkstyle/JavadocDetailNodeParser.java#L290
+
+For example:
+test.java
+
+``` java
+class A {
+    /** This is
+        a method */
+    void method(){}
+}
+```
+
+```
+$ java -jar checkstyle-7.2-SNAPSHOT-all.jar -J test.java
+CLASS_DEF -> CLASS_DEF [1:0]
+|--MODIFIERS -> MODIFIERS [1:0]
+|--LITERAL_CLASS -> class [1:0]
+|--IDENT -> A [1:6]
+`--OBJBLOCK -> OBJBLOCK [1:8]
+    |--LCURLY -> { [1:8]
+    |--METHOD_DEF -> METHOD_DEF [4:4]
+    |   |--MODIFIERS -> MODIFIERS [4:4]
+    |   |--TYPE -> TYPE [4:4]
+    |   |   |--JAVADOC ->  This is\n        a method <EOF> [2:0]
+    |   |   |   |--TEXT ->  This is [2:0]
+    |   |   |   |   |--WS ->   [2:0]
+    |   |   |   |   |--CHAR -> T [2:1]
+    |   |   |   |   |--CHAR -> h [2:2]
+    |   |   |   |   |--CHAR -> i [2:3]
+    |   |   |   |   |--CHAR -> s [2:4]
+    |   |   |   |   |--WS ->   [2:5]
+    |   |   |   |   |--CHAR -> i [2:6]
+    |   |   |   |   `--CHAR -> s [2:7]
+    |   |   |   |--NEWLINE -> \n [2:8]
+    |   |   |   |--TEXT ->         a method  [3:0]
+    |   |   |   |   |--WS ->          [3:0]
+    |   |   |   |   |--CHAR -> a [3:8]
+    |   |   |   |   |--WS ->   [3:9]
+    |   |   |   |   |--CHAR -> m [3:10]
+    |   |   |   |   |--CHAR -> e [3:11]
+    |   |   |   |   |--CHAR -> t [3:12]
+    |   |   |   |   |--CHAR -> h [3:13]
+    |   |   |   |   |--CHAR -> o [3:14]
+    |   |   |   |   |--CHAR -> d [3:15]
+    |   |   |   |   `--WS ->   [3:16]
+    |   |   |   `--EOF -> <EOF> [3:17]
+    |   |   `--LITERAL_VOID -> void [4:4]
+    |   |--IDENT -> method [4:9]
+    |   |--LPAREN -> ( [4:15]
+    |   |--PARAMETERS -> PARAMETERS [4:16]
+    |   |--RPAREN -> ) [4:16]
+    |   `--SLIST -> { [4:17]
+    |       `--RCURLY -> } [4:18]
+    `--RCURLY -> } [5:0]
+```
+
+Attention to `JAVADOC ->  This is\n        a method <EOF> [2:0]`. Line number is 2, however column number is 0 despite it is actually on 7th column. So expected column number is 7.
+## 

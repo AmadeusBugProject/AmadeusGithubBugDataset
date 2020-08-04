@@ -1,0 +1,46 @@
+Prepared params, IN clause, array of enums: stackoverflow exception
+### OrientDB Version: 2.2.20 
+
+`SELECT * FROM Project WHERE status in :status`
+
+if status is enum array (tested with 2 elements), it will fall into infinite recursion during parsing named parameters, and end in stackoverflow.
+
+This one works, if :status is Enum:
+`SELECT * FROM Project WHERE status = :status`
+
+
+```
+// toParsedTree function
+ ...
+      while (iterator.hasNext()) {
+        Object o = iterator.next();
+        OExpression exp = new OExpression(-1);
+        exp.value = toParsedTree(o); //recursive call, returns itself, one time for each element in array
+        coll.expressions.add(exp);
+      }
+...
+```
+
+Not particulary painfull, as I can map Enum to String on my own, but confusing, since status = :status, where status is enum works.
+
+Part of stack: 
+
+> ERROR [2017-05-15 09:54:47,472] io.dropwizard.jersey.errors.LoggingExceptionMapper: Error handling a request: f8918bc72cb46f84
+> ! java.lang.StackOverflowError: null
+> ! at com.orientechnologies.common.collection.OMultiValue.isMultiValue(OMultiValue.java:50)
+> ! at com.orientechnologies.common.collection.OMultiValue.isMultiValue(OMultiValue.java:62)
+> ! at com.orientechnologies.orient.core.sql.parser.OInputParameter.toParsedTree(OInputParameter.java:77)
+> ! at com.orientechnologies.orient.core.sql.parser.ONamedParameter.bindFromInputParams(ONamedParameter.java:49)
+> ! at com.orientechnologies.orient.core.sql.parser.ONamedParameter.toString(ONamedParameter.java:31)
+> ! at com.orientechnologies.orient.core.sql.parser.OExpression.toString(OExpression.java:104)
+> ! at com.orientechnologies.orient.core.sql.parser.OCollection.toString(OCollection.java:35)
+> ! at com.orientechnologies.orient.core.sql.parser.ONamedParameter.toString(ONamedParameter.java:39)
+> ! at com.orientechnologies.orient.core.sql.parser.OExpression.toString(OExpression.java:104)
+> ! at com.orientechnologies.orient.core.sql.parser.OCollection.toString(OCollection.java:35)
+> ! at com.orientechnologies.orient.core.sql.parser.ONamedParameter.toString(ONamedParameter.java:39)
+> ! at com.orientechnologies.orient.core.sql.parser.OExpression.toString(OExpression.java:104)
+> ! at com.orientechnologies.orient.core.sql.parser.OCollection.toString(OCollection.java:35)
+> ! at com.orientechnologies.orient.core.sql.parser.ONamedParameter.toString(ONamedParameter.java:39)
+> ! at com.orientechnologies.orient.core.sql.parser.OExpression.toString(OExpression.java:104)
+> ! at com.orientechnologies.orient.core.sql.parser.OCollection.toString(OCollection.java:35)
+>  ...

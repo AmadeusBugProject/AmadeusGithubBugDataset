@@ -1,0 +1,5 @@
+Openssl SSLEngine reports too little size in session.getPacketBufferSize
+It seems OpenSSLEngine needs more package buffer space than the JDK one. Both JDK and Openssl report for `session.getPacketBufferSize` 18713 bytes (16665 + 2048) but the OpenSSLEngine will in some cases only succeed with buffers of size 16665 + 2048 + 58 (I bisected the exact amount, 1 byte less will still fail) and will otherwise return a BUFFER_OVERFLOW. 
+
+This isn't a fatal problem as you can just provide more buffer space and call again. However, 
+we relied on the invariant that a call to `wrap` can never result with BUFFER_OVERFLOW if the destination buffer was at least of size `session.getPacketBufferSize`. This allows us not to care for BUFFER_OVERFLOWs at all using the JDK SSLEngine. Not sure if that invariant really exists, though, so, one could say that this is just another degree of freedom the SSLEngine might leave to implementors.

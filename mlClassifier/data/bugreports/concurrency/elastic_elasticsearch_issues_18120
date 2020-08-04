@@ -1,0 +1,6 @@
+Build Failure: org.elasticsearch.search.aggregations.bucket.SignificantTermsSignificanceScoreIT.testScriptScore
+Unable to replicate, but I do not have a Windows machine for testing.
+
+REPRODUCE WITH: gradle :core:integTest -Dtests.seed=4DA46F7D8DF8CF05 -Dtests.class=org.elasticsearch.search.aggregations.bucket.SignificantTermsSignificanceScoreIT -Dtests.method="testScriptScore" -Des.logger.level=DEBUG -Dtests.security.manager=true -Dtests.nightly=false -Dtests.heap.size=1024m -Dtests.jvm.argline="-server -XX:+UseConcMarkSweepGC -XX:-UseCompressedOops -XX:+AggressiveOpts" -Dtests.locale=sr-Latn-RS -Dtests.timezone=Asia/Chongqing
+
+Build Failure: (http://build-us-00.elastic.co/job/es_core_master_window-2008/3699/testReport/junit/org.elasticsearch.search.aggregations.bucket/SignificantTermsSignificanceScoreIT/testScriptScore/)

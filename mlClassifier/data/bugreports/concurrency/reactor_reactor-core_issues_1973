@@ -1,0 +1,64 @@
+BoundedElasticScheduler does not invoke any tasks after interruption.
+I've stumbled upon a problem with BoundedElasticScheduler when there's high traffic creating many queued task on it. Invoking dispose() on scheduled tasks seems to break scheduler, to the point where it is not invoking any new tasks.
+
+## Expected Behavior
+Scheduler should correctly invoke tasks, after disposing all of its other tasks.
+
+## Actual Behavior
+Scheduler doesn't do anything after disposing all of its tasks, and scheduling a new one.
+
+## Steps to Reproduce
+In the following example, behavior is as follows:
+
+* ~520 tasks are scheduled
+* ~300 scheduled tasks are processed correctly
+* When dispose() is called all of scheduled tasks are cancelled
+* On most scheduled tasks InterruptedException occurs, except ~15 last ones (505-520)
+* Scheduled task after dispose() call is never invoked.
+
+```java
+Logger logger = LoggerFactory.getLogger("Test");
+
+    @Test
+    public void test() throws InterruptedException {
+        Scheduler scheduler =
+                Schedulers.newBoundedElastic(30, Schedulers.DEFAULT_BOUNDED_ELASTIC_QUEUESIZE, "test-scheduler");
+        Disposable subscription = Flux.range(0, 100000000)
+                .flatMap(i -> {
+                    logger.info("Scheduling {}", i);
+                    return Mono.fromSupplier(() -> invokeLongOperation(i))
+                            .subscribeOn(scheduler)
+                            .publishOn(Schedulers.parallel())
+                            .doOnError(throwable -> logger.error("Error occurred in thread {} ", i, throwable))
+                            .doOnCancel(() -> logger.info("Thread {} cancelled", i));
+                })
+                .subscribe(i -> logger.info("Thread {} finished", i),
+                           throwable -> logger.error("Error ", throwable));
+        Thread.sleep(10000);
+        logger.info("Invoking dispose");
+        subscription.dispose();
+        Thread.sleep(1000);
+        Mono.fromSupplier(() -> invokeLongOperation(999999999))
+                .subscribeOn(scheduler)
+                .publishOn(Schedulers.parallel())
+                .subscribe((i) -> logger.info("Consumed value {} ", i),
+                           throwable -> logger.error("Exception"));
+        logger.info("Sleeping");
+        Thread.sleep(100000);
+    }
+
+    private int invokeLongOperation(Integer i) {
+        logger.info("Invoking long operation {}", i);
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            logger.error("Thread {} interrupted", i);
+        }
+        return i;
+    }
+```
+
+##Environment
+
+* Reactor version used: 3.3.0
+* JVM version: 1.8.0

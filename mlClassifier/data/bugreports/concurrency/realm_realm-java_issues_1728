@@ -1,0 +1,52 @@
+Trying to catch a dead lock
+Hi there,
+
+I'm trying to locate a dead-lock which is happening somewhere inside Realm.
+By logging I found that I get an infinite ANR in `onCreate()` of the MainActivity on the line `Realm.getDefaultInstance()`. Another place where it hangs is a worker thread on the line `Realm.close()`.
+
+Here is how the worker thread body looks like (without the domain details):
+
+``` java
+Realm realm = null;
+try {
+    realm = Realm.getDefaultInstance();
+    RealmResults<A> results = realm.where(A.class).findAll();
+    realm.beginTransaction();
+    for (int i = results.size() - 1; i >= 0; i--) {
+        final A item = results.get(i);
+        String value = item.getSomeStringValue();
+        callSomeMethod(value); // this method throws an exception not related to realm when i == 1
+    }
+    realm.commitTransaction();
+} finally {
+    if (realm != null) {
+        realm.close(); // hangs on this line based on the logs
+    }
+}
+```
+
+I was able to narrow down where exactly Realm.close() hangs. It is the line `synchronized (BaseRealm.class)`:
+
+``` java
+protected void lastLocalInstanceClosed() {
+        // validatedRealmFiles must not modified while other thread is executing createAndValidate()
+        synchronized (BaseRealm.class) {
+            validatedRealmFiles.remove(configuration.getPath());
+        }
+        realmsCache.get().remove(configuration);
+    }
+}
+```
+
+Here is the sequence of actions accordingly to logs:
+1. Application.onCreate() called and starts the worker thread
+2. Worker thread is going through the items
+3. MainActivity.onCreate() called and it hangs on Realm.getDefaultInstance()
+4. Exception thrown in the worker thread, and it hangs on realm.close()
+5. Infinite ANR in MainActivity
+
+It's very hard to locate the problem because it's not 100% reproducible and time-dependent. If I remove transaction, or there is no exception then the dead-lock doesn't happen (could be just due to timing). Also, I have another running worker thread in background which uses realm. But it successfully finishes and doesn't hang on `realm.close()`. 
+
+I tried to reproduce it in a small project, but it didn't work out.
+
+I hope this description could lead you to some ideas what could go wrong, or what I can check to locate the exact problem.

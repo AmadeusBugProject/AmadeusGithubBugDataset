@@ -1,0 +1,31 @@
+WebSocket08FrameDecoder may leak memory if channel is closed before the full frame was received
+Morning, i was looking through logfiles from our application and found this (after running without exceptions for days):
+
+```
+22:48:33.120 WARN  io.netty.util.ResourceLeakDetector - LEAK: ByteBuf was GC'd before being released correctly.  The following stack trace shows where the leaked object was created, rather than where you failed to release it.
+io.netty.util.ResourceLeakException: io.netty.buffer.UnpooledUnsafeDirectByteBuf@201e42a1
+at io.netty.util.ResourceLeakDetector$DefaultResourceLeak.<init>(ResourceLeakDetector.java:174) ~[thruput-0.6.2.jar:na]
+at io.netty.util.ResourceLeakDetector.open(ResourceLeakDetector.java:116) ~[thruput-0.6.2.jar:na]
+at io.netty.buffer.UnpooledUnsafeDirectByteBuf.<init>(UnpooledUnsafeDirectByteBuf.java:72) ~[thruput-0.6.2.jar:na]
+at io.netty.buffer.UnpooledByteBufAllocator.newDirectBuffer(UnpooledByteBufAllocator.java:49) ~[thruput-0.6.2.jar:na]
+at io.netty.buffer.AbstractByteBufAllocator.directBuffer(AbstractByteBufAllocator.java:132) ~[thruput-0.6.2.jar:na]
+at io.netty.buffer.AbstractByteBufAllocator.directBuffer(AbstractByteBufAllocator.java:123) ~[thruput-0.6.2.jar:na]
+at io.netty.buffer.AbstractByteBufAllocator.buffer(AbstractByteBufAllocator.java:60) ~[thruput-0.6.2.jar:na]
+at io.netty.handler.codec.http.websocketx.WebSocket08FrameDecoder.decode(WebSocket08FrameDecoder.java:268) ~[thruput-0.6.2.jar:na]
+at io.netty.handler.codec.ReplayingDecoder.callDecode(ReplayingDecoder.java:362) ~[thruput-0.6.2.jar:na]
+at io.netty.handler.codec.ByteToMessageDecoder.channelRead(ByteToMessageDecoder.java:131) [thruput-0.6.2.jar:na]
+at io.netty.channel.DefaultChannelHandlerContext.invokeChannelRead(DefaultChannelHandlerContext.java:337) [thruput-0.6.2.jar:na]
+at io.netty.channel.DefaultChannelHandlerContext.fireChannelRead(DefaultChannelHandlerContext.java:323) [thruput-0.6.2.jar:na]
+at io.netty.handler.timeout.IdleStateHandler.channelRead(IdleStateHandler.java:253) [thruput-0.6.2.jar:na]
+at io.netty.channel.DefaultChannelHandlerContext.invokeChannelRead(DefaultChannelHandlerContext.java:337) [thruput-0.6.2.jar:na]
+at io.netty.channel.DefaultChannelHandlerContext.fireChannelRead(DefaultChannelHandlerContext.java:323) [thruput-0.6.2.jar:na]
+at io.netty.channel.DefaultChannelPipeline.fireChannelRead(DefaultChannelPipeline.java:785) [thruput-0.6.2.jar:na]
+at io.netty.channel.nio.AbstractNioByteChannel$NioByteUnsafe.read(AbstractNioByteChannel.java:100) [thruput-0.6.2.jar:na]
+at io.netty.channel.nio.NioEventLoop.processSelectedKey(NioEventLoop.java:478) [thruput-0.6.2.jar:na]
+at io.netty.channel.nio.NioEventLoop.processSelectedKeysOptimized(NioEventLoop.java:447) [thruput-0.6.2.jar:na]
+at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:341) [thruput-0.6.2.jar:na]
+at io.netty.util.concurrent.SingleThreadEventExecutor$2.run(SingleThreadEventExecutor.java:101) [thruput-0.6.2.jar:na]
+at java.lang.Thread.run(Thread.java:724) [na:1.7.0_40]
+```
+
+I do not have any more information than this :(

@@ -1,0 +1,27 @@
+Comparison demo crash when select Volley + network
+### Description
+
+```
+E/AndroidRuntime: FATAL EXCEPTION: main
+    Process: com.facebook.samples.comparison, PID: 4529
+    java.util.ConcurrentModificationException
+       at java.util.HashMap$HashIterator.nextEntry(HashMap.java:851)
+       at java.util.HashMap$ValueIterator.next(HashMap.java:879)
+       at com.android.volley.toolbox.ImageLoader$4.run(ImageLoader.java:464)
+       at android.os.Handler.handleCallback(Handler.java:751)
+       at android.os.Handler.dispatchMessage(Handler.java:95)
+       at android.os.Looper.loop(Looper.java:154)
+       at android.app.ActivityThread.main(ActivityThread.java:6119)
+       at java.lang.reflect.Method.invoke(Native Method)
+       at com.android.internal.os.ZygoteInit$MethodAndArgsCaller.run(ZygoteInit.java:886)
+       at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:776)
+```
+
+### Reproduction
+
+Select Volley and Network in the Comparison demo application 
+
+### Additional Information
+
+* Fresco version: 1.0.1
+* Platform version: 5.1 - Xiaomi Redmi Note 3, 7.0 - Android Emulator

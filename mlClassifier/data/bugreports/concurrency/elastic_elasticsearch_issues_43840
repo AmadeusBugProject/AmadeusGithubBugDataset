@@ -1,0 +1,32 @@
+HashMap is is not thread safe. Field fileDetails is synchronized in 20 locations, but not in 1 (the 21st) location
+I submitted a CR for this issue:
+
+https://github.com/elastic/elasticsearch/pull/43839
+
+The field ```fileDetails``` (a ```HashMap```, i.e., not thread safe)
+
+https://github.com/elastic/elasticsearch/blob/master/server/src/main/java/org/elasticsearch/indices/recovery/RecoveryState.java#L679
+
+is used only in synchronzied methods (in about 20 locations), e.g.,:
+
+https://github.com/elastic/elasticsearch/blob/master/server/src/main/java/org/elasticsearch/indices/recovery/RecoveryState.java#L767-L768
+
+i.e., including ```.size()```.
+
+This is correct, because according to JDK:
+
+```
+If multiple threads access a hash map concurrently, and at least
+one of the threads modifies the map structurally, it must be
+synchronized externally.
+```
+
+https://docs.oracle.com/javase/8/docs/api/java/util/HashMap.html
+
+However, in the 21st location, here:
+
+https://github.com/elastic/elasticsearch/blob/master/server/src/main/java/org/elasticsearch/indices/recovery/RecoveryState.java#L958
+
+the method is not synchronized.
+
+This CR simply adds the keyword synchronized to the method, just like for all the other places.

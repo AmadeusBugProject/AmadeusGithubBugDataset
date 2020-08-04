@@ -1,0 +1,2 @@
+Scheduling threads can be leaked on exception
+In #9843, HunspellServiceTests leak scheduler and timer thread pools.  In this test class, there are 2 tests which check excepetion cases.  When those 2 tests are @Ignored, there are no more thread leaks.

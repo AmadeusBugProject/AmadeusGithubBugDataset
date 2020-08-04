@@ -1,0 +1,2 @@
+OioSocketChannel.close(...) and OioDatagramChannel.close(...) may interrupt wrong thread
+Because of a race-condition it is possible that OioSocketChannel.close(...) / OioDatagramChannel.close(...) will interrupt the wrong thread.

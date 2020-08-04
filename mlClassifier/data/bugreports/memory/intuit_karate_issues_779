@@ -1,0 +1,12 @@
+background callonce read causes scenarios to share variables
+Failing test case here:
+
+https://github.com/ericdriggs/karate-callonce-bug/blob/master/src/test/java/callonce-bug.feature
+
+Expected:
+* variables created by previous scenario remain undefined when another scenario starts
+
+Actual
+* variables still have previous values when start new scenario
+
+Manually verified the following work correctly: karate.callSingle, callonce for a function variable

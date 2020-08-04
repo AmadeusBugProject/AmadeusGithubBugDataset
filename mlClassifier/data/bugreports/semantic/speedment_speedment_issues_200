@@ -1,0 +1,2 @@
+If JsonEncoder is used to create hierarchial objects, it may crash on NULL columns
+If a table has a column that is nullable and has a foreign key to another table, hierarchial JsonEncoders for that table will crash if given a null reference. This is easily fixed.

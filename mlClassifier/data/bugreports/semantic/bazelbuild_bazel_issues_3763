@@ -1,0 +1,8 @@
+JUnit XML are showing all test as passed when there is a timeout
+The XML produced by the tests are shown as all passing when there is a timeout (probably because we do not write the skipped tests and the incomplete tests).
+
+Internal ref b/65292484
+
+Assigning to @iirina to follow through but we need more precision from the team.
+
+/cc @vladmos: we need to at least understand the issue, maybe cherry-pick the fix

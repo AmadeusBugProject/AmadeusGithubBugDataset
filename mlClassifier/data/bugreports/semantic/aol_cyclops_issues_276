@@ -1,0 +1,5 @@
+SimpleReactStream block Collector is missing generic types
+```
+  default  <R> R block(final Collector collector,
+           final Predicate<Status<U>> breakout)
+```

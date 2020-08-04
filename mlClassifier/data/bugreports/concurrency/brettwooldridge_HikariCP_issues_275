@@ -1,0 +1,57 @@
+Fail to suspend 2 pools
+When trying to suspend 2 pools, the suspend is stuck on the 2nd suspend command.
+
+Notes:
+Both pools access the same database.
+
+jetty-web.xml
+
+`<New id="mainDS" class="org.eclipse.jetty.plus.jndi.Resource">`
+        `<Arg>jdbc/mainDataSource</Arg>`
+        `<Arg>`
+            `<New class="com.zaxxer.hikari.HikariDataSource">`
+              `<Arg>`
+                `<New class="com.zaxxer.hikari.HikariConfig">`
+                    `<Set name="dataSourceClassName">org.postgresql.ds.PGSimpleDataSource</Set>`
+                    `<Set name="username"></Set>`
+                    `<Set name="password"></Set>`
+                    `<Set name="maximumPoolSize">30</Set>`
+                    `<Set name="allowPoolSuspension">true</Set>`
+                    `<Set name="registerMbeans">true</Set>`
+                    `<Set name="poolName">MainPool</Set>`
+                    `<Call name="addDataSourceProperty">`
+                        `<Arg>url</Arg>`
+                        `<Arg>jdbc:postgresql://localhost/db</Arg>`
+                    `</Call>`
+                `</New>`
+              `</Arg>`
+            `</New>`
+        `</Arg>`
+    `</New>`
+
+```
+`<!-- For Quartz job execution. -->`
+
+`<New id="QuartzDS" class="org.eclipse.jetty.plus.jndi.Resource">`
+    `<Arg>jdbc/QuartzDataSource</Arg>`
+    `<Arg>`
+        `<New class="com.zaxxer.hikari.HikariDataSource">`
+          `<Arg>`
+            `<New class="com.zaxxer.hikari.HikariConfig">`
+                `<Set name="dataSourceClassName">org.postgresql.ds.PGSimpleDataSource</Set>`
+                `<Set name="username"></Set>`
+                `<Set name="password"></Set>`
+                `<Set name="maximumPoolSize">30</Set>`
+                `<Set name="allowPoolSuspension">true</Set>`
+                `<Set name="registerMbeans">true</Set>`
+                `<Set name="poolName">QuartzPool</Set>`
+                `<Call name="addDataSourceProperty">`
+                    `<Arg>url</Arg>`
+                    `<Arg>jdbc:postgresql://localhost/db</Arg>`
+                `</Call>`
+            `</New>`
+          `</Arg>`
+        `</New>`
+    `</Arg>`
+`</New>`
+```

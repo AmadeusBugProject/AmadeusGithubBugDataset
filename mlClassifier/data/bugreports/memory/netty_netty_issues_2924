@@ -1,0 +1,4 @@
+head is not updated when trim MemoryRegionCache
+When MeoryRegionCache's trim() is triggered, some unused cache entries will be freed(Start from head). However, in MeoryRegionCache.trim() the head is not updated, which make entry list's head point to an entry whose chunk is null(freed in trim()) and following allocate of MeoryRegionCache will return false immediately.
+
+In other word, cache is no longer usable once trim happen.

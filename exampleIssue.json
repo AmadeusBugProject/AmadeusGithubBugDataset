@@ -1,0 +1,113 @@
+{
+	"projectName": "mockito/mockito",
+	"bugLabels": ["bug"],
+	"captureTime": "Sat Jul  4 15:32:09 2020",
+	"issues": [{
+		"title": "Problem spying on abstract classes",
+		"body": "There's a problem with spying on abstract classes when the real implementation calls out to the abstract method. More details: #121 \n",
+		"url": "https://github.com/mockito/mockito/issues/122",
+		"user": "mockitoguy",
+		"labels": ["bug"],
+		"created": "2014-11-22 21:12:51",
+		"closed": "2014-11-22 21:14:13",
+		"commits": {
+			"31f908029b8cd9b1f32bed3a41651b30ebb47b9f": {
+				"commitGHEventType": "referenced",
+				"commitUser": "mockitoguy"
+			}
+		},
+		"ttf": 0.0002777777777777778,
+		"commitsDetails": [{
+			"commitHash": "31f908029b8cd9b1f32bed3a41651b30ebb47b9f",
+			"commitGHEventType": "referenced",
+			"commitUser": "mockitoguy",
+			"commitParents": ["f45c2dc0c21f365218fa093106e45dbb0b54746a"],
+			"nameRev": "31f908029b8cd9b1f32bed3a41651b30ebb47b9f tags/v1.10.13~3",
+			"commitMessage": "Changed CallsRealMethods to delegate to default answer for abstract methods.\n\nFixes #122\n",
+			"commitDateTime": "2014-11-22 22:13:29",
+			"authoredDateTime": "2014-11-22 10:36:41",
+			"commitGitStats": [{
+				"filePath": "src/org/mockito/internal/stubbing/answers/CallsRealMethods.java",
+				"insertions": 10,
+				"deletions": 5,
+				"lines": 15
+			}, {
+				"filePath": "test/org/mockitousage/constructor/CreatingMocksWithConstructorTest.java",
+				"insertions": 28,
+				"deletions": 1,
+				"lines": 29
+			}],
+			"commitSpoonAstDiffStats": [{
+				"spoonFilePath": "CallsRealMethods.java",
+				"spoonMethods": [{
+					"spoonMethodName": "org.mockito.internal.stubbing.answers.CallsRealMethods.answer(org.mockito.invocation.InvocationOnMock)",
+					"TOT": 1,
+					"UPD": 0,
+					"INS": 1,
+					"MOV": 0,
+					"DEL": 0
+				}]
+			}, {
+				"spoonFilePath": "CreatingMocksWithConstructorTest.java",
+				"spoonMethods": [{
+					"spoonMethodName": "org.mockitousage.constructor.CreatingMocksWithConstructorTest.AbstractThing",
+					"TOT": 1,
+					"UPD": 0,
+					"INS": 1,
+					"MOV": 0,
+					"DEL": 0
+				}, {
+					"spoonMethodName": "org.mockitousage.constructor.CreatingMocksWithConstructorTest.abstractMethodReturnsDefault()",
+					"TOT": 1,
+					"UPD": 0,
+					"INS": 1,
+					"MOV": 0,
+					"DEL": 0
+				}, {
+					"spoonMethodName": "org.mockitousage.constructor.CreatingMocksWithConstructorTest.abstractMethodStubbed()",
+					"TOT": 1,
+					"UPD": 0,
+					"INS": 1,
+					"MOV": 0,
+					"DEL": 0
+				}, {
+					"spoonMethodName": "org.mockitousage.constructor.CreatingMocksWithConstructorTest.testCallsRealInterfaceMethod()",
+					"TOT": 1,
+					"UPD": 0,
+					"INS": 1,
+					"MOV": 0,
+					"DEL": 0
+				}]
+			}],
+			"spoonStatsSkippedReason": ""
+		}],
+		"filteredCommits": ["31f908029b8cd9b1f32bed3a41651b30ebb47b9f"],
+		"filteredCommitsReason": {
+			"duplicated": 0,
+			"alsoFixesPhrase": 0,
+			"moreThanOneParent": 0,
+			"multipleIssueFixes": 0,
+			"unavailable": 0,
+			"mergeCommitUsed": 0
+		},
+		"numCommits": 1,
+		"gitStatsSummary": {
+			"insertions": 10,
+			"deletions": 5,
+			"lines": 15,
+			"gitFilesChange": 1
+		},
+		"spoonStatsSummary": {
+			"TOT": 1,
+			"UPD": 0,
+			"INS": 1,
+			"MOV": 0,
+			"DEL": 0,
+			"spoonFilesChanged": 1,
+			"spoonMethodsChanged": 1
+		},
+		"statsSkippedReason": "",
+		"changesInPackagesGIT": ["src/org/mockito/internal/stubbing/answers"],
+		"changesInPackagesSPOON": ["org.mockito.internal.stubbing.answers.CallsRealMethods.answer(org.mockito.invocation.InvocationOnMock)"]
+	}]
+}

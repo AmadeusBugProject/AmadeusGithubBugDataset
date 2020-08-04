@@ -1,0 +1,5 @@
+Turn Costs improvements necessary
+As reported [here](https://lists.openstreetmap.org/pipermail/graphhopper/2014-November/001342.html) there is a problem with turn cost weighting.
+- [x] virtual edges should have the same turn costs associated as the original edge! keep in mind that there could be multiple points on one edge => more than 2 virtual edges per original edge
+- [x] In RoutingAlgorithmIT.testMoscowTurnCosts we should do some minor work to finally resolve the TODOs -> we can include this once we have fixed the previous issue
+- [x] u-turn restrictions do not seem to work, probably due to the if 'edgeId != edgeIdFrom'

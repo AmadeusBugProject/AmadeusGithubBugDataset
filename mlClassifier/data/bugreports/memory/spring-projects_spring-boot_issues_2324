@@ -1,0 +1,32 @@
+War deployment in standalone Tomcat causes webclassloader memory leak
+During startup Spring Boot invokes `SLF4JBridgeHandler.install()` to add a logging handler to container's LogManager, but during application shutdown (undeploy) adequate `SLF4JBridgeHandler.uninstall()` or `SLF4JBridgeHandler.removeHandlersForRootLogger()` is not called. I think it should be.
+
+The bug manifests itself in taking metaspace memory space and following message is displayed after invoking Tomcat's find leaks method:
+Message:    
+
+```
+The following web applications were stopped (reloaded, undeployed), but their
+classes from previous runs are still loaded in memory, thus causing a memory
+leak (use a profiler to confirm):
+/spring-boot-logging-issue
+```
+
+Below is my workaround that solves the issue. It removes the logging handler during ContextClosedEvent.
+
+```
+@Bean
+public ApplicationListener<ContextClosedEvent> uninstallSLF4JBridgeHandlerWorkaround() {
+    return new ApplicationListener<ContextClosedEvent>() {
+        @Override
+        public void onApplicationEvent(ContextClosedEvent event) {
+            try {
+                SLF4JBridgeHandler.removeHandlersForRootLogger();
+            } catch (NoSuchMethodError ex) {
+                SLF4JBridgeHandler.uninstall();
+            }
+        }
+    };
+}
+```
+
+Tested with Tomcat 8.0.15 and OpenJDK 1.8.0_25 on Linux 3.17.6

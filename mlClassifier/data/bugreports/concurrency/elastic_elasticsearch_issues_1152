@@ -1,0 +1,2 @@
+Search / Broadcast concurrency bug can result in response corruption / errors
+Concurrency bug when trying to aggregate results from different endpoints can cause response corruption, or other type of failures like error notices that a message can't be sent twice for the same http request, or search context missing failures.

@@ -1,0 +1,43 @@
+[FIX INCLUDED] Improrer use of the "write" flag causes flush() to be ignored, increasing used resources
+Scenario:
+netty 4.1
+user calls writeAndFlush(packet)
+
+Expected behaviour:
+
+the packet is ALWAYS written and flushed...
+(want a unit test in the future? stress writeAndFlush() + check that outbound buffer is empty)
+
+What can happen:
+
+the explict flush can be ignored because of improrer use of the OP_WRITE/EPOLLOUT flag.......
+(it only gets called later on by the event loop)
+it's a pretty serious bug because it increases used resources(5 million ChannelOutboundBuffer$Entrys anyone?)
+please note that channel.isWritable() etc. etc. is NOT involved in this
+
+the flag is not always turned on when there's work to do, it's the same problem on epoll and nio backends.
+
+example(confirmed working) patch:
+
+```
+Index: transport-native-epoll/src/main/java/io/netty/channel/epoll/AbstractEpollStreamChannel.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- transport-native-epoll/src/main/java/io/netty/channel/epoll/AbstractEpollStreamChannel.java (revision 250a09df635d70853e1576a9e522c846e918938e)
++++ transport-native-epoll/src/main/java/io/netty/channel/epoll/AbstractEpollStreamChannel.java (revision )
+@@ -389,6 +389,8 @@
+                 // Wrote all messages.
+                 clearFlag(Native.EPOLLOUT);
+                 break;
++            } else {
++                setFlag(Native.EPOLLOUT);
+             }
+```
+
+nio has the same behaviour and this line at NIO can be blamed
+https://github.com/netty/netty/blob/4.1/transport/src/main/java/io/netty/channel/socket/nio/NioSocketChannel.java#L271
+or more like https://github.com/netty/netty/blob/4.1/transport/src/main/java/io/netty/channel/socket/nio/NioSocketChannel.java#L283 should also set opwrite
+
+I hope this gives you an idea of what is wrong and you guys can think of a "better" way to fix it(but I will also look for a such a way in the meantime)

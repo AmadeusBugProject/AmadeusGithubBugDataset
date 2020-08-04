@@ -1,0 +1,20 @@
+Percolator: High memory usage issue when nested query is registered
+ES version: 5.2.2.
+JDK: 1.8.0_65
+OS version: Ubuntu 14.04.4 
+
+We faced high memory usage issue when using percolator.
+Dedicated index is configured for percolator.
+It works as expected and JVM heap usage picture is 
+
+![without_nested_queries](https://cloud.githubusercontent.com/assets/27484990/25040396/b5e6e152-2111-11e7-92db-3182e11dc73c.JPG)
+
+After registering a nested nested query the picture changes and there is a steady grow of used memory and CPU on the same input document set
+
+![with_nested_query](https://cloud.githubusercontent.com/assets/27484990/25040463/2acc2f0e-2112-11e7-8a10-2edc730e4fc9.JPG)
+
+Input documents contain up to hundred of nested documents. Caching settings are by default.
+
+Memory dump:
+![memory1](https://cloud.githubusercontent.com/assets/27484990/25040531/a17841ba-2112-11e7-98d3-b1060a68ad4a.JPG)
+![memory2](https://cloud.githubusercontent.com/assets/27484990/25040536/a59bfbe2-2112-11e7-8e43-16212e0d7333.JPG)

@@ -1,0 +1,69 @@
+TitanBlueprintsGraph's WeakHashMap loses transactions
+TitanBlueprintsGraph (TBG) implements the Blueprints interface TransactionalGraph.  TBG's implementation internally creates a single ThreadLocal transaction for each caller and also stores all of these transaction references as keys in a WeakHashMap.  TBG's shutdown() method iterates over the WeakHashMap and autocommits every open transaction.
+
+The test method BerkeleyJEBlueprintsTest#testTransactionalGraphTestSuite would sometimes fail like this:
+
+```
+Encountered error in testCompetingThreads
+java.lang.reflect.InvocationTargetException
+    at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+    at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57)
+    at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+    at java.lang.reflect.Method.invoke(Method.java:601)
+    at com.thinkaurelius.titan.blueprints.TitanBlueprintsTest.doTestSuite(TitanBlueprintsTest.java:117)
+    at com.thinkaurelius.titan.blueprints.TitanBlueprintsTest.testTransactionalGraphTestSuite(TitanBlueprintsTest.java:63)
+    at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+    at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57)
+    at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+    at java.lang.reflect.Method.invoke(Method.java:601)
+    at junit.framework.TestCase.runTest(TestCase.java:168)
+    at junit.framework.TestCase.runBare(TestCase.java:134)
+    at junit.framework.TestResult$1.protect(TestResult.java:110)
+    at junit.framework.TestResult.runProtected(TestResult.java:128)
+    at junit.framework.TestResult.run(TestResult.java:113)
+    at junit.framework.TestCase.run(TestCase.java:124)
+    at junit.framework.TestSuite.runTest(TestSuite.java:232)
+    at junit.framework.TestSuite.run(TestSuite.java:227)
+    at org.junit.internal.runners.JUnit38ClassRunner.run(JUnit38ClassRunner.java:83)
+    at org.eclipse.jdt.internal.junit4.runner.JUnit4TestReference.run(JUnit4TestReference.java:50)
+    at org.eclipse.jdt.internal.junit.runner.TestExecution.run(TestExecution.java:38)
+    at org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.runTests(RemoteTestRunner.java:467)
+    at org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.runTests(RemoteTestRunner.java:683)
+    at org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.run(RemoteTestRunner.java:390)
+    at org.eclipse.jdt.internal.junit.runner.RemoteTestRunner.main(RemoteTestRunner.java:197)
+Caused by: java.lang.IllegalStateException: There is 1 existing transaction opened against the Environment.
+Aborting open transactions ...
+aborting <Transaction id="269">
+    at com.sleepycat.je.Environment.close(Environment.java:384)
+    at com.thinkaurelius.titan.diskstorage.berkeleyje.BerkeleyJEStoreManager.close(BerkeleyJEStoreManager.java:152)
+    at com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStoreManagerAdapter.close(OrderedKeyValueStoreManagerAdapter.java:52)
+    at com.thinkaurelius.titan.diskstorage.Backend.close(Backend.java:346)
+    at com.thinkaurelius.titan.graphdb.database.StandardTitanGraph.shutdown(StandardTitanGraph.java:92)
+    at com.tinkerpop.blueprints.TransactionalGraphTestSuite.testCompetingThreads(TransactionalGraphTestSuite.java:491)
+    at com.thinkaurelius.titan.blueprints.TransactionalTitanGraphTestSuite.testCompetingThreads(TransactionalTitanGraphTestSuite.java:33)
+    ... 25 more
+```
+
+The count of open transactions and BDB transaction id are always 1 and 269, respectively.
+
+I found this failure accidentally while attempting to move Titan from Tinkerpop 2.3.0 to 2.4.0-SNAPSHOT to support Metrics integration.  The failure appears to have nothing to do with new Tinkerpop code or Metrics.
+
+The failure is setup in the last three lines of `TransactionalGraphTestSuite#testCompetingThreads()`:
+
+```
+edgeCount(graph, edges.get());
+vertexCount(graph, vertices.get());
+graph.shutdown();
+```
+
+`edgeCount()` ends up calling TBG's `getAutoStartTx()` method.  This creates a new transaction and stores its reference in both TBG's WeakHashMap and the main thread's ThreadLocal storage.  `graph.shutdown()` iterates over TBG's WeakHashMap to look for open transactions to autocommit.  Sometimes the size of the map (as measured by a counter incremented during iteration) is zero, and other times one.  When it's of size one, `shutdown()` successfully autocommits the transaction and the test passes.  When it's empty, TBG's reference to the still-open transaction created for edge counting has been lost, and we get the exception stacktrace from BDB shown above.  I've verified this with conditional breakpoints.
+
+I'm not convinced that I have the root cause figured out.  I have three observations so far.
+1. WeakHashMap is not synchronized according to [its javadoc](http://docs.oracle.com/javase/6/docs/api/java/util/WeakHashMap.html).  TBG allows multiple threads to simultaneously write to a single WeakHashMap without synchronization.  This might be sufficient to cause the failure.  When I run the test on a loop, the first failure usually emerges within ten iterations; when I changed WeakHashMap to ConcurrentHashMap, it ran for 551 successful consecutive iterations before I killed the loop.  I'm trying Collections.synchronizedMap(new WeakHashMap()) now.
+2. ThreadLocalMap (an inner static class of ThreadLocal that tracks all its data) uses WeakReference.  For a while, I thought this failure might have something to do with WeakReferences: maybe we erroneously kept only WeakReferences to our transactions and wound up unintentionally losing them to GC?  However, I currently think this is not the case.  TBG puts every transaction in ThreadLocal storage before putting it in the WeakHashMap as a key.  I think this is sufficient to guarantee that every transaction in the WeakHashMap visible from a live thread cannot be GC'ed.  Here's the strong-reachability path from each live thread to its ThreadLocal transaction:
+   - `Thread` has a field `threadLocals` (type `ThreadLocal.ThreadLocalMap`)
+   - `ThreadLocalMap` has a field `table`  (type `ThreadLocalMap.Entry[]`)
+   - `Entry` has a field `value` (type `Object`) holding the transaction
+   
+   If that's all correct, then I think I can rule out WeakReference semantics and premature GC as the root cause.  But this code is unfamiliar and I could easily have bungled my analysis.
+3. A workaround for this problem is to always call TBG's `commit()` or `rollback()` method after calling some method that could have opened a ThreadLocal transaction.  This problem can only arise if a thread relies on `shutdown()` to autocommit an open transaction.

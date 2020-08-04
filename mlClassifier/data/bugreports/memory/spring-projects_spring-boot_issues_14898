@@ -1,0 +1,8 @@
+When using Tomcat, closing the application context blocks for two seconds for each DispatcherServlet initialised by a request to the mappings endpoint
+Let me try and explain the problem that I am seeing.
+
+With https://github.com/spring-projects/spring-boot/issues/13186 support for lazy loading `DispatcherServlet` when hitting `/actuator/mappings` has been added to Spring Boot 2.0.6. However, when that happens and one tries to close the application it takes 2s per `DispatcherServlet` to close its `WebApplicationContext` (this is on 2.0.6.RELEASE). However, if each context was initialized by hitting it's path then everything is fine. Therefore, I think that there might be some problem with the way the async `DispatcherServlet`(s) are initialized in the Actuator.
+
+I have created a small project that displays the problem. You can find it [here](https://github.com/filiphr/spring-boot-issues/tree/master/multi-dispatcher-issue).
+
+Note: #13186 actually does not work with 2.1.0.RC1 (which means that you won't see the problem there, as the other contexts are not initialized).

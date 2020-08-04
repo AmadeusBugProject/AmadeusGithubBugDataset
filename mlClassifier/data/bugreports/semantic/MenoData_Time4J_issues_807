@@ -1,0 +1,18 @@
+Issues with Japanese Calendar
+1. As far as we understand, JapaneseCalendar supports Japanese dates starting from Taihō nengo. As explained [here](https://en.wikipedia.org/wiki/Taih%C5%8D_(era)) this nengo starts from `Taihō-1(701)-3-21` (`-464097` UTC) and therefore we expect `JapaneseCalendar.axis().getCalendarSystem().getMinimumSinceUTC()` returns `-464097` while it returns `-464176` (`Taihō-1(701)-1-01`).
+We have realized that the first value (`-464097`) is extracted from `nengo.data` and the second one (`-464176`) is extracted from `tsuchihashi.data`.  Hope this helps.
+
+2. The last line of the following code throws `IllegalArgumentException`:
+```
+Nengo taiho = Nengo.list().get(0);
+JapaneseCalendar date = JapaneseCalendar.of(taiho, 1, EastAsianMonth.valueOf(1), 1);
+date.with(JapaneseCalendar.MONTH_AS_ORDINAL, 1);
+```
+
+3. The result of adjusting a Japanese date with `MONTH_AS_ORDINAL` for non leap years is unexpected. For example:
+```
+JapaneseCalendar date = JapaneseCalendar.of(Nengo.list().get(1), 1, EastAsianMonth.valueOf(1), 1).with(JapaneseCalendar.MONTH_AS_ORDINAL, 9);
+System.out.println(date);
+```
+prints `Keiun-1(704)-8-01` while expecting `Keiun-1(704)-9-01`.
+

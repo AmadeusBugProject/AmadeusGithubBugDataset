@@ -1,0 +1,4 @@
+ThrottleRequestFilter swallows interfaces
+The ThrottleRequestFilter wraps the AsyncHandler with an AsyncHandlerWrapper. This way all additional interfaces implemented by the originating AsyncHandler get lost. E.g. ProgressAsyncHandler, ResumableAsyncHandler or any custom interfaces.
+
+Suggestion: Maybe use a dynamic proxy which implements all interfaces of the originating AsyncHandler instead of using AsyncHandlerWrapper.

@@ -1,0 +1,6 @@
+Memory leak in Execution Time View
+The execution time view is notified by the layout kernel whenever a layout run has completed. It then adds the root progress monitor of that layout run to the list of executions to be shown. Sadly, the root progress monitor keeps references to a whole lot of things, among them the layout mapping. This keeps the layout graph and the original view model from being garbage collected.
+
+The solution will probably be to traverse the progress monitor hierarchy, extract the information to be shown in the view, and keep those around in light-weight objects.
+
+_This ticket originated from the KIELER ticket [KIPRA-1532](https://rtsys.informatik.uni-kiel.de/jira/browse/KIPRA-1532)._

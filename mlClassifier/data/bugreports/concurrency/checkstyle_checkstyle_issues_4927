@@ -1,0 +1,2 @@
+SeverityLevelCounter should be thread-safe
+Now the `SeverityLevelCounter` uses `int count` to track the number of errors with the specified `SeverityLevel`. However, this is not thread-safe, because `int` incrementation is not an atomic operation and therefore may lead to unpredictable results.

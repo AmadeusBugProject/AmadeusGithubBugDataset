@@ -1,0 +1,9 @@
+Without pre-creating index, heavy write rates OOM with too many threads
+I observed this with logstash.
+
+Recreate:
+- start with a fresh elasticsearch (no data dir)
+- start indexing fast (1000s per second)
+- a few seconds later, OOM due to thread creation explosion
+
+This only seems to occur when heavy write rates hit an index that isn't created yet, causing ES to create the index and that seems to stall out writes and threads balloon waiting for that to happen.

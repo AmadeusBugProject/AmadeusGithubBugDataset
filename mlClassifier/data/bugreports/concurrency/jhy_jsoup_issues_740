@@ -1,0 +1,23 @@
+OutputSettings is not threadsafe, throws ISE in canEncode when shared
+I stumbled on this problem:
+
+```
+java.lang.IllegalStateException: Current state = CODING_END, new state = CODING
+    at java.nio.charset.CharsetEncoder.throwIllegalStateException(CharsetEncoder.java:992)
+    at java.nio.charset.CharsetEncoder.canEncode(CharsetEncoder.java:904)
+    at java.nio.charset.CharsetEncoder.canEncode(CharsetEncoder.java:985)
+    at org.jsoup.nodes.Entities.escape(Entities.java:154)
+    at org.jsoup.nodes.TextNode.outerHtmlHead(TextNode.java:100)
+    at org.jsoup.nodes.Node$OuterHtmlVisitor.head(Node.java:678)
+    at org.jsoup.select.NodeTraversor.traverse(NodeTraversor.java:31)
+    at org.jsoup.nodes.Node.outerHtml(Node.java:551)
+    at org.jsoup.nodes.Element.html(Element.java:1203)
+    at org.jsoup.nodes.Element.html(Element.java:1197)
+    at org.jsoup.Jsoup.clean(Jsoup.java:235)
+```
+
+Issue is most likely appearing under high load (?), this doesn't happen every time I run the cleaning for the same string
+
+```
+Jsoup.clean(input, domainName, myWhiteList, new OutputSettings().indentAmount(0).prettyPrint(false))
+```

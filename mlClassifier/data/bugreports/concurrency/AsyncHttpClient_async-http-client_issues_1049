@@ -1,0 +1,14 @@
+Race condition causing NPE when a timeout gets scheduled as the ResponseFuture gets terminated
+```
+java.lang.NullPointerException: null
+    at org.asynchttpclient.netty.NettyResponseFuture.getChannelRemoteAddress(NettyResponseFuture.java:414) ~[async-http-client-2.0.0-alpha27.jar:na]
+    at org.asynchttpclient.netty.timeout.TimeoutTimerTask.<init>(TimeoutTimerTask.java:42) ~[async-http-client-2.0.0-alpha27.jar:na]
+    at org.asynchttpclient.netty.timeout.RequestTimeoutTimerTask.<init>(RequestTimeoutTimerTask.java:31) ~[async-http-client-2.0.0-alpha27.jar:na]
+    at org.asynchttpclient.netty.request.NettyRequestSender.scheduleTimeouts(NettyRequestSender.java:365) [async-http-client-2.0.0-alpha27.jar:na]
+    at org.asynchttpclient.netty.request.NettyRequestSender.writeRequest(NettyRequestSender.java:346) [async-http-client-2.0.0-alpha27.jar:na]
+    at org.asynchttpclient.netty.request.NettyRequestSender.sendRequestWithOpenChannel(NettyRequestSender.java:228) [async-http-client-2.0.0-alpha27.jar:na]
+    at org.asynchttpclient.netty.request.NettyRequestSender.sendRequestWithCertainForceConnect(NettyRequestSender.java:139) [async-http-client-2.0.0-alpha27.jar:na]
+    at org.asynchttpclient.netty.request.NettyRequestSender.sendRequest(NettyRequestSender.java:112) [async-http-client-2.0.0-alpha27.jar:na]
+    at org.asynchttpclient.DefaultAsyncHttpClient.execute(DefaultAsyncHttpClient.java:220) [async-http-client-2.0.0-alpha27.jar:na]
+    at org.asynchttpclient.DefaultAsyncHttpClient.executeRequest(DefaultAsyncHttpClient.java:188) [async-http-client-2.0.0-alpha27.jar:na]
+```

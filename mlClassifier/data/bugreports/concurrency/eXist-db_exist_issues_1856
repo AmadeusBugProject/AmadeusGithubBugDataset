@@ -1,0 +1,2 @@
+IndexManager has insufficient synchronization
+Not all methods in IndexManager are correctly synchronized for updating/reading state.

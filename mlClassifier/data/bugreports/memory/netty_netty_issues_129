@@ -1,0 +1,1 @@
+Memory leak when setOptions() fails while accepting a new connection.

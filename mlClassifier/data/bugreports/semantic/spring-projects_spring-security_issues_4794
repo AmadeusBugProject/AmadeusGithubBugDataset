@@ -1,0 +1,4 @@
+UserBuilder.password can be double encoded
+### Summary
+
+If `PasswordEncoder` is set twice the password is double encoded

@@ -1,0 +1,44 @@
+ConcurrentModificationException
+Hi- 
+
+I just got this stack trace from Intellij 16.1.1:
+
+```
+null
+java.util.ConcurrentModificationException
+    at java.util.ArrayList$Itr.checkForComodification(ArrayList.java:901)
+    at java.util.ArrayList$Itr.next(ArrayList.java:851)
+    at com.intellij.ide.bookmarks.BookmarkManager$2.documentCreated(BookmarkManager.java:100)
+    at com.intellij.psi.impl.PsiDocumentManagerBase.fireDocumentCreated(PsiDocumentManagerBase.java:600)
+    at com.intellij.psi.impl.PsiDocumentManagerImpl$1.fileContentLoaded(PsiDocumentManagerImpl.java:80)
+    at sun.reflect.GeneratedMethodAccessor31.invoke(Unknown Source)
+    at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+    at java.lang.reflect.Method.invoke(Method.java:497)
+    at com.intellij.util.messages.impl.MessageBusConnectionImpl.deliverMessage(MessageBusConnectionImpl.java:117)
+    at com.intellij.util.messages.impl.MessageBusImpl.doPumpMessages(MessageBusImpl.java:372)
+    at com.intellij.util.messages.impl.MessageBusImpl.pumpMessages(MessageBusImpl.java:359)
+    at com.intellij.util.messages.impl.MessageBusImpl.sendMessage(MessageBusImpl.java:338)
+    at com.intellij.util.messages.impl.MessageBusImpl.access$200(MessageBusImpl.java:42)
+    at com.intellij.util.messages.impl.MessageBusImpl$2.invoke(MessageBusImpl.java:226)
+    at com.sun.proxy.$Proxy21.fileContentLoaded(Unknown Source)
+    at sun.reflect.GeneratedMethodAccessor31.invoke(Unknown Source)
+    at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+    at java.lang.reflect.Method.invoke(Method.java:497)
+    at com.intellij.openapi.fileEditor.impl.FileDocumentManagerImpl.a(FileDocumentManagerImpl.java:136)
+    at com.intellij.openapi.fileEditor.impl.FileDocumentManagerImpl.access$000(FileDocumentManagerImpl.java:86)
+    at com.intellij.openapi.fileEditor.impl.FileDocumentManagerImpl$1.invoke(FileDocumentManagerImpl.java:114)
+    at com.sun.proxy.$Proxy21.fileContentLoaded(Unknown Source)
+    at com.intellij.openapi.fileEditor.impl.FileDocumentManagerImpl.getDocument(FileDocumentManagerImpl.java:215)
+    at com.intellij.psi.SingleRootFileViewProvider.getDocument(SingleRootFileViewProvider.java:437)
+    at com.intellij.psi.SingleRootFileViewProvider$VirtualFileContent.getText(SingleRootFileViewProvider.java:594)
+    at com.intellij.psi.SingleRootFileViewProvider.getContents(SingleRootFileViewProvider.java:417)
+    at com.intellij.psi.impl.source.PsiFileImpl.getText(PsiFileImpl.java:398)
+    at mobi.hsz.idea.gitignore.IgnoreManager$5$1.run(IgnoreManager.java:437)
+    at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:511)
+    at java.util.concurrent.FutureTask.run(FutureTask.java:266)
+    at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1142)
+    at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:617)
+    at java.lang.Thread.run(Thread.java:745)
+```
+
+I'm using .ignore 1.3.3.

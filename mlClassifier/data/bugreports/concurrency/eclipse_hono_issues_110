@@ -1,0 +1,35 @@
+MQTT adapter doesn't start anymore
+When the MQTT adapter is starting up, it throws a NoClassDefFound exception because it requires `io.vertx.core.net.impl.NetServerBase` which is provided by vertx-core-3.3.4.Beta1 only. However, we are using vertx-core-3.3.3 ...
+
+Here's the stack tracec:
+
+15:43:34.851 [vert.x-eventloop-thread-2] ERROR o.e.h.a.m.Application$$EnhancerBySpringCGLIB$$5f2015e6 - could not start 'MQTT' adapter
+java.lang.NoClassDefFoundError: io/vertx/core/net/impl/NetServerBase
+	at java.lang.ClassLoader.defineClass1(Native Method) ~[na:1.8.0_102]
+	at java.lang.ClassLoader.defineClass(ClassLoader.java:763) ~[na:1.8.0_102]
+	at java.security.SecureClassLoader.defineClass(SecureClassLoader.java:142) ~[na:1.8.0_102]
+	at java.net.URLClassLoader.defineClass(URLClassLoader.java:467) ~[na:1.8.0_102]
+	at java.net.URLClassLoader.access$100(URLClassLoader.java:73) ~[na:1.8.0_102]
+	at java.net.URLClassLoader$1.run(URLClassLoader.java:368) ~[na:1.8.0_102]
+	at java.net.URLClassLoader$1.run(URLClassLoader.java:362) ~[na:1.8.0_102]
+	at java.security.AccessController.doPrivileged(Native Method) ~[na:1.8.0_102]
+	at java.net.URLClassLoader.findClass(URLClassLoader.java:361) ~[na:1.8.0_102]
+	at java.lang.ClassLoader.loadClass(ClassLoader.java:424) ~[na:1.8.0_102]
+	at org.springframework.boot.loader.LaunchedURLClassLoader.loadClass(LaunchedURLClassLoader.java:89) ~[hono-adapter-mqtt-vertx-0.5-M5-SNAPSHOT.jar:na]
+	at java.lang.ClassLoader.loadClass(ClassLoader.java:357) ~[na:1.8.0_102]
+	at io.vertx.mqtt.MqttServer.create(MqttServer.java:45) ~[vertx-mqtt-server-3.4.0.Beta1.jar!/:na]
+	at org.eclipse.hono.adapter.mqtt.VertxBasedMqttProtocolAdapter.bindMqttServer(VertxBasedMqttProtocolAdapter.java:88) ~[classes!/:na]
+	at org.eclipse.hono.adapter.mqtt.VertxBasedMqttProtocolAdapter.start(VertxBasedMqttProtocolAdapter.java:130) ~[classes!/:na]
+	at io.vertx.core.impl.DeploymentManager.lambda$doDeploy$8(DeploymentManager.java:434) ~[vertx-core-3.3.3.jar!/:na]
+	at io.vertx.core.impl.ContextImpl.lambda$wrapTask$2(ContextImpl.java:316) ~[vertx-core-3.3.3.jar!/:na]
+	at io.netty.util.concurrent.AbstractEventExecutor.safeExecute(AbstractEventExecutor.java:163) ~[netty-common-4.1.8.Final.jar!/:4.1.8.Final]
+	at io.netty.util.concurrent.SingleThreadEventExecutor.runAllTasks(SingleThreadEventExecutor.java:403) ~[netty-common-4.1.8.Final.jar!/:4.1.8.Final]
+	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:445) ~[netty-transport-4.1.8.Final.jar!/:4.1.8.Final]
+	at io.netty.util.concurrent.SingleThreadEventExecutor$5.run(SingleThreadEventExecutor.java:858) ~[netty-common-4.1.8.Final.jar!/:4.1.8.Final]
+	at java.lang.Thread.run(Thread.java:745) ~[na:1.8.0_102]
+Caused by: java.lang.ClassNotFoundException: io.vertx.core.net.impl.NetServerBase
+	at java.net.URLClassLoader.findClass(URLClassLoader.java:381) ~[na:1.8.0_102]
+	at java.lang.ClassLoader.loadClass(ClassLoader.java:424) ~[na:1.8.0_102]
+	at org.springframework.boot.loader.LaunchedURLClassLoader.loadClass(LaunchedURLClassLoader.java:89) ~[hono-adapter-mqtt-vertx-0.5-M5-SNAPSHOT.jar:na]
+	at java.lang.ClassLoader.loadClass(ClassLoader.java:357) ~[na:1.8.0_102]
+	... 22 common frames omitted

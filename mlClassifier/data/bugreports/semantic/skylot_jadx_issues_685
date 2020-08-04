@@ -1,0 +1,15 @@
+[core] Constructor and super constructor invocations should be first statements
+Example in class ``` com.mercadolibre.android.cx.support.yoshi.p271a.p272a.C5475c ``` (original class ``` com.mercadolibre.android.cx.support.yoshi.a.a.c ```), but tons of examples
+```java
+    public C5475c(com.mercadolibre.android.cx.support.yoshi.p271a.C5472a aVar, java.lang.String str, java.lang.String... strArr) {
+        kotlin.jvm.internal.C12967g.m60316b(aVar, "intentResolver");
+        kotlin.jvm.internal.C12967g.m60316b(str, "mainUrlExpression");
+        kotlin.jvm.internal.C12967g.m60316b(strArr, "otherValidUrlExpressions");
+        super(aVar, str, strArr);
+    }
+```
+Usually all those statements before constructor and super constructor invocations are synthetic, and can be placed after invocs or even removed.
+
+I know about that bug for a long time, but only now I noticed that it prevents binding resolutions :(
+
+Example apk: https://drive.google.com/file/d/17kvvsl22CFsFzpcOUO4f0Szl_rdjTT1T/view?usp=sharing

@@ -1,0 +1,20 @@
+[IntelliJ][ReportedByUser] MS Azure Explorer - Error Loading Spring Cloud(Preview)
+IntelliJ build version: 2019.3.4 IU-193.6911.18
+OS: Windows 10
+JDK: JetBrains s.r.o 11.0.6
+Plugin version: 3.37.0-2019.3
+Error message: 
+```
+java.util.ConcurrentModificationException
+	at java.base/java.util.HashMap.computeIfAbsent(HashMap.java:1134)
+	at com.microsoft.azuretools.sdkmanage.AccessTokenAzureManager.getAzureSpringCloudClient(AccessTokenAzureManager.java:135)
+	at com.microsoft.azuretools.authmanage.AuthMethodManager.getAzureSpringCloudClient(AuthMethodManager.java:84)
+	at com.microsoft.azuretools.core.mvp.model.springcloud.AzureSpringCloudMvpModel.getSpringManager(AzureSpringCloudMvpModel.java:262)
+	at com.microsoft.azuretools.core.mvp.model.springcloud.AzureSpringCloudMvpModel.listAllSpringCloudClustersBySubscription(AzureSpringCloudMvpModel.java:91)
+	at com.microsoft.azuretools.core.mvp.model.springcloud.AzureSpringCloudMvpModel.lambda$null$0(AzureSpringCloudMvpModel.java:77)
+	at rx.Observable.unsafeSubscribe(Observable.java:10327)
+	at rx.internal.operators.OperatorSubscribeOn$SubscribeOnSubscriber.call(OperatorSubscribeOn.java:100)
+	at rx.internal.schedulers.CachedThreadScheduler$EventLoopWorker$1.call(CachedThreadScheduler.java:230)
+	at rx.internal.schedulers.ScheduledAction.run(ScheduledAction.java:55)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:515)
+	at java.base/java.util.concurrent.FutureTask.run

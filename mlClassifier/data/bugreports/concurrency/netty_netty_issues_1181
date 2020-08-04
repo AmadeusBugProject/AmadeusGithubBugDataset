@@ -1,0 +1,143 @@
+Deadlock in SSLHandler
+Hi,
+
+I suspect I found a bug in the SSLHandler class.
+One of our integration tests fails systematically; from the stacktraces it appears to be caused by a thread deadlock.
+
+I've tried with several versions, from 3.4 on - it happens with all of them, including 3.6.4.Final-SNAPSHOT build #122 which is the one relative to the stacktraces below; 
+
+To give an idea of the scenario the netty server is serving several https download which are interrupted by the clients before termination.
+
+<pre>
+Found one Java-level deadlock:
+=============================
+"com.spreaker.mi.station.download.HttpDownloader@4a6f19d5":
+  waiting to lock monitor 7f839e82c058 (object 7db0310f0, a java.lang.Object),
+  which is held by "New I/O worker #15"
+"New I/O worker #15":
+  waiting to lock monitor 7f839b131e60 (object 7db031130, a java.util.LinkedList),
+  which is held by "com.spreaker.mi.station.download.HttpDownloader@4a6f19d5"
+
+Java stack information for the threads listed above:
+===================================================
+"com.spreaker.mi.station.download.HttpDownloader@4a6f19d5":
+    at org.jboss.netty.handler.ssl.SslHandler.wrap(SslHandler.java:959)
+    - waiting to lock <7db0310f0> (a java.lang.Object)
+    - locked <7db031130> (a java.util.LinkedList)
+    at org.jboss.netty.handler.ssl.SslHandler.handleDownstream(SslHandler.java:627)
+    at org.jboss.netty.channel.DefaultChannelPipeline.sendDownstream(DefaultChannelPipeline.java:587)
+    at org.jboss.netty.channel.DefaultChannelPipeline$DefaultChannelHandlerContext.sendDownstream(DefaultChannelPipeline.java:780)
+    at org.jboss.netty.channel.SimpleChannelDownstreamHandler.writeRequested(SimpleChannelDownstreamHandler.java:108)
+    at org.jboss.netty.handler.timeout.WriteTimeoutHandler.writeRequested(WriteTimeoutHandler.java:159)
+    at org.jboss.netty.channel.SimpleChannelDownstreamHandler.handleDownstream(SimpleChannelDownstreamHandler.java:70)
+    at org.jboss.netty.channel.DefaultChannelPipeline.sendDownstream(DefaultChannelPipeline.java:587)
+    at org.jboss.netty.channel.DefaultChannelPipeline$DefaultChannelHandlerContext.sendDownstream(DefaultChannelPipeline.java:780)
+    at org.jboss.netty.handler.codec.oneone.OneToOneEncoder.handleDownstream(OneToOneEncoder.java:60)
+    at org.jboss.netty.channel.DefaultChannelPipeline.sendDownstream(DefaultChannelPipeline.java:587)
+    at org.jboss.netty.channel.DefaultChannelPipeline$DefaultChannelHandlerContext.sendDownstream(DefaultChannelPipeline.java:780)
+    at org.jboss.netty.channel.SimpleChannelHandler.writeRequested(SimpleChannelHandler.java:292)
+    at org.jboss.netty.channel.SimpleChannelHandler.handleDownstream(SimpleChannelHandler.java:254)
+    at org.jboss.netty.channel.DefaultChannelPipeline.sendDownstream(DefaultChannelPipeline.java:587)
+    at org.jboss.netty.channel.DefaultChannelPipeline$DefaultChannelHandlerContext.sendDownstream(DefaultChannelPipeline.java:780)
+    at org.jboss.netty.handler.execution.ExecutionHandler.handleDownstream(ExecutionHandler.java:186)
+    at org.jboss.netty.channel.DefaultChannelPipeline.sendDownstream(DefaultChannelPipeline.java:587)
+    at org.jboss.netty.channel.DefaultChannelPipeline$DefaultChannelHandlerContext.sendDownstream(DefaultChannelPipeline.java:780)
+    at org.jboss.netty.channel.SimpleChannelHandler.writeRequested(SimpleChannelHandler.java:292)
+    at com.spreaker.mi.net.icecast.StreamingServerStatsdHandler.writeRequested(StreamingServerStatsdHandler.java:92)
+    at org.jboss.netty.channel.SimpleChannelHandler.handleDownstream(SimpleChannelHandler.java:254)
+    at org.jboss.netty.channel.DefaultChannelPipeline.sendDownstream(DefaultChannelPipeline.java:587)
+    at org.jboss.netty.channel.DefaultChannelPipeline$DefaultChannelHandlerContext.sendDownstream(DefaultChannelPipeline.java:780)
+    at org.jboss.netty.channel.SimpleChannelHandler.writeRequested(SimpleChannelHandler.java:292)
+    at org.jboss.netty.channel.SimpleChannelHandler.handleDownstream(SimpleChannelHandler.java:254)
+    at org.jboss.netty.channel.DefaultChannelPipeline.sendDownstream(DefaultChannelPipeline.java:587)
+    at org.jboss.netty.channel.DefaultChannelPipeline$DefaultChannelHandlerContext.sendDownstream(DefaultChannelPipeline.java:780)
+    at org.jboss.netty.channel.SimpleChannelHandler.writeRequested(SimpleChannelHandler.java:292)
+    at org.jboss.netty.channel.SimpleChannelHandler.handleDownstream(SimpleChannelHandler.java:254)
+    at org.jboss.netty.channel.DefaultChannelPipeline.sendDownstream(DefaultChannelPipeline.java:587)
+    at org.jboss.netty.channel.DefaultChannelPipeline$DefaultChannelHandlerContext.sendDownstream(DefaultChannelPipeline.java:780)
+    at org.jboss.netty.channel.SimpleChannelHandler.writeRequested(SimpleChannelHandler.java:292)
+    at org.jboss.netty.channel.SimpleChannelHandler.handleDownstream(SimpleChannelHandler.java:254)
+    at org.jboss.netty.channel.DefaultChannelPipeline.sendDownstream(DefaultChannelPipeline.java:587)
+    at org.jboss.netty.channel.DefaultChannelPipeline$DefaultChannelHandlerContext.sendDownstream(DefaultChannelPipeline.java:780)
+    at org.jboss.netty.channel.SimpleChannelHandler.writeRequested(SimpleChannelHandler.java:292)
+    at org.jboss.netty.channel.SimpleChannelHandler.handleDownstream(SimpleChannelHandler.java:254)
+    at org.jboss.netty.channel.DefaultChannelPipeline.sendDownstream(DefaultChannelPipeline.java:587)
+    at org.jboss.netty.channel.DefaultChannelPipeline$DefaultChannelHandlerContext.sendDownstream(DefaultChannelPipeline.java:780)
+    at com.spreaker.mi.core.net.http.HttpServerProtocolHandler._writeRequested(HttpServerProtocolHandler.java:152)
+    at com.spreaker.mi.core.net.http.HttpServerProtocolHandler.writeRequested(HttpServerProtocolHandler.java:92)
+    at org.jboss.netty.channel.SimpleChannelHandler.handleDownstream(SimpleChannelHandler.java:254)
+    at org.jboss.netty.channel.DefaultChannelPipeline.sendDownstream(DefaultChannelPipeline.java:587)
+    at org.jboss.netty.channel.DefaultChannelPipeline$DefaultChannelHandlerContext.sendDownstream(DefaultChannelPipeline.java:780)
+    at org.jboss.netty.channel.Channels.write(Channels.java:725)
+    at com.spreaker.mi.core.net.DebugChunkedWriteHandler.flush(DebugChunkedWriteHandler.java:271)
+    at com.spreaker.mi.core.net.DebugChunkedWriteHandler.resumeTransfer(DebugChunkedWriteHandler.java:85)
+    at com.spreaker.mi.core.net.PacketChunkedStreamHandler.onResumeTransfer(PacketChunkedStreamHandler.java:49)
+    at com.spreaker.mi.core.net.PacketChunkedStream.addPacket(PacketChunkedStream.java:114)
+    at com.spreaker.mi.station.download.HttpDownloader._downloadBytes(HttpDownloader.java:83)
+    at com.spreaker.mi.station.download.HttpEngine.run(HttpEngine.java:131)
+    at java.lang.Thread.run(Thread.java:680)
+"New I/O worker #15":
+    at org.jboss.netty.handler.ssl.SslHandler$6.run(SslHandler.java:1562)
+    - waiting to lock <7db031130> (a java.util.LinkedList)
+    at org.jboss.netty.channel.socket.ChannelRunnableWrapper.run(ChannelRunnableWrapper.java:40)
+    at org.jboss.netty.channel.socket.nio.AbstractNioWorker.executeInIoThread(AbstractNioWorker.java:69)
+    at org.jboss.netty.channel.socket.nio.NioWorker.executeInIoThread(NioWorker.java:36)
+    at org.jboss.netty.channel.socket.nio.AbstractNioWorker.executeInIoThread(AbstractNioWorker.java:55)
+    at org.jboss.netty.channel.socket.nio.NioWorker.executeInIoThread(NioWorker.java:36)
+    at org.jboss.netty.channel.socket.nio.AbstractNioChannelSink.execute(AbstractNioChannelSink.java:34)
+    at org.jboss.netty.channel.DefaultChannelPipeline.execute(DefaultChannelPipeline.java:632)
+    at org.jboss.netty.handler.ssl.SslHandler.channelClosed(SslHandler.java:1557)
+    at org.jboss.netty.channel.SimpleChannelUpstreamHandler.handleUpstream(SimpleChannelUpstreamHandler.java:88)
+    at org.jboss.netty.channel.DefaultChannelPipeline.sendUpstream(DefaultChannelPipeline.java:560)
+    at org.jboss.netty.channel.DefaultChannelPipeline$DefaultChannelHandlerContext.sendUpstream(DefaultChannelPipeline.java:787)
+    at org.jboss.netty.channel.SimpleChannelHandler.channelClosed(SimpleChannelHandler.java:216)
+    at org.jboss.netty.channel.SimpleChannelHandler.handleUpstream(SimpleChannelHandler.java:106)
+    at org.jboss.netty.channel.DefaultChannelPipeline.sendUpstream(DefaultChannelPipeline.java:560)
+    at org.jboss.netty.channel.DefaultChannelPipeline.sendUpstream(DefaultChannelPipeline.java:555)
+    at org.jboss.netty.channel.Channels.fireChannelClosed(Channels.java:468)
+    at org.jboss.netty.channel.socket.nio.AbstractNioWorker.close(AbstractNioWorker.java:351)
+    at org.jboss.netty.channel.socket.nio.AbstractNioWorker.write0(AbstractNioWorker.java:254)
+    - locked <7db031868> (a java.lang.Object)
+    at org.jboss.netty.channel.socket.nio.AbstractNioWorker.writeFromUserCode(AbstractNioWorker.java:145)
+    at org.jboss.netty.channel.socket.nio.NioServerSocketPipelineSink.handleAcceptedSocket(NioServerSocketPipelineSink.java:99)
+    at org.jboss.netty.channel.socket.nio.NioServerSocketPipelineSink.eventSunk(NioServerSocketPipelineSink.java:36)
+    at org.jboss.netty.channel.DefaultChannelPipeline$DefaultChannelHandlerContext.sendDownstream(DefaultChannelPipeline.java:775)
+    at org.jboss.netty.channel.SimpleChannelHandler.writeRequested(SimpleChannelHandler.java:292)
+    at org.jboss.netty.channel.SimpleChannelHandler.handleDownstream(SimpleChannelHandler.java:254)
+    at org.jboss.netty.channel.DefaultChannelPipeline.sendDownstream(DefaultChannelPipeline.java:587)
+    at org.jboss.netty.channel.DefaultChannelPipeline$DefaultChannelHandlerContext.sendDownstream(DefaultChannelPipeline.java:780)
+    at org.jboss.netty.channel.Channels.write(Channels.java:725)
+    at org.jboss.netty.channel.Channels.write(Channels.java:686)
+    at org.jboss.netty.handler.ssl.SslHandler.wrapNonAppData(SslHandler.java:1144)
+    at org.jboss.netty.handler.ssl.SslHandler.unwrap(SslHandler.java:1233)
+    - locked <7db0310f0> (a java.lang.Object)
+    at org.jboss.netty.handler.ssl.SslHandler.decode(SslHandler.java:910)
+    at org.jboss.netty.handler.codec.frame.FrameDecoder.callDecode(FrameDecoder.java:425)
+    at org.jboss.netty.handler.codec.frame.FrameDecoder.messageReceived(FrameDecoder.java:303)
+    at org.jboss.netty.channel.SimpleChannelUpstreamHandler.handleUpstream(SimpleChannelUpstreamHandler.java:70)
+    at org.jboss.netty.channel.DefaultChannelPipeline.sendUpstream(DefaultChannelPipeline.java:560)
+    at org.jboss.netty.channel.DefaultChannelPipeline$DefaultChannelHandlerContext.sendUpstream(DefaultChannelPipeline.java:787)
+    at org.jboss.netty.channel.SimpleChannelHandler.messageReceived(SimpleChannelHandler.java:142)
+    at org.jboss.netty.channel.SimpleChannelHandler.handleUpstream(SimpleChannelHandler.java:88)
+    at org.jboss.netty.channel.DefaultChannelPipeline.sendUpstream(DefaultChannelPipeline.java:560)
+    at org.jboss.netty.channel.DefaultChannelPipeline.sendUpstream(DefaultChannelPipeline.java:555)
+    at org.jboss.netty.channel.Channels.fireMessageReceived(Channels.java:268)
+    at org.jboss.netty.channel.Channels.fireMessageReceived(Channels.java:255)
+    at org.jboss.netty.channel.socket.nio.NioWorker.read(NioWorker.java:88)
+    at org.jboss.netty.channel.socket.nio.AbstractNioWorker.process(AbstractNioWorker.java:107)
+    at org.jboss.netty.channel.socket.nio.AbstractNioSelector.run(AbstractNioSelector.java:312)
+    at org.jboss.netty.channel.socket.nio.AbstractNioWorker.run(AbstractNioWorker.java:88)
+    at org.jboss.netty.channel.socket.nio.NioWorker.run(NioWorker.java:178)
+    at org.jboss.netty.util.ThreadRenamingRunnable.run(ThreadRenamingRunnable.java:108)
+    at org.jboss.netty.util.internal.DeadLockProofWorker$1.run(DeadLockProofWorker.java:42)
+    at java.util.concurrent.ThreadPoolExecutor$Worker.runTask(ThreadPoolExecutor.java:895)
+    at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:918)
+    at java.lang.Thread.run(Thread.java:680)
+</pre>
+
+
+Please let me know if any additional information is required or if this issue might be caused by a misuse of the SSLHandler class on our side.
+
+Thanks,
+
+Andrea.

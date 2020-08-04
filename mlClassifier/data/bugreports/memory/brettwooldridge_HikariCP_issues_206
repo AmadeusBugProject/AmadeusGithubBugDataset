@@ -1,0 +1,28 @@
+Unclosed MySQL connections when not using connectionTestQuery
+We are testing a high-load database tool that requires the execution of a big amount of queries on a MySQL server. For this, we are using HikariCP (`HikariCP-java6:2.2.5`) and the MySQL JDBC Driver (`mysql-connector-java:5.1.34`). 
+
+We use Hikari's default configuration: we only set the driver class (`com.mysql.jdbc.Driver`), JDBC URL, user and password. And sometimes the `connectionTestQuery`, which seems to make a big difference.
+
+It was our understanding that the newest versions of the MySQL driver would implement the `isValid()` method and therefore not need a `connectionTestQuery` property to be set. However, when we run one of our tests --which creates and shutdowns 1,002 different instances of the Hikari pool in sequence-- with such setup, we observe a growing number of unclosed connections (orange):
+
+![mysql_novalidationquery](https://cloud.githubusercontent.com/assets/1492299/5181387/2d9af060-7496-11e4-97a6-222aa448e4fc.png)
+
+However, if we run exactly the same test setting having set the `connectionTestQuery` property like:
+
+``` java
+properties.setProperty("connectionTestQuery", "/* ping */ SELECT 1");
+```
+
+...this doesn't happen at all, and everything looks fine:
+
+![mysql_validationquery](https://cloud.githubusercontent.com/assets/1492299/5181334/9757ad14-7495-11e4-8068-245a8467c2c8.png)
+
+The profiler shows to us that our test actually uses and _closes_ the same amount of connections in both cases (29,058), but in the first case many more connections are open and never closed. Also, the profiler shows that these unclosed connections are not strongly-reachable after the test has finished executing all the queries, but that a good number of connections are still weak and/or soft reachable (and forcing a GC execution doesn't change things):
+
+![mysql_novalidationreachability](https://cloud.githubusercontent.com/assets/1492299/5181730/8e6c8bb2-7499-11e4-8ac5-da43ac7832e4.png)
+
+Note that, when we use `connectionTestQuery`, we also see a comparable number of weak/softly reachable connections at the end. The difference seems to be that the connections are closed this time...
+
+![mysql_validationreachability](https://cloud.githubusercontent.com/assets/1492299/5181840/a5fad8aa-749a-11e4-81e3-a9990277c787.png)
+
+At first we thought this could be some kind of issue at the MySQL JDBC Driver, but the fact is, we run this same test using Commons-DBCP with its default configuration (no connection validation query), and we obtained no unclosed connections...

@@ -1,0 +1,94 @@
+IllegalArgumentException for "address" in newDirectBuffer
+### Observed behavior
+
+Running any Apache Spark job results in an IllegalArgumentException.
+
+```
+java.lang.IllegalArgumentException: address: -2251768783175664 (expected: >= 0)
+	at io.netty.util.internal.ObjectUtil.checkPositiveOrZero(ObjectUtil.java:75)
+	at io.netty.util.internal.PlatformDependent0.newDirectBuffer(PlatformDependent0.java:280)
+	at io.netty.util.internal.PlatformDependent0.allocateDirectNoCleaner(PlatformDependent0.java:276)
+	at io.netty.util.internal.PlatformDependent.allocateDirectNoCleaner(PlatformDependent.java:486)
+	at io.netty.buffer.PoolArena$DirectArena.allocateDirect(PoolArena.java:711)
+	at io.netty.buffer.PoolArena$DirectArena.newChunk(PoolArena.java:700)
+	at io.netty.buffer.PoolArena.allocateNormal(PoolArena.java:237)
+	at io.netty.buffer.PoolArena.allocate(PoolArena.java:213)
+	at io.netty.buffer.PoolArena.allocate(PoolArena.java:141)
+	at io.netty.buffer.PooledByteBufAllocator.newDirectBuffer(PooledByteBufAllocator.java:296)
+	at io.netty.buffer.AbstractByteBufAllocator.directBuffer(AbstractByteBufAllocator.java:177)
+	at io.netty.buffer.AbstractByteBufAllocator.directBuffer(AbstractByteBufAllocator.java:168)
+	at io.netty.channel.nio.AbstractNioChannel.newDirectBuffer(AbstractNioChannel.java:404)
+	at io.netty.channel.nio.AbstractNioByteChannel.filterOutboundMessage(AbstractNioByteChannel.java:275)
+	at io.netty.channel.AbstractChannel$AbstractUnsafe.write(AbstractChannel.java:746)
+	at io.netty.channel.DefaultChannelPipeline$HeadContext.write(DefaultChannelPipeline.java:1251)
+	at io.netty.channel.AbstractChannelHandlerContext.invokeWrite0(AbstractChannelHandlerContext.java:733)
+	at io.netty.channel.AbstractChannelHandlerContext.invokeWrite(AbstractChannelHandlerContext.java:725)
+	at io.netty.channel.AbstractChannelHandlerContext.write(AbstractChannelHandlerContext.java:810)
+	at io.netty.channel.AbstractChannelHandlerContext.write(AbstractChannelHandlerContext.java:718)
+	at io.netty.handler.codec.MessageToMessageEncoder.write(MessageToMessageEncoder.java:111)
+	at io.netty.channel.AbstractChannelHandlerContext.invokeWrite0(AbstractChannelHandlerContext.java:733)
+	at io.netty.channel.AbstractChannelHandlerContext.invokeWrite(AbstractChannelHandlerContext.java:725)
+	at io.netty.channel.AbstractChannelHandlerContext.write(AbstractChannelHandlerContext.java:810)
+	at io.netty.channel.AbstractChannelHandlerContext.write(AbstractChannelHandlerContext.java:718)
+	at io.netty.handler.timeout.IdleStateHandler.write(IdleStateHandler.java:305)
+	at io.netty.channel.AbstractChannelHandlerContext.invokeWrite0(AbstractChannelHandlerContext.java:733)
+	at io.netty.channel.AbstractChannelHandlerContext.invokeWrite(AbstractChannelHandlerContext.java:725)
+	at io.netty.channel.AbstractChannelHandlerContext.access$1900(AbstractChannelHandlerContext.java:35)
+	at io.netty.channel.AbstractChannelHandlerContext$AbstractWriteTask.write(AbstractChannelHandlerContext.java:1062)
+	at io.netty.channel.AbstractChannelHandlerContext$WriteAndFlushTask.write(AbstractChannelHandlerContext.java:1116)
+	at io.netty.channel.AbstractChannelHandlerContext$AbstractWriteTask.run(AbstractChannelHandlerContext.java:1051)
+	at io.netty.util.concurrent.SingleThreadEventExecutor.runAllTasks(SingleThreadEventExecutor.java:399)
+	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:446)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$2.run(SingleThreadEventExecutor.java:131)
+	at io.netty.util.concurrent.DefaultThreadFactory$DefaultRunnableDecorator.run(DefaultThreadFactory.java:144)
+	at java.lang.Thread.run(Thread.java:748)
+```
+
+### Steps to reproduce
+
+The crash can be reproduced by running the Apache Spark SparkPi example:
+
+`$ $SPARK_HOME/bin/run-example SparkPi`
+
+### Netty version
+4.0.43.Final
+
+### JVM version (e.g. `java -version`)
+java version "1.8.0_121"
+Java(TM) SE Runtime Environment (build 1.8.0_121-b13)
+Java HotSpot(TM) 64-Bit Server VM (build 25.121-b13, mixed mode)
+
+### OS version (e.g. `uname -a`)
+Linux localhost 4.1.12-80.el6uek.sparc64 #1 SMP Wed Nov 30 03:09:10 PST 2016 sparc64 sparc64 sparc64 GNU/Linux
+
+### Analysis
+
+It appears that UNSAFE.allocateMemory is returning an **address** whose high bit is set. When **address** is tested in ObjectUtil.checkPositiveOrZero, **address** appears negative and an exception is raised. 
+
+### Proposed Fix
+
+I propose to add two methods to ObjectUtil:
+
+```
+public static int checkNotZero(int i, String name)
+public static long checkNotZero(long i, String name)
+```
+
+and replace the call to ObjectUtil.checkPositiveOrZero() in PlatformDependent0.newDirectBuffer() with ObjectUtil.checkNotZero() instead:
+
+```
+    static ByteBuffer newDirectBuffer(long address, int capacity) {
+        ObjectUtil.checkNotZero(address, "address");
+        ObjectUtil.checkPositiveOrZero(capacity, "capacity");
+
+        try {
+            return (ByteBuffer) DIRECT_BUFFER_CONSTRUCTOR.newInstance(address, capacity);
+        } catch (Throwable cause) {
+            // Not expected to ever throw!
+            if (cause instanceof Error) {
+                throw (Error) cause;
+            }
+            throw new Error(cause);
+        }
+    }
+```

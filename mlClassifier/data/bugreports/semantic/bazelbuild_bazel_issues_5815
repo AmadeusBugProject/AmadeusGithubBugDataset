@@ -1,0 +1,5 @@
+incompatible_bzl_disallow_load_after_statement: Require load() be at the top of bzl files
+This is a tracking issue for offering a migration solution for
+`--incompatible_bzl_disallow_load_after_statement`
+
+This flag would enforce that bzl files have load() statements listed first.

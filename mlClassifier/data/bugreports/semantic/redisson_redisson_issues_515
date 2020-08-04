@@ -1,0 +1,16 @@
+RKeys.getKeysByPattern infinite scan when no keys are present
+After updating to version 2.2.14 RKeys.getKeysByPattern is doing infinite scans when there is not even 1 key by this pattern. It was working fine earlier.
+
+1464601787.027739 [0 127.0.0.1:53406] "SCAN" "14" "MATCH" "XXX__"
+1464601787.027892 [0 127.0.0.1:53405] "SCAN" "0" "MATCH" "XXX__"
+1464601787.028022 [0 127.0.0.1:53401] "SCAN" "14" "MATCH" "XXX__"
+1464601787.028161 [0 127.0.0.1:53402] "SCAN" "0" "MATCH" "XXX__"
+1464601787.028317 [0 127.0.0.1:53407] "SCAN" "14" "MATCH" "XXX__"
+1464601787.028456 [0 127.0.0.1:53406] "SCAN" "0" "MATCH" "XXX__"
+1464601787.028631 [0 127.0.0.1:53405] "SCAN" "14" "MATCH" "XXX__"
+1464601787.028775 [0 127.0.0.1:53401] "SCAN" "0" "MATCH" "XXX__"
+1464601787.028944 [0 127.0.0.1:53402] "SCAN" "14" "MATCH" "XXX__"
+1464601787.029096 [0 127.0.0.1:53407] "SCAN" "0" "MATCH" "XXX__"
+1464601787.029262 [0 127.0.0.1:53406] "SCAN" "14" "MATCH" "XXX_*"
+
+It works fine when there is at least 1 key with this pattern

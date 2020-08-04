@@ -1,0 +1,88 @@
+Regression: body of POST requests is not kept after redirection
+This seems to have been introduced by #898.
+
+The following java junit test passes with v`1.9.25` but fails with v`1.9.26` and above.
+My expectations are that this should still pass.
+
+``` java
+package reprotests;
+
+import com.ning.http.client.AsyncHttpClient;
+import com.ning.http.client.AsyncHttpClientConfig;
+import com.ning.http.client.Response;
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
+import com.sun.net.httpserver.HttpServer;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.InetSocketAddress;
+
+import static java.util.stream.Collectors.joining;
+import static org.junit.Assert.assertEquals;
+
+public class RedirectTest {
+
+    private HttpServer redirectsTo8888;
+    private HttpServer returnsBodyOfRequest;
+    private AsyncHttpClient httpClient;
+
+    @Before
+    public void startServers() throws Exception {
+        httpClient = new AsyncHttpClient(new AsyncHttpClientConfig.Builder()
+                .setFollowRedirect(true)
+                .setStrict302Handling(true)
+                .build());
+
+        redirectsTo8888 = createAndStartServer(7777, new HttpHandler() {
+            public void handle(HttpExchange httpExchange) throws IOException {
+                httpExchange.getResponseHeaders().add("Location", "http://localhost:8888");
+                httpExchange.sendResponseHeaders(302, 0);
+                httpExchange.close();
+            }
+        });
+
+        returnsBodyOfRequest = createAndStartServer(8888, new HttpHandler() {
+            public void handle(HttpExchange httpExchange) throws IOException {
+                String body = readRequestBody(httpExchange);
+                httpExchange.sendResponseHeaders(200, body.length());
+                OutputStream os = httpExchange.getResponseBody();
+                os.write(body.getBytes());
+                os.close();
+            }
+        });
+    }
+
+    @After
+    public void stopServers() throws Exception {
+        redirectsTo8888.stop(0);
+        returnsBodyOfRequest.stop(0);
+    }
+
+    @Test
+    public void postRequestKeepsItsBodyAcrossRedirect() throws Exception {
+        Response response = httpClient.preparePost("http://localhost:7777/ad").setBody("request body").execute().get();
+
+        assertEquals(200, response.getStatusCode());
+        assertEquals("request body", response.getResponseBody());
+    }
+
+    private HttpServer createAndStartServer(int port, HttpHandler handler) throws IOException {
+        HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
+        server.createContext("/", handler);
+        server.setExecutor(null);
+        server.start();
+        return server;
+    }
+
+    private String readRequestBody(HttpExchange httpExchange) {
+        BufferedReader reader = new BufferedReader(new InputStreamReader(httpExchange.getRequestBody()));
+        return reader.lines().collect(joining("\n"));
+    }
+}
+```

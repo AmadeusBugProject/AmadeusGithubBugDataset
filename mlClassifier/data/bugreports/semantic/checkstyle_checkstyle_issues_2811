@@ -1,0 +1,58 @@
+JavadocType doesn't report unused param tag
+TestClass.java
+
+```
+package test;
+
+/**
+ * TestClass.
+ * 
+ * @param BAD
+ *            This doesn't exist.
+ */
+public class TestClass {
+    public void test() {
+    }
+}
+```
+
+config.xml
+
+```
+<?xml version="1.0"?>
+<!DOCTYPE module PUBLIC
+          "-//Puppy Crawl//DTD Check Configuration 1.3//EN"
+          "http://www.puppycrawl.com/dtds/configuration_1_3.dtd">
+
+<module name="Checker">
+    <property name="charset" value="ASCII" />
+    <property name="severity" value="error" />
+    <property name="fileExtensions" value="java" />
+
+    <module name="TreeWalker">
+        <module name="JavadocType">
+            <property name="scope" value="public" />
+        </module>
+    </module>
+</module>
+```
+
+output from: `java -jar checkstyle-6.14.1-all.jar -c config.xml TestClass.java`
+
+```
+Starting audit...
+Audit done.
+```
+
+Expected output:
+
+```
+Starting audit...
+[ERROR] D:\Rickys\Java\EclipseStuff\checkstyle\src\main\java\test\TestClass.java:6:4: Unused @param tag for 'BAD'. [JavadocType]
+Audit done.
+Checkstyle ends with 1 errors.
+```
+
+JavadocType should validate that if a param is defined, that it is used in the class definition so the 2 stay in synch. JavadocMethod will report unused params, so Type should follow suite.
+
+Just as a note, class parameters are used by generic classes. (Ex: ArrayList&lt;T&gt;, T is considered the parameter)

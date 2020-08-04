@@ -1,0 +1,4 @@
+Memory leak when using closeOnJvmShutdown (eg. any tmp map)
+You have each engine register a shutdown hook with an anonymous class creation. Each of those threads has a reference to the engine being made (not that leaking threads themselves is great). These are kept in a special jdk store and will prevent garbage collection. You can unregister shutdown hooks if you keep a reference to them or you could lazily register a single static hook equipped with something similar to a listenable future and add/remove things to/from it.
+
+Definitely not what you want to happen if you naively try to do something like create a temporary map for disk backed sorts.

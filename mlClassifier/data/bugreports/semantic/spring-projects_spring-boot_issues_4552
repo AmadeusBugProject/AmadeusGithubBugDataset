@@ -1,0 +1,6 @@
+Regex support on /metrics returns "not found" if metrics value is null
+Regex support added in boot v1.3 does not handle correctly null metrics value due to :
+
+https://github.com/spring-projects/spring-boot/blob/8ca5635b69109fba898a094abd5970c906d29060/spring-boot-actuator/src/main/java/org/springframework/boot/actuate/endpoint/mvc/MetricsMvcEndpoint.java#L75
+
+Consequently, it results in a 404 HTTP error code.

@@ -1,0 +1,55 @@
+Sending DefaultLastContent with trailers causes "io.netty.handler.codec.EncoderException: HttpServerCodec$HttpServerResponseEncoder must produce at least one message."
+### Expected behavior
+Writing `DefaultLastContent` object with trailing headers sends an empty chunk with trailing headers.
+
+### Actual behavior
+Writing `DefaultLastContent` with trailing headers causes EncoderException:
+```
+io.netty.handler.codec.EncoderException: HttpServerCodec$HttpServerResponseEncoder must produce at least one message.
+        at io.netty.handler.codec.MessageToMessageEncoder.write(MessageToMessageEncoder.java:98) ~[netty-all-4.0.52.Final.jar:4.0.52.Final]
+        at io.netty.channel.CombinedChannelDuplexHandler.write(CombinedChannelDuplexHandler.java:348) ~[netty-all-4.0.52.Final.jar:4.0.52.Final]
+        at io.netty.channel.AbstractChannelHandlerContext.invokeWrite0(AbstractChannelHandlerContext.java:732) ~[netty-all-4.0.52.Final.jar:4.0.52.Final]
+        at io.netty.channel.AbstractChannelHandlerContext.invokeWrite(AbstractChannelHandlerContext.java:724) ~[netty-all-4.0.52.Final.jar:4.0.52.Final]
+        at io.netty.channel.AbstractChannelHandlerContext.write(AbstractChannelHandlerContext.java:809) ~[netty-all-4.0.52.Final.jar:4.0.52.Final]
+        at io.netty.channel.AbstractChannelHandlerContext.write(AbstractChannelHandlerContext.java:717) ~[netty-all-4.0.52.Final.jar:4.0.52.Final]
+        at io.netty.handler.logging.LoggingHandler.write(LoggingHandler.java:254) ~[netty-all-4.0.52.Final.jar:4.0.52.Final]
+        at io.netty.channel.AbstractChannelHandlerContext.invokeWrite0(AbstractChannelHandlerContext.java:732) ~[netty-all-4.0.52.Final.jar:4.0.52.Final]
+        at io.netty.channel.AbstractChannelHandlerContext.invokeWriteAndFlush(AbstractChannelHandlerContext.java:795) ~[netty-all-4.0.52.Final.jar:4.0.52.Final]
+        at io.netty.channel.AbstractChannelHandlerContext.write(AbstractChannelHandlerContext.java:807) ~[netty-all-4.0.52.Final.jar:4.0.52.Final]
+        at io.netty.channel.AbstractChannelHandlerContext.writeAndFlush(AbstractChannelHandlerContext.java:788) ~[netty-all-4.0.52.Final.jar:4.0.52.Final]
+        at io.netty.channel.AbstractChannelHandlerContext.writeAndFlush(AbstractChannelHandlerContext.java:824) ~[netty-all-4.0.52.Final.jar:4.0.52.Final]
+        at com.datastax.bdp.fs.rest.util.NettyHttpUtil$.writeAndFlush(NettyHttpUtil.scala:77) ~[dse-dsefs-common-5.0.12-cbbffcf.jar:5.0.12-cbbffcf]
+        at com.datastax.bdp.fs.rest.server.RestServerHandler$$anonfun$sendResponseBody$2.apply(RestServerHandler.scala:163) [dse-dsefs-common-5.0.12-cbbffcf.jar:5.0.12-cbbffcf]
+        at com.datastax.bdp.fs.rest.server.RestServerHandler$$anonfun$sendResponseBody$2.apply(RestServerHandler.scala:143) [dse-dsefs-common-5.0.12-cbbffcf.jar:5.0.12-cbbffcf]
+        at scala.concurrent.impl.CallbackRunnable.run(Promise.scala:32) [scala-library-2.10.6.jar:na]
+        at io.netty.util.concurrent.SingleThreadEventExecutor.runAllTasks(SingleThreadEventExecutor.java:399) [netty-all-4.0.52.Final.jar:4.0.52.Final]
+        at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:464) [netty-all-4.0.52.Final.jar:4.0.52.Final]
+        at io.netty.util.concurrent.SingleThreadEventExecutor$2.run(SingleThreadEventExecutor.java:131) [netty-all-4.0.52.Final.jar:4.0.52.Final]
+        at java.lang.Thread.run(Thread.java:748) [na:1.8.0_144]
+
+```
+Writing `DefaultLastContent` with no trailing headers in the same place of code, works as expected - sends an empty last chunk and no exception is thrown.
+
+### Steps to reproduce
+1. Setup a simple HttpServer using HttpServerCodec (without HttpMessageAggregator)
+2. When sending a response, enable chunked transfer encoding.
+3. writeAndFlush a DefaultLastContent object with trailers:
+```
+   val lastContent = new DefaultLastHttpContent()
+   lastContent.trailingHeaders().add(...., ....)
+   context.writeAndFlush(lastContent)
+```
+
+### Minimal yet complete reproducer code (or URL to code)
+
+### Netty version
+We found the problem after upgrading to 4.0.52.Final
+Error was not present in 4.0.34.Final.
+
+### JVM version (e.g. `java -version`)
+java version "1.8.0_144"
+Java(TM) SE Runtime Environment (build 1.8.0_144-b01)
+Java HotSpot(TM) 64-Bit Server VM (build 25.144-b01, mixed mode)
+
+### OS version (e.g. `uname -a`)
+Linux p5520 4.14.0-041400rc8-generic #201711052313 SMP Sun Nov 5 23:14:08 UTC 2017 x86_64 x86_64 x86_64 GNU/Linux

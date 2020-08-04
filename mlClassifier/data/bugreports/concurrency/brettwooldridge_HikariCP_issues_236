@@ -1,0 +1,30 @@
+NullPointerException in utility thread, only appearing on console
+I am creating this for the one from the google group https://groups.google.com/forum/#!topic/hikari-cp/RgS7J0Xs05U
+
+quote:
+
+I'm getting this funny exceptions. It only appears in my console, not on my logs where HikariCP messages appear.
+It seems to appear every few minutes, maybe after inactivity.
+
+end quote
+
+The stacktraces seem to appear without anything happening in particular, while the various dev/testing web apps where HikariCP is used still function as normal so far but the connection may possible fail in the middle of a long series of database operations when this happens. I am not really sure.
+
+Exception in thread "HikariCP utility thread (pool HikariPool-0)" java.lang.NullPointerException
+    at com.mysql.jdbc.MysqlIO.setSocketTimeout(MysqlIO.java:4890)
+    at com.mysql.jdbc.ConnectionImpl$12.run(ConnectionImpl.java:5540)
+    at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1142)
+    at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:617)
+    at java.lang.Thread.run(Thread.java:745)
+Exception in thread "HikariCP utility thread (pool HikariPool-0)" java.lang.NullPointerException
+    at com.mysql.jdbc.MysqlIO.setSocketTimeout(MysqlIO.java:4890)
+    at com.mysql.jdbc.ConnectionImpl$12.run(ConnectionImpl.java:5540)
+    at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1142)
+    at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:617)
+    at java.lang.Thread.run(Thread.java:745)
+Exception in thread "HikariCP utility thread (pool HikariPool-0)" java.lang.NullPointerException
+    at com.mysql.jdbc.MysqlIO.setSocketTimeout(MysqlIO.java:4890)
+    at com.mysql.jdbc.ConnectionImpl$12.run(ConnectionImpl.java:5540)
+    at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1142)
+    at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:617)
+    at java.lang.Thread.run(Thread.java:745)

@@ -1,0 +1,64 @@
+DeviceClient.closeNow() blocks forever
+<!--
+Hi there! thank you for discovering and submitting an issue!
+
+Please first tell us a little bit about the environment you're running:
+The commands in the comments can be run directly in a command prompt.
+-->
+
+
+- **OS and version used:** <Android 7.1.1> <!-- Windows 10, Ubuntu 15.04... -->
+
+- **Java runtime used:** <Java 8> <!-- Please include runtime and version -->
+
+- **SDK version used:** <1.5.36> <!-- Please include the SDK version -->
+
+
+# Description of the issue:
+<!-- please be as detailed as possible: which feature has a problem, how often does it fail,  -->
+My code on mobile device calls SDK in following order:
+
+0. network is available
+1. DeviceClient.open()
+2. DeviceClient.setMessageCallback()
+3. subscribeToDeviceMethod()
+4. device is now listening for incoming IoT message/method
+5. network connection lost
+6. DeviceClient.closeNow()
+
+Problem is that at step 6, the closeNow() never returns and the calling thread is blocked forever (at least I waited for minutes).
+
+If I remove step 3, then there is no block at step 6. This seems indicate the issue is related with direct method handling.
+
+Step into SDK code with Android Studio, it appears the code is blocked on a wait object at:
+
+```
+void unsubscribe(String topic) throws IOException {
+    synchronized(this.mqttLock) { <<<< lock here
+        try {
+            if(!this.mqttConnection.getMqttAsyncClient().isConnected()) {
+                throw new IOException("Cannot unsubscribe when mqtt client is disconnected");
+            }
+
+            if(this.userSpecifiedSASTokenExpiredOnRetry) {
+                throw new IOException("Cannot unsubscribe when user supplied SAS token has expired");
+            }
+
+            IMqttToken e = this.mqttConnection.getMqttAsyncClient().unsubscribe(topic);
+            e.waitForCompletion();
+        } catch (MqttException var5) {
+            throw new IOException("Unable to unsubscribe to topic :" + topic + "because " + var5.getCause() + var5.getMessage());
+        }
+
+    }
+}
+```
+
+
+# Code sample exhibiting the issue:
+<!-- Please remove any connection string information! -->
+Just the 6 steps above
+# Console log of the issue:
+<!-- Consider setting the DEBUG environment variable to '*'. This will produce a much more verbose output that will help debugging -->
+<!-- Don't forget to remove any connection string information! -->
+

@@ -1,0 +1,2 @@
+AutoConfigurationReportLoggingInitializer error handling not defensive enough
+You can get an NPE when `SpringApplication` is trying to report errors if it hasn't got very  far in its lifecycle yet. See the example [here](https://github.com/dturanski/boot-yaml-issue)

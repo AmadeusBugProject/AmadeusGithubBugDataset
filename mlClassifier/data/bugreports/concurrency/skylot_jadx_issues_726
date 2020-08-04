@@ -1,0 +1,301 @@
+[core] Thread lock
+**Checks before report**
+- [+] check [latest unstable build](https://bintray.com/skylot/jadx/unstable/_latestVersion#files) (maybe issue already fixed)
+- [+] search existing issues by exception message
+- [+] check [Troubleshooting Q&A](https://github.com/skylot/jadx/wiki/Troubleshooting-Q&A) section on wiki
+
+**Describe error**
+Hi, I've noticed that an app is never decompiled. I run jadx with the following arguments
+```
+--no-replace-consts --show-bad-code --threads-count 8 --no-inline-anonymous --no-imports --deobf --deobf-min 2 --deobf-rewrite-cfg
+```
+jstack output
+```
+2019-07-29 12:53:48
+Full thread dump Java HotSpot(TM) 64-Bit Server VM (25.201-b09 mixed mode):
+
+"Java2D Disposer" #16 daemon prio=10 os_prio=2 tid=0x0000000045548800 nid=0xd34 in Object.wait() [0x000000004e0af000]
+   java.lang.Thread.State: WAITING (on object monitor)
+        at java.lang.Object.wait(Native Method)
+        - waiting on <0x0000000408b02e00> (a java.lang.ref.ReferenceQueue$Lock)
+        at java.lang.ref.ReferenceQueue.remove(ReferenceQueue.java:144)
+        - locked <0x0000000408b02e00> (a java.lang.ref.ReferenceQueue$Lock)
+        at java.lang.ref.ReferenceQueue.remove(ReferenceQueue.java:165)
+        at sun.java2d.Disposer.run(Disposer.java:148)
+        at java.lang.Thread.run(Thread.java:748)
+
+   Locked ownable synchronizers:
+        - None
+
+"pool-1-thread-4" #14 prio=5 os_prio=0 tid=0x0000000045942000 nid=0xec4 waiting for monitor entry [0x000000004d1ae000]
+   java.lang.Thread.State: BLOCKED (on object monitor)
+        at jadx.core.ProcessClass.process(ProcessClass.java:46)
+        - waiting to lock <0x0000000407e3b578> (a jadx.core.dex.info.ClassInfo)
+        at jadx.core.ProcessClass.process(ProcessClass.java:25)
+        at jadx.core.dex.nodes.ClassNode.loadAndProcess(ClassNode.java:248)
+        at jadx.core.codegen.InsnGen.processOverloadedArg(InsnGen.java:794)
+        at jadx.core.codegen.InsnGen.generateMethodArguments(InsnGen.java:765)
+        at jadx.core.codegen.InsnGen.makeInvoke(InsnGen.java:709)
+        at jadx.core.codegen.InsnGen.makeInsnBody(InsnGen.java:353)
+        at jadx.core.codegen.InsnGen.makeInsn(InsnGen.java:235)
+        at jadx.core.codegen.InsnGen.makeInsn(InsnGen.java:206)
+        at jadx.core.dex.visitors.regions.CheckRegions.getBlockInsnStr(CheckRegions.java:93)
+        at jadx.core.dex.visitors.regions.CheckRegions.visit(CheckRegions.java:64)
+        at jadx.core.dex.visitors.DepthTraversal.visit(DepthTraversal.java:30)
+        at jadx.core.dex.visitors.DepthTraversal.lambda$visit$1(DepthTraversal.java:15)
+        at jadx.core.dex.visitors.DepthTraversal$$Lambda$31/253399104.accept(Unknown Source)
+        at java.util.ArrayList.forEach(ArrayList.java:1257)
+        at jadx.core.dex.visitors.DepthTraversal.visit(DepthTraversal.java:15)
+        at jadx.core.dex.visitors.DepthTraversal.lambda$visit$0(DepthTraversal.java:14)
+        at jadx.core.dex.visitors.DepthTraversal$$Lambda$30/993888079.accept(Unknown Source)
+        at java.util.ArrayList.forEach(ArrayList.java:1257)
+        at jadx.core.dex.visitors.DepthTraversal.visit(DepthTraversal.java:14)
+        at jadx.core.ProcessClass.process(ProcessClass.java:54)
+        - locked <0x0000000407f76398> (a jadx.core.dex.info.ClassInfo)
+        at jadx.core.ProcessClass.generateCode(ProcessClass.java:30)
+        at jadx.core.dex.nodes.ClassNode.decompile(ClassNode.java:255)
+        at jadx.api.JavaClass.decompile(JavaClass.java:61)
+        - locked <0x000000040a3135d0> (a jadx.api.JavaClass)
+        at jadx.api.JadxDecompiler.lambda$appendSourcesSave$0(JadxDecompiler.java:211)
+        at jadx.api.JadxDecompiler$$Lambda$24/914942811.run(Unknown Source)
+        at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+        at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+        at java.lang.Thread.run(Thread.java:748)
+
+   Locked ownable synchronizers:
+        - <0x0000000408d053d0> (a java.util.concurrent.ThreadPoolExecutor$Worker)
+
+"pool-1-thread-3" #13 prio=5 os_prio=0 tid=0x0000000045941800 nid=0xe14 waiting for monitor entry [0x000000004c2ae000]
+   java.lang.Thread.State: BLOCKED (on object monitor)
+        at jadx.core.ProcessClass.process(ProcessClass.java:46)
+        - waiting to lock <0x0000000407f76398> (a jadx.core.dex.info.ClassInfo)
+        at jadx.core.ProcessClass.processDependencies(ProcessClass.java:78)
+        at jadx.core.ProcessClass.process(ProcessClass.java:59)
+        - locked <0x0000000407e3b578> (a jadx.core.dex.info.ClassInfo)
+        at jadx.core.ProcessClass.generateCode(ProcessClass.java:30)
+        at jadx.core.dex.nodes.ClassNode.decompile(ClassNode.java:255)
+        at jadx.api.JavaClass.decompile(JavaClass.java:61)
+        - locked <0x000000040a313580> (a jadx.api.JavaClass)
+        at jadx.api.JadxDecompiler.lambda$appendSourcesSave$0(JadxDecompiler.java:211)
+        at jadx.api.JadxDecompiler$$Lambda$24/914942811.run(Unknown Source)
+        at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+        at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+        at java.lang.Thread.run(Thread.java:748)
+
+   Locked ownable synchronizers:
+        - <0x0000000408c05780> (a java.util.concurrent.ThreadPoolExecutor$Worker)
+
+"pool-1-thread-2" #12 prio=5 os_prio=0 tid=0x0000000045940800 nid=0x4f4 waiting for monitor entry [0x000000004b3ae000]
+   java.lang.Thread.State: BLOCKED (on object monitor)
+        at jadx.core.ProcessClass.process(ProcessClass.java:46)
+        - waiting to lock <0x0000000407f76398> (a jadx.core.dex.info.ClassInfo)
+        at jadx.core.ProcessClass.processDependencies(ProcessClass.java:78)
+        at jadx.core.ProcessClass.process(ProcessClass.java:59)
+        - locked <0x00000004082e4090> (a jadx.core.dex.info.ClassInfo)
+        at jadx.core.ProcessClass.generateCode(ProcessClass.java:30)
+        at jadx.core.dex.nodes.ClassNode.decompile(ClassNode.java:255)
+        at jadx.api.JavaClass.decompile(JavaClass.java:61)
+        - locked <0x000000040a3135f8> (a jadx.api.JavaClass)
+        at jadx.api.JadxDecompiler.lambda$appendSourcesSave$0(JadxDecompiler.java:211)
+        at jadx.api.JadxDecompiler$$Lambda$24/914942811.run(Unknown Source)
+        at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+        at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+        at java.lang.Thread.run(Thread.java:748)
+
+   Locked ownable synchronizers:
+        - <0x0000000408b02fe0> (a java.util.concurrent.ThreadPoolExecutor$Worker)
+
+"pool-1-thread-1" #11 prio=5 os_prio=0 tid=0x00000000484bb000 nid=0x7dc waiting for monitor entry [0x000000004a4ae000]
+   java.lang.Thread.State: BLOCKED (on object monitor)
+        at jadx.core.ProcessClass.process(ProcessClass.java:46)
+        - waiting to lock <0x0000000407f76398> (a jadx.core.dex.info.ClassInfo)
+        at jadx.core.ProcessClass.processDependencies(ProcessClass.java:78)
+        at jadx.core.ProcessClass.process(ProcessClass.java:59)
+        - locked <0x0000000407fd04d8> (a jadx.core.dex.info.ClassInfo)
+        at jadx.core.ProcessClass.generateCode(ProcessClass.java:30)
+        at jadx.core.dex.nodes.ClassNode.decompile(ClassNode.java:255)
+        at jadx.api.JavaClass.decompile(JavaClass.java:61)
+        - locked <0x000000040a312a18> (a jadx.api.JavaClass)
+        at jadx.api.JadxDecompiler.lambda$appendSourcesSave$0(JadxDecompiler.java:211)
+        at jadx.api.JadxDecompiler$$Lambda$24/914942811.run(Unknown Source)
+        at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+        at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+        at java.lang.Thread.run(Thread.java:748)
+
+   Locked ownable synchronizers:
+        - <0x0000000408d055b8> (a java.util.concurrent.ThreadPoolExecutor$Worker)
+
+"Service Thread" #10 daemon prio=9 os_prio=0 tid=0x000000003ccdd000 nid=0x130c runnable [0x0000000000000000]
+   java.lang.Thread.State: RUNNABLE
+
+   Locked ownable synchronizers:
+        - None
+
+"C1 CompilerThread2" #9 daemon prio=9 os_prio=2 tid=0x000000003cc5a000 nid=0x81c waiting on condition [0x0000000000000000]
+   java.lang.Thread.State: RUNNABLE
+
+   Locked ownable synchronizers:
+        - None
+
+"C2 CompilerThread1" #8 daemon prio=9 os_prio=2 tid=0x000000003cc56000 nid=0x12c8 waiting on condition [0x0000000000000000]
+   java.lang.Thread.State: RUNNABLE
+
+   Locked ownable synchronizers:
+        - None
+
+"C2 CompilerThread0" #7 daemon prio=9 os_prio=2 tid=0x000000003cc54000 nid=0xf64 waiting on condition [0x0000000000000000]
+   java.lang.Thread.State: RUNNABLE
+
+   Locked ownable synchronizers:
+        - None
+
+"Attach Listener" #6 daemon prio=5 os_prio=2 tid=0x000000003cc50000 nid=0xe90 waiting on condition [0x0000000000000000]
+   java.lang.Thread.State: RUNNABLE
+
+   Locked ownable synchronizers:
+        - None
+
+"Signal Dispatcher" #5 daemon prio=9 os_prio=2 tid=0x000000003cc4d000 nid=0x1460 runnable [0x0000000000000000]
+   java.lang.Thread.State: RUNNABLE
+
+   Locked ownable synchronizers:
+        - None
+
+"Surrogate Locker Thread (Concurrent GC)" #4 daemon prio=9 os_prio=0 tid=0x000000003cc4b800 nid=0x1010 waiting on condition [0x0000000000000000]
+   java.lang.Thread.State: RUNNABLE
+
+   Locked ownable synchronizers:
+        - None
+
+"Finalizer" #3 daemon prio=8 os_prio=1 tid=0x000000003cc2e800 nid=0xee0 in Object.wait() [0x000000003edaf000]
+   java.lang.Thread.State: WAITING (on object monitor)
+        at java.lang.Object.wait(Native Method)
+        - waiting on <0x0000000401806718> (a java.lang.ref.ReferenceQueue$Lock)
+        at java.lang.ref.ReferenceQueue.remove(ReferenceQueue.java:144)
+        - locked <0x0000000401806718> (a java.lang.ref.ReferenceQueue$Lock)
+        at java.lang.ref.ReferenceQueue.remove(ReferenceQueue.java:165)
+        at java.lang.ref.Finalizer$FinalizerThread.run(Finalizer.java:216)
+
+   Locked ownable synchronizers:
+        - None
+
+"Reference Handler" #2 daemon prio=10 os_prio=2 tid=0x000000003cc21000 nid=0x280 in Object.wait() [0x000000003deaf000]
+   java.lang.Thread.State: WAITING (on object monitor)
+        at java.lang.Object.wait(Native Method)
+        - waiting on <0x0000000401705c60> (a java.lang.ref.Reference$Lock)
+        at java.lang.Object.wait(Object.java:502)
+        at java.lang.ref.Reference.tryHandlePending(Reference.java:191)
+        - locked <0x0000000401705c60> (a java.lang.ref.Reference$Lock)
+        at java.lang.ref.Reference$ReferenceHandler.run(Reference.java:153)
+
+   Locked ownable synchronizers:
+        - None
+
+"main" #1 prio=5 os_prio=0 tid=0x0000000002d53800 nid=0x1434 waiting on condition [0x0000000002d4f000]
+   java.lang.Thread.State: TIMED_WAITING (parking)
+        at sun.misc.Unsafe.park(Native Method)
+        - parking to wait for  <0x0000000408d05600> (a java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject)
+        at java.util.concurrent.locks.LockSupport.parkNanos(LockSupport.java:215)
+        at java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.awaitNanos(AbstractQueuedSynchronizer.java:2078)
+        at java.util.concurrent.ThreadPoolExecutor.awaitTermination(ThreadPoolExecutor.java:1475)
+        at jadx.api.JadxDecompiler.save(JadxDecompiler.java:153)
+        at jadx.api.JadxDecompiler.save(JadxDecompiler.java:138)
+        at jadx.cli.JadxCLI.processAndSave(JadxCLI.java:37)
+        at jadx.cli.JadxCLI.main(JadxCLI.java:18)
+
+   Locked ownable synchronizers:
+        - None
+
+"VM Thread" os_prio=2 tid=0x000000003cbfc800 nid=0xea4 runnable
+
+"Gang worker#0 (Parallel GC Threads)" os_prio=2 tid=0x0000000002d6c000 nid=0xf18 runnable
+
+"Gang worker#1 (Parallel GC Threads)" os_prio=2 tid=0x0000000002d6d800 nid=0xda0 runnable
+
+"Gang worker#2 (Parallel GC Threads)" os_prio=2 tid=0x0000000002d6f000 nid=0x15c4 runnable
+
+"Gang worker#3 (Parallel GC Threads)" os_prio=2 tid=0x0000000002d71000 nid=0x12b8 runnable
+
+"G1 Main Concurrent Mark GC Thread" os_prio=2 tid=0x0000000002e1f800 nid=0x174c runnable
+
+"Gang worker#0 (G1 Parallel Marking Threads)" os_prio=2 tid=0x0000000002e20800 nid=0xe84 runnable
+
+"G1 Concurrent Refinement Thread#0" os_prio=2 tid=0x0000000002d7c800 nid=0xe24 runnable
+
+"G1 Concurrent Refinement Thread#1" os_prio=2 tid=0x0000000002d7a800 nid=0xbf4 runnable
+
+"G1 Concurrent Refinement Thread#2" os_prio=2 tid=0x0000000002d79000 nid=0xf00 runnable
+
+"G1 Concurrent Refinement Thread#3" os_prio=2 tid=0x0000000002d76000 nid=0x1214 runnable
+
+"G1 Concurrent Refinement Thread#4" os_prio=2 tid=0x0000000002d75000 nid=0x1300 runnable
+
+"VM Periodic Task Thread" os_prio=2 tid=0x000000003ccf6800 nid=0x16d8 waiting on condition
+
+JNI global references: 517
+
+
+Found one Java-level deadlock:
+=============================
+"pool-1-thread-4":
+  waiting to lock monitor 0x0000000047032988 (object 0x0000000407e3b578, a jadx.core.dex.info.ClassInfo),
+  which is held by "pool-1-thread-3"
+"pool-1-thread-3":
+  waiting to lock monitor 0x0000000048aeb628 (object 0x0000000407f76398, a jadx.core.dex.info.ClassInfo),
+  which is held by "pool-1-thread-4"
+
+Java stack information for the threads listed above:
+===================================================
+"pool-1-thread-4":
+        at jadx.core.ProcessClass.process(ProcessClass.java:46)
+        - waiting to lock <0x0000000407e3b578> (a jadx.core.dex.info.ClassInfo)
+        at jadx.core.ProcessClass.process(ProcessClass.java:25)
+        at jadx.core.dex.nodes.ClassNode.loadAndProcess(ClassNode.java:248)
+        at jadx.core.codegen.InsnGen.processOverloadedArg(InsnGen.java:794)
+        at jadx.core.codegen.InsnGen.generateMethodArguments(InsnGen.java:765)
+        at jadx.core.codegen.InsnGen.makeInvoke(InsnGen.java:709)
+        at jadx.core.codegen.InsnGen.makeInsnBody(InsnGen.java:353)
+        at jadx.core.codegen.InsnGen.makeInsn(InsnGen.java:235)
+        at jadx.core.codegen.InsnGen.makeInsn(InsnGen.java:206)
+        at jadx.core.dex.visitors.regions.CheckRegions.getBlockInsnStr(CheckRegions.java:93)
+        at jadx.core.dex.visitors.regions.CheckRegions.visit(CheckRegions.java:64)
+        at jadx.core.dex.visitors.DepthTraversal.visit(DepthTraversal.java:30)
+        at jadx.core.dex.visitors.DepthTraversal.lambda$visit$1(DepthTraversal.java:15)
+        at jadx.core.dex.visitors.DepthTraversal$$Lambda$31/253399104.accept(Unknown Source)
+        at java.util.ArrayList.forEach(ArrayList.java:1257)
+        at jadx.core.dex.visitors.DepthTraversal.visit(DepthTraversal.java:15)
+        at jadx.core.dex.visitors.DepthTraversal.lambda$visit$0(DepthTraversal.java:14)
+        at jadx.core.dex.visitors.DepthTraversal$$Lambda$30/993888079.accept(Unknown Source)
+        at java.util.ArrayList.forEach(ArrayList.java:1257)
+        at jadx.core.dex.visitors.DepthTraversal.visit(DepthTraversal.java:14)
+        at jadx.core.ProcessClass.process(ProcessClass.java:54)
+        - locked <0x0000000407f76398> (a jadx.core.dex.info.ClassInfo)
+        at jadx.core.ProcessClass.generateCode(ProcessClass.java:30)
+        at jadx.core.dex.nodes.ClassNode.decompile(ClassNode.java:255)
+        at jadx.api.JavaClass.decompile(JavaClass.java:61)
+        - locked <0x000000040a3135d0> (a jadx.api.JavaClass)
+        at jadx.api.JadxDecompiler.lambda$appendSourcesSave$0(JadxDecompiler.java:211)
+        at jadx.api.JadxDecompiler$$Lambda$24/914942811.run(Unknown Source)
+        at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+        at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+        at java.lang.Thread.run(Thread.java:748)
+"pool-1-thread-3":
+        at jadx.core.ProcessClass.process(ProcessClass.java:46)
+        - waiting to lock <0x0000000407f76398> (a jadx.core.dex.info.ClassInfo)
+        at jadx.core.ProcessClass.processDependencies(ProcessClass.java:78)
+        at jadx.core.ProcessClass.process(ProcessClass.java:59)
+        - locked <0x0000000407e3b578> (a jadx.core.dex.info.ClassInfo)
+        at jadx.core.ProcessClass.generateCode(ProcessClass.java:30)
+        at jadx.core.dex.nodes.ClassNode.decompile(ClassNode.java:255)
+        at jadx.api.JavaClass.decompile(JavaClass.java:61)
+        - locked <0x000000040a313580> (a jadx.api.JavaClass)
+        at jadx.api.JadxDecompiler.lambda$appendSourcesSave$0(JadxDecompiler.java:211)
+        at jadx.api.JadxDecompiler$$Lambda$24/914942811.run(Unknown Source)
+        at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+        at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+        at java.lang.Thread.run(Thread.java:748)
+
+Found 1 deadlock.
+```
+
+APK: https://drive.google.com/file/d/16KjFNIb20qGCWREbQ64maNHlrsKurWkK/view?usp=sharing

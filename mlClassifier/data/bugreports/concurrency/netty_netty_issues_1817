@@ -1,0 +1,125 @@
+Deadlock for SSL connections when closing during an exception handler
+We've received a customer report in respect of Play 2.1.2, .3, .4 and Netty 3.6.3 where an internal Play upstream handler handles an exception and closes the channel, and there is SSL handling code also in the midst of handshaking. This then causes a deadlock.
+
+The following mail thread yields the details including the stack trace surrounding the deadlock:
+
+https://groups.google.com/d/msg/play-framework/-4DUxhxNa_g/5wbmPZdqar0J
+
+We have also tried Netty 3.6.6 and see the problem after suspecting the following issues having been resolved since 3.6.3:
+
+https://github.com/netty/netty/issues/1181
+https://github.com/netty/netty/issues/1310
+
+```
+Found one Java-level deadlock:
+=============================
+"play-internal-execution-context-1":
+  waiting to lock monitor 0x00007fd80dab2968 (object 0x00000007dcd19300, a java.lang.Object),
+  which is held by "New I/O worker #19"
+"New I/O worker #19":
+  waiting to lock monitor 0x00007fd80da852e8 (object 0x00000007dcd194c0, a java.lang.Object),
+  which is held by "play-internal-execution-context-1"
+
+Java stack information for the threads listed above:
+===================================================
+"play-internal-execution-context-1":
+at org.jboss.netty.channel.socket.nio.AbstractNioWorker.cleanUpWriteBuffer(AbstractNioWorker.java:374)
+- waiting to lock <0x00000007dcd19300> (a java.lang.Object)
+at org.jboss.netty.channel.socket.nio.AbstractNioWorker.close(AbstractNioWorker.java:349)
+at org.jboss.netty.channel.socket.nio.NioServerSocketPipelineSink.handleAcceptedSocket(NioServerSocketPipelineSink.java:81)
+at org.jboss.netty.channel.socket.nio.NioServerSocketPipelineSink.eventSunk(NioServerSocketPipelineSink.java:36)
+at org.jboss.netty.channel.DefaultChannelPipeline$DefaultChannelHandlerContext.sendDownstream(DefaultChannelPipeline.java:779)
+at org.jboss.netty.handler.ssl.SslHandler.closeOutboundAndChannel(SslHandler.java:1458)
+at org.jboss.netty.handler.ssl.SslHandler.handleDownstream(SslHandler.java:591)
+at org.jboss.netty.channel.DefaultChannelPipeline.sendDownstream(DefaultChannelPipeline.java:591)
+at org.jboss.netty.channel.DefaultChannelPipeline$DefaultChannelHandlerContext.sendDownstream(DefaultChannelPipeline.java:784)
+at org.jboss.netty.handler.codec.oneone.OneToOneEncoder.handleDownstream(OneToOneEncoder.java:54)
+at org.jboss.netty.channel.DefaultChannelPipeline.sendDownstream(DefaultChannelPipeline.java:591)
+at org.jboss.netty.channel.DefaultChannelPipeline$DefaultChannelHandlerContext.sendDownstream(DefaultChannelPipeline.java:784)
+at org.jboss.netty.channel.SimpleChannelHandler.closeRequested(SimpleChannelHandler.java:334)
+at org.jboss.netty.channel.SimpleChannelHandler.handleDownstream(SimpleChannelHandler.java:260)
+at org.jboss.netty.channel.DefaultChannelPipeline.sendDownstream(DefaultChannelPipeline.java:591)
+at org.jboss.netty.channel.DefaultChannelPipeline.sendDownstream(DefaultChannelPipeline.java:582)
+at org.jboss.netty.channel.Channels.close(Channels.java:812)
+at org.jboss.netty.channel.AbstractChannel.close(AbstractChannel.java:197)
+at play.core.server.netty.PlayDefaultUpstreamHandler.exceptionCaught(PlayDefaultUpstreamHandler.scala:37)
+at org.jboss.netty.channel.SimpleChannelUpstreamHandler.handleUpstream(SimpleChannelUpstreamHandler.java:112)
+at org.jboss.netty.channel.DefaultChannelPipeline.sendUpstream(DefaultChannelPipeline.java:564)
+at org.jboss.netty.channel.DefaultChannelPipeline$DefaultChannelHandlerContext.sendUpstream(DefaultChannelPipeline.java:791)
+at org.jboss.netty.channel.SimpleChannelHandler.exceptionCaught(SimpleChannelHandler.java:156)
+at org.jboss.netty.channel.SimpleChannelHandler.handleUpstream(SimpleChannelHandler.java:130)
+at org.jboss.netty.channel.DefaultChannelPipeline.sendUpstream(DefaultChannelPipeline.java:564)
+at org.jboss.netty.channel.DefaultChannelPipeline$DefaultChannelHandlerContext.sendUpstream(DefaultChannelPipeline.java:791)
+at org.jboss.netty.channel.SimpleChannelUpstreamHandler.exceptionCaught(SimpleChannelUpstreamHandler.java:153)
+at org.jboss.netty.channel.SimpleChannelUpstreamHandler.handleUpstream(SimpleChannelUpstreamHandler.java:112)
+at org.jboss.netty.channel.DefaultChannelPipeline.sendUpstream(DefaultChannelPipeline.java:564)
+at org.jboss.netty.channel.DefaultChannelPipeline$DefaultChannelHandlerContext.sendUpstream(DefaultChannelPipeline.java:791)
+at org.jboss.netty.handler.codec.frame.FrameDecoder.exceptionCaught(FrameDecoder.java:377)
+at org.jboss.netty.channel.SimpleChannelUpstreamHandler.handleUpstream(SimpleChannelUpstreamHandler.java:112)
+at org.jboss.netty.channel.DefaultChannelPipeline.sendUpstream(DefaultChannelPipeline.java:564)
+at org.jboss.netty.channel.DefaultChannelPipeline$DefaultChannelHandlerContext.sendUpstream(DefaultChannelPipeline.java:791)
+at org.jboss.netty.channel.Channels.fireExceptionCaught(Channels.java:536)
+at org.jboss.netty.handler.ssl.SslHandler.handshake(SslHandler.java:468)
+- locked <0x00000007dcd194c0> (a java.lang.Object)
+at org.jboss.netty.handler.ssl.SslHandler.handleRenegotiation(SslHandler.java:1338)
+- locked <0x00000007dcd194c0> (a java.lang.Object)
+at org.jboss.netty.handler.ssl.SslHandler.unwrap(SslHandler.java:1238)
+- locked <0x00000007dcd194c0> (a java.lang.Object)
+at org.jboss.netty.handler.ssl.SslHandler.closeOutboundAndChannel(SslHandler.java:1434)
+at org.jboss.netty.handler.ssl.SslHandler.handleDownstream(SslHandler.java:591)
+at org.jboss.netty.channel.DefaultChannelPipeline.sendDownstream(DefaultChannelPipeline.java:591)
+at org.jboss.netty.channel.DefaultChannelPipeline$DefaultChannelHandlerContext.sendDownstream(DefaultChannelPipeline.java:784)
+at org.jboss.netty.handler.codec.oneone.OneToOneEncoder.handleDownstream(OneToOneEncoder.java:54)
+at org.jboss.netty.channel.DefaultChannelPipeline.sendDownstream(DefaultChannelPipeline.java:591)
+at org.jboss.netty.channel.DefaultChannelPipeline$DefaultChannelHandlerContext.sendDownstream(DefaultChannelPipeline.java:784)
+at org.jboss.netty.channel.SimpleChannelHandler.closeRequested(SimpleChannelHandler.java:334)
+at org.jboss.netty.channel.SimpleChannelHandler.handleDownstream(SimpleChannelHandler.java:260)
+at org.jboss.netty.channel.DefaultChannelPipeline.sendDownstream(DefaultChannelPipeline.java:591)
+at org.jboss.netty.channel.DefaultChannelPipeline.sendDownstream(DefaultChannelPipeline.java:582)
+at org.jboss.netty.channel.Channels.close(Channels.java:812)
+at play.core.server.netty.PlayDefaultUpstreamHandler$$anonfun$play$core$server$netty$PlayDefaultUpstreamHandler$$handle$1$6$$anonfun$apply$9.apply(PlayDefaultUpstreamHandler.scala:219)
+at play.core.server.netty.PlayDefaultUpstreamHandler$$anonfun$play$core$server$netty$PlayDefaultUpstreamHandler$$handle$1$6$$anonfun$apply$9.apply(PlayDefaultUpstreamHandler.scala:215)
+at play.api.libs.concurrent.PlayPromise$$anonfun$extend1$1.apply(Promise.scala:113)
+at play.api.libs.concurrent.PlayPromise$$anonfun$extend1$1.apply(Promise.scala:113)
+at play.api.libs.concurrent.PlayPromise$$anonfun$extend$1$$anonfun$apply$1.apply(Promise.scala:104)
+at scala.concurrent.impl.Future$PromiseCompletingRunnable.liftedTree1$1(Future.scala:24)
+at scala.concurrent.impl.Future$PromiseCompletingRunnable.run(Future.scala:24)
+at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:615)
+at java.lang.Thread.run(Thread.java:722)
+"New I/O worker #19":
+at org.jboss.netty.handler.ssl.SslHandler.wrapNonAppData(SslHandler.java:1127)
+- waiting to lock <0x00000007dcd194c0> (a java.lang.Object)
+at org.jboss.netty.handler.ssl.SslHandler.closeOutboundAndChannel(SslHandler.java:1445)
+at org.jboss.netty.handler.ssl.SslHandler.handleDownstream(SslHandler.java:591)
+at org.jboss.netty.channel.DefaultChannelPipeline.sendDownstream(DefaultChannelPipeline.java:591)
+at org.jboss.netty.channel.DefaultChannelPipeline$DefaultChannelHandlerContext.sendDownstream(DefaultChannelPipeline.java:784)
+at org.jboss.netty.handler.codec.oneone.OneToOneEncoder.handleDownstream(OneToOneEncoder.java:54)
+at org.jboss.netty.channel.DefaultChannelPipeline.sendDownstream(DefaultChannelPipeline.java:591)
+at org.jboss.netty.channel.DefaultChannelPipeline$DefaultChannelHandlerContext.sendDownstream(DefaultChannelPipeline.java:784)
+at org.jboss.netty.channel.SimpleChannelHandler.closeRequested(SimpleChannelHandler.java:334)
+at org.jboss.netty.channel.SimpleChannelHandler.handleDownstream(SimpleChannelHandler.java:260)
+at org.jboss.netty.channel.DefaultChannelPipeline.sendDownstream(DefaultChannelPipeline.java:591)
+at org.jboss.netty.channel.DefaultChannelPipeline.sendDownstream(DefaultChannelPipeline.java:582)
+at org.jboss.netty.channel.Channels.close(Channels.java:812)
+at org.jboss.netty.channel.AbstractChannel.close(AbstractChannel.java:197)
+at org.jboss.netty.channel.ChannelFutureListener$1.operationComplete(ChannelFutureListener.java:41)
+at org.jboss.netty.channel.DefaultChannelFuture.notifyListener(DefaultChannelFuture.java:427)
+at org.jboss.netty.channel.DefaultChannelFuture.notifyListeners(DefaultChannelFuture.java:413)
+at org.jboss.netty.channel.DefaultChannelFuture.setSuccess(DefaultChannelFuture.java:362)
+at org.jboss.netty.channel.socket.nio.AbstractNioWorker.write0(AbstractNioWorker.java:217)
+- locked <0x00000007dcd19300> (a java.lang.Object)
+at org.jboss.netty.channel.socket.nio.AbstractNioWorker.writeFromTaskLoop(AbstractNioWorker.java:150)
+at org.jboss.netty.channel.socket.nio.AbstractNioChannel$WriteTask.run(AbstractNioChannel.java:335)
+at org.jboss.netty.channel.socket.nio.AbstractNioSelector.processTaskQueue(AbstractNioSelector.java:366)
+at org.jboss.netty.channel.socket.nio.AbstractNioSelector.run(AbstractNioSelector.java:290)
+at org.jboss.netty.channel.socket.nio.AbstractNioWorker.run(AbstractNioWorker.java:88)
+at org.jboss.netty.channel.socket.nio.NioWorker.run(NioWorker.java:178)
+at org.jboss.netty.util.ThreadRenamingRunnable.run(ThreadRenamingRunnable.java:108)
+at org.jboss.netty.util.internal.DeadLockProofWorker$1.run(DeadLockProofWorker.java:42)
+at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:615)
+at java.lang.Thread.run(Thread.java:722)
+
+Found 1 deadlock.
+```

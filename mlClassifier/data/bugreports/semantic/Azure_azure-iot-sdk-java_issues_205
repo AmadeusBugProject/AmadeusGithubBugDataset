@@ -1,0 +1,30 @@
+Cannot suppress output of "Lost connection to the server...."
+<!--
+Hi there! thank you for discovering and submitting an issue!
+
+Please first tell us a little bit about the environment you're running:
+The commands in the comments can be run directly in a command prompt.
+-->
+
+
+- **OS and version used:** Windows 10 
+
+- **Java runtime used:** <VERSION> Java 8
+
+- **SDK version used:** <VERSION> 1.7.0
+
+
+# Description of the issue:
+Printout of "Lost connection to the server." is printed both to System.out and to log.
+This makes it harder/impossible to suppres that output that would go to log with info level.
+
+I found the message in 
+https://github.com/Azure/azure-iot-sdk-java/blob/master/device/iot-device-client/src/main/java/com/microsoft/azure/sdk/iot/device/transport/amqps/AmqpsIotHubConnection.java#L769
+
+---
+System.out.println("Lost connection to the server. Reconnection attempt " + currentReconnectionAttempt++ + "...");
+        logger.LogInfo("Lost connection to the server. Reconnection attempt %s, method name is %s ", currentReconnectionAttempt, logger.getMethodName());
+---
+
+My suggestion is to remove the System.out line 
+

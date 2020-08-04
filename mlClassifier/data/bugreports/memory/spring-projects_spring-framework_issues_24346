@@ -1,0 +1,2 @@
+StringDecoder buffer leak related to maxInMemorySize limit
+Backport of gh-24339

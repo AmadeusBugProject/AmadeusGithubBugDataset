@@ -1,0 +1,15 @@
+DefaultSocks5CommandRequest incorrectly rejects SOCKS5 commands with dstPort=0
+### Expected behavior
+According to [SOCKS 5 spec](https://www.ietf.org/rfc/rfc1928.txt), dstPort = 0 is a valid value in case of UDP ASSOCIATE command:
+
+> If the client is not in possesion of the information at the time of the UDP ASSOCIATE, the client MUST use a port number and address of all zeros.
+
+### Actual behavior
+However, constructor of DefaultSocks5CommandRequest rejects this value as invalid:
+
+    if (dstPort <= 0 || dstPort >= 65536) {
+            throw new IllegalArgumentException("dstPort: " + dstPort + " (expected: 1~65535)");
+    }
+
+### Netty version
+4.1.15.Final

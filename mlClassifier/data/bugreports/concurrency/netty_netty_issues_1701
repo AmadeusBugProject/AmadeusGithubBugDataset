@@ -1,0 +1,68 @@
+Intermittent dead lock when java.util.logging uses a LoggingHandler writtin on top of Netty.
+```
+Found one Java-level deadlock:
+=============================
+"New I/O worker #1":
+  waiting to lock monitor 0x0000000000e2a278 (object 0x00000006fafed930, a java.util.logging.LogManager),
+  which is held by "main"
+"main":
+  waiting to lock monitor 0x0000000000e28c78 (object 0x00000006fafee5e0, a java.util.logging.LogManager$LoggerContext),
+  which is held by "New I/O worker #1"
+
+Java stack information for the threads listed above:
+===================================================
+"New I/O worker #1":
+at java.util.logging.LogManager.drainLoggerRefQueueBounded(LogManager.java:811)
+- waiting to lock <0x00000006fafed930> (a java.util.logging.LogManager)
+at java.util.logging.LogManager$LoggerContext.addLocalLogger(LogManager.java:511)
+- locked <0x00000006fafee5e0> (a java.util.logging.LogManager$LoggerContext)
+at java.util.logging.LogManager.addLogger(LogManager.java:848)
+at java.util.logging.LogManager.demandLogger(LogManager.java:405)
+at java.util.logging.Logger.demandLogger(Logger.java:317)
+at java.util.logging.Logger.getLogger(Logger.java:361)
+at org.jboss.netty.logging.JdkLoggerFactory.newInstance(JdkLoggerFactory.java:30)
+at org.jboss.netty.logging.InternalLoggerFactory.getInstance(InternalLoggerFactory.java:76)
+at org.jboss.netty.logging.InternalLoggerFactory.getInstance(InternalLoggerFactory.java:69)
+at org.jboss.netty.channel.socket.nio.SelectorUtil.<clinit>(SelectorUtil.java:28)
+at org.jboss.netty.channel.socket.nio.AbstractNioSelector.run(AbstractNioSelector.java:199)
+at org.jboss.netty.channel.socket.nio.AbstractNioWorker.run(AbstractNioWorker.java:90)
+at org.jboss.netty.channel.socket.nio.NioWorker.run(NioWorker.java:178)
+at org.jboss.netty.util.ThreadRenamingRunnable.run(ThreadRenamingRunnable.java:108)
+at org.jboss.netty.util.internal.DeadLockProofWorker$1.run(DeadLockProofWorker.java:42)
+at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:615)
+at java.lang.Thread.run(Thread.java:722)
+
+"main":
+at java.util.logging.LogManager$LoggerContext.findLogger(LogManager.java:489)
+- waiting to lock <0x00000006fafee5e0> (a java.util.logging.LogManager$LoggerContext)
+at java.util.logging.LogManager.getLogger(LogManager.java:910)
+at java.util.logging.LogManager.demandLogger(LogManager.java:400)
+at java.util.logging.Logger.demandLogger(Logger.java:317)
+at java.util.logging.Logger.getLogger(Logger.java:361)
+at org.jboss.netty.logging.JdkLoggerFactory.newInstance(JdkLoggerFactory.java:30)
+at org.jboss.netty.logging.InternalLoggerFactory.getInstance(InternalLoggerFactory.java:76)
+at org.jboss.netty.logging.InternalLoggerFactory.getInstance(InternalLoggerFactory.java:69)
+at org.jboss.netty.channel.socket.nio.NioClientSocketPipelineSink.<clinit>(NioClientSocketPipelineSink.java:36)
+at org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory.<init>(NioClientSocketChannelFactory.java:208)
+at org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory.<init>(NioClientSocketChannelFactory.java:185)
+...
+at sun.reflect.NativeConstructorAccessorImpl.newInstance0(Native Method)
+at sun.reflect.NativeConstructorAccessorImpl.newInstance(NativeConstructorAccessorImpl.java:57)
+at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
+at java.lang.reflect.Constructor.newInstance(Constructor.java:525)
+at java.lang.Class.newInstance0(Class.java:374)
+at java.lang.Class.newInstance(Class.java:327)
+at java.util.logging.LogManager$4.run(LogManager.java:685)
+at java.security.AccessController.doPrivileged(Native Method)
+at java.util.logging.LogManager.loadLoggerHandlers(LogManager.java:678)
+at java.util.logging.LogManager.initializeGlobalHandlers(LogManager.java:1249)
+- locked <0x00000006fafed930> (a java.util.logging.LogManager)
+at java.util.logging.LogManager.access$1300(LogManager.java:150)
+at java.util.logging.LogManager$RootLogger.getHandlers(LogManager.java:1332)
+at java.util.logging.Logger.log(Logger.java:564)
+at java.util.logging.Logger.doLog(Logger.java:586)
+at java.util.logging.Logger.log(Logger.java:609)
+at java.util.logging.Logger.info(Logger.java:1128)
+...
+```

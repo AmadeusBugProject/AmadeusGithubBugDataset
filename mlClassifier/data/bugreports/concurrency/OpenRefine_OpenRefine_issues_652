@@ -1,0 +1,16 @@
+ConcurrentModificationException when flushing projects at shutdown
+User Ryan Elenbaum reported this exception when shutting down the Refine server
+
+java.util.ConcurrentModificationException
+        at java.util.HashMap$HashIterator.nextEntry(HashMap.java:894)
+        at java.util.HashMap$EntryIterator.next(HashMap.java:934)
+        at java.util.HashMap$EntryIterator.next(HashMap.java:932)
+        at com.google.refine.InterProjectModel.flushJoinsInvolvingProject(InterProjectModel.java:109)
+        at com.google.refine.model.Project.dispose(Project.java:109)
+        at com.google.refine.ProjectManager.saveProjects(ProjectManager.java:265) 
+        at com.google.refine.ProjectManager.save(ProjectManager.java:206)
+        at com.google.refine.ProjectManager.dispose(ProjectManager.java:99)
+        at com.google.refine.RefineServlet.destroy(RefineServlet.java:151)
+        at org.mortbay.jetty.servlet.ServletHolder.destroyInstance(ServletHolder.java:318)
+        at org.mortbay.jetty.servlet.ServletHolder.doStop(ServletHolder.java:289)
+        at org.mortbay.component.AbstractLifeCycle.stop(AbstractLifeCycle.java:76)

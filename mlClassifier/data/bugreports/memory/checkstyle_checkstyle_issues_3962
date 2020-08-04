@@ -1,0 +1,48 @@
+ImportControlLoader does not close InputStream and leaks filehandles when xml is malformed
+## Overview
+I have been looking into this checkstyle plugin related gradle issue https://github.com/gradle/gradle/issues/1416. One of the issues the original author has is a problem with the import-control.xml file remaining open after gradle has finished execution.
+
+I have managed to replicate the issue on my Linux box using the provided project and checkstyle configuration.
+
+I have tracked the problem to be in ImportControlLoader which opens an InputStream but not closes it in case there is a parse exception.
+
+
+## Reproduction steps
+
+_Setup project as described in https://github.com/gradle/gradle/issues/1416_
+```
+$ $JAVA_HOME/bin/jps                      
+26515 RemoteMavenServer
+28548 Main
+17143 Jps
+15103 Launcher
+```
+```
+$ /home/gaganis/workspace/gradle-development/gradle/bin/gradle clean build --stacktrace --refresh-dependencies
+
+...
+Execution failed for task ':checkstyleMain'.
+> Unable to create Root Module: configLocation {/home/gaganis/programming/gradle/issue-1416/project/config/checkstyle/checkstyle.xml}, classpath {/home/gaganis/programming/gradle/issue-1416/project/build/classes/main:/home/gaganis/programming/gradle/issue-1416/project/build/resources/main}.
+
+...
+Caused by: com.puppycrawl.tools.checkstyle.api.CheckstyleException: unable to parse file:/home/gaganis/programming/gradle/issue-1416/project/config/checkstyle/import-control.xml - The content of element type "import-control" must match "((allow|disallow)*,subpackage*)".
+        at com.puppycrawl.tools.checkstyle.checks.imports.ImportControlLoader.load(ImportControlLoader.java:194)
+        at com.puppycrawl.tools.checkstyle.checks.imports.ImportControlLoader.load(ImportControlLoader.java:175)
+        at com.puppycrawl.tools.checkstyle.checks.imports.ImportControlCheck.setFile(ImportControlCheck.java:185)
+        ... 107 more
+```
+
+```
+lsof -n|grep checkstyle                                                                                     
+java      17293                gaganis  221r      REG                8,5       371    1791156 /home/gaganis/programming/gradle/issue-1416/project/config/checkstyle/import-control.xml
+...
+```
+
+
+---------------
+
+When checkstyle library fails to read import-control.xml for whatever reason it should not leave unclosed streams in the containing jvm.
+
+--------------
+
+_I have tries applying a fix using a try-with-resources construct but I got stuck because it drops coverage in cobertura. I have researched this quite a bit https://github.com/cobertura/cobertura/issues/289 but was unable to find a solution._

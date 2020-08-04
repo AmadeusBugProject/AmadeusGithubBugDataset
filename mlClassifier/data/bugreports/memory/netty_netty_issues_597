@@ -1,0 +1,37 @@
+Garbage being created from idle workers on 3.5.7.Final
+On Java 1.6.0_u35, Windows 7 64-bit with 3.5.7.Final I see lots of garbage being generated (~17MB/minute with 16 workers) and churning from idle workers, immediately after startup before framework is actively used.
+
+I don't observe this with 3.5.6.Final or 3.5.2.Final.
+
+We're starting Netty as a client with a pretty standard setup like
+
+```
+        ChannelFactory factory = new NioClientSocketChannelFactory(
+            Executors.newCachedThreadPool(),
+            Executors.newCachedThreadPool());
+    bootstrap = new ClientBootstrap(factory);
+```
+
+Any idea what's going on here?
+
+Sorry for the formatting here, but here's an excerpt of a Yourkit allocation trace
+
+```
+Name            Recorded Objects  Size (bytes)
+java.util.concurrent.ThreadPoolExecutor$Worker.run()    338335  12852080
+  java.util.concurrent.ThreadPoolExecutor$Worker.runTask(Runnable)  337818  12835328
+    org.jboss.netty.util.internal.DeadLockProofWorker$1.run()   337725  12823856
+      sun.nio.ch.SelectorImpl.select(long)  253434  9452216
+        sun.nio.ch.SelectorImpl.lockAndDoSelect(long)   253434  9452216
+          sun.nio.ch.WindowsSelectorImpl.doSelect(long) 253434  9452216
+            sun.nio.ch.SelectorImpl.processDeregisterQueue()    167796  6711816
+              java.util.HashMap$KeySet.iterator()   167795  6711800
+              java.util.HashMap.keySet()    1   16
+            sun.nio.ch.WindowsSelectorImpl.updateSelectedKeys() 85637   2740384
+              java.util.AbstractList.iterator() 85637   2740384
+            java.nio.channels.spi.AbstractSelector.begin()  1   16
+      sun.nio.ch.Util$2.iterator()  84286   3371440
+        java.util.HashSet.iterator()    84286   3371440
+          java.util.HashMap$KeySet.iterator()   84286   3371440
+            java.util.HashMap.newKeyIterator()  84286   3371440
+```

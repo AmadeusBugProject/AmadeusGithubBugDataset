@@ -1,0 +1,11 @@
+Many Bootsraps attempting to register to the event loop will cause deadlocks
+The majority of this discussion will be stemming from https://github.com/ElasticPortalSuite/BungeeCord/issues/206 an issue currently plaguing my software, which may or may not be Netty related, but it happens to basically every user.
+
+Basically after an undetermined amount of time, all existing connections are terminated (via my read timeout handler) and no new connections are made. Unfortunately I cannot reproduce this locally, probably due to the fact I do not run a production server that cycles through 1000+ connections a minute, however given the amount of users reporting this (all Linux, Java 7), it doesn't appear to be constrained to one particular setup.
+
+The biggest breakthrough of information I have so far, is this screenshot from VisualVM before and after the issue. Beforehand, the Netty IO threads are runnable (as is the case even when no connections are present), and after the issue occurs and all channels have been dropped, they appear to enter some sort of wait; no new connections can be made.
+You can view the screenshot here: http://d.pr/i/mJb7
+
+Unfortunately the VisualVM snapshot provided was useless, however I have informed my users of YourKit, and some of them have downloaded the free trial, and promise to get me useful CPU and heap dumps as soon as possible.
+
+Thanks for the hard work you put into Netty and I hope we can solve this final blocker for me (and I'm assuming 4.0 can't ship with this)

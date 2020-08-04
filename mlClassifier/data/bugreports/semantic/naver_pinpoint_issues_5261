@@ -1,0 +1,18 @@
+Pinpoint agent not working for nested jars
+#### What version of pinpoint are you using?
+1.8.1
+
+#### Describe the bug
+There is an exception in the pinpoint agent logs, and it concerns Spring Cassandra library. In fact, Applications that communicate with Cassandra are not linked to each other and I think it's because of this exception.
+For example normally the request flow is : 
+App 1 > App 2 > Cassandra
+but pinpoint web shows it like this : 
+App 1
+App 2 > Cassandra
+So the traceId is lost between the App 1 and App 2
+
+#### Logs
+You can see the logs here: https://gist.github.com/simoelmou/7123f75eb341023750daf11675df4284
+
+#### Additional context
+I'm using version 1.8.0 for the Collector and Web.

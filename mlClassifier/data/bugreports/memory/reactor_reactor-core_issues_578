@@ -1,0 +1,33 @@
+Memory leaks when using concatMap and subscribeOn Schedulers.newSingle
+When running the following test:
+```
+@Test
+    public void test() throws Exception {
+        AtomicLong counter = new AtomicLong(0L);
+        Scheduler scheduler = Schedulers.newParallel("scheduler", 10);
+        Flux
+            .<Long>generate(sink -> sink.next(counter.getAndIncrement()))
+            .concatMap(i -> {
+                return Mono.just(i)
+                    .publishOn(scheduler)
+                    .map(number -> number * 2L);
+            })
+            .subscribeOn(Schedulers.newSingle("subscriber"))
+            .subscribe(new BaseSubscriber<Long>() {
+                @Override
+                protected void hookOnSubscribe(Subscription subscription) {
+                    subscription.request(10);
+                }
+
+                @Override
+                protected void hookOnNext(Long value) {
+                    upstream().request(1);
+                }
+            });
+
+        Thread.sleep(100000000);
+    }
+```
+Memory starts to leak.
+Thanks to @dfeist the leak seems to be here `reactor.core.scheduler.SingleScheduler.SingleWorker#tasks` and as a workaround scheduler can be replaced with
+`.subscribeOn(Schedulers.fromExecutorService(Executors.newSingleThreadExecutor()))`.

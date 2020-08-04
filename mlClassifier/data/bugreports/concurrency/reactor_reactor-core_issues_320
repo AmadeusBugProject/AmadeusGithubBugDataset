@@ -1,0 +1,20 @@
+FluxBufferTimeOrSize buffer can be concurrently modified
+This for example causes the `WorkQueueProcessorTest#highRate` to fail:
+
+```
+@Override
+public void onNext(List<String> strings) {
+  int size = strings.size();
+  counter += size;
+  if (strings.contains(s)) {
+    synchronized (s) {
+      //logger.debug("Synchronizer!");
+      s.notifyAll();
+    }
+  } //added to showcase the bug:
+  else if (size > 1) {
+    System.out.println(strings.contains(s));
+  }
+}
+```
+The bug manifests itself in the else branch above, where the sysout would print `true` (contradicting the if/else condition).

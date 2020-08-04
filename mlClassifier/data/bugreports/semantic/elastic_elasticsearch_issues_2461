@@ -1,0 +1,7 @@
+Wildcard query on non existent field matches all documents.
+It turns into ConstantScore(NotDeleted(_:_)) and matches everything.
+Shouldn't it return no hit?
+
+https://gist.github.com/4200358
+
+We are using 0.19.11. Please note that 0.19.4 returns no hit.

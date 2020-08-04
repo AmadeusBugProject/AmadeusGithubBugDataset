@@ -1,0 +1,5 @@
+Server metadata listener notification has a race condition
+#### Description
+Multiple threads may collect server meta data and every time they do, they notify their collection to the listeners.
+When notifying the listeners, a `ServerMetaData` object is created based on everything collected up to that point and this is passed on to the listeners.
+However, these 2 operations are not atomic so a thread that have created the object first could publish it later, resulting in an out of order operation.

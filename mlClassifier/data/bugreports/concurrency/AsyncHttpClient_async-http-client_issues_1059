@@ -1,0 +1,2 @@
+Race condition when channel gets closed during a reuse before sending next request
+This happens because the future is still set on the channel so AHC tries to recover or abort it.

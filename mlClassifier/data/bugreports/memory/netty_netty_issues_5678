@@ -1,0 +1,28 @@
+SniHandler#replaceHandler() may leak (reference counted) SslContexts
+The SniHandler#select()/AsyncMapper#map() methods execute asynchronously and by the time the returned Future completes the client is possibly no longer connected.
+
+The #selection field will be set but probably after #channelInactive() (i.e. can't really do anything with it) and the #replace() call on the ChannelPipeline will probably throw a NoSuchElementException.
+
+I have no good suggestion how to fix it. There is an opportunity to cancel the future and it could try to decrement the refCnt if the Future completes successfully but the client has disconnected in the meantime. 
+
+Given SniHandler is a one-shot handler maybe something along the lines of this?!
+
+``` java
+class SniHandler {
+  private Promsie<SslContext> promise;
+
+  void handlerAdded(ChannelHandlerContext ctx) {
+    promsie = ctx.newPromise();
+  }
+
+  void channelInactive(ChannelHandlerContext ctx) {
+    promsie.cancel(true);
+    promsie.addFutureListener(... release() on success ...);
+    ctx.fireChannelInactive();
+  }
+
+  void select(...) {
+    mapping.map(hostname, promsie).addFutureListener(... replaceHandler() ...);
+  }
+}
+```

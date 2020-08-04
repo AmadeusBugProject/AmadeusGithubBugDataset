@@ -1,0 +1,38 @@
+Can't change html when using "spring-boot-starter-mustache" with Eclipse.
+I want to use SpringBoot, SpringDevtool, Mustache, Gradle, and Eclipse on Windows10.
+But not work.
+1. I run as "Spring Boot app" at Eclipse, and Tomcat start.
+2. I can change html in "src/main/templates"
+3. I access "localhost:8080" by chrome browser.
+4. I change html, then Eclipse error `The project was not built due to "Could not delete '/${projectname}/bin/templates'.". Fix the problem, then try refreshing this project and building it since it may be inconsistent` occurred, so "localhost:8080" return error.
+
+Are SpringBoot and Mustache and Eclipse bad combination?
+
+My build.gradle is ...
+
+```
+apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin: 'spring-boot' 
+
+sourceCompatibility = '1.8'
+targetCompatibility = '1.8'
+
+repositories {
+    mavenCentral()
+}
+
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:1.3.1.RELEASE")
+    }
+}
+
+dependencies {
+    compile 'org.springframework.boot:spring-boot-starter-web:1.3.1.RELEASE'
+    compile 'org.springframework.boot:spring-boot-starter-mustache:1.3.1.RELEASE'
+}
+```

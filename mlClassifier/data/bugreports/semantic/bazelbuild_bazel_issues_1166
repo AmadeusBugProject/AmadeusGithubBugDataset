@@ -1,0 +1,4 @@
+external repositories without an embedded name shouldn't warn
+After https://github.com/bazelbuild/bazel/commit/857cda2c45a5cc68c3fa398311c48c571a64915d all external repository rules warn about mismatched local/remote workspace names, even the `new_*` variety, for which there is no explicit external workspace name.
+
+Either the warning should take the new `__main__` name into account or (arguably better) generate an initial `WORKSPACE` file with `workspace(name="{local_repository_name}")` instead.

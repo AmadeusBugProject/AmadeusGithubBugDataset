@@ -1,0 +1,23 @@
+ExoPlayer set up with Rtmp extension leaks memory when closing the activity with playerView
+### Issue description
+LeakCanary detects a leak when closing activity with PlayerView.
+
+I'm using the ExoPlayer with Rtmp extensions to display the live stream. When the url is invalid (there is no live stream there) the leak occurs. 
+
+This is how the releasePlayer method looks like
+```
+private fun releasePlayer() {
+        player?.release()
+        player = null
+        playerView.player = null
+        mediaSource = null
+        trackSelector = null
+}
+```
+
+![screenshot_20180514-081829](https://user-images.githubusercontent.com/12660801/39981425-d7a85e26-5750-11e8-8459-e509f8e63483.jpg)
+
+### Version of ExoPlayer being used
+2.8.0
+
+

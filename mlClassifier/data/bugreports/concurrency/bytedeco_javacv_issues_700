@@ -1,0 +1,11 @@
+ FFmpegFrameRecorder.stop() sometimes causes app crashing
+`mFrameRecorder.stop();`
+
+```
+05-19 14:31:06.807 22871-24324/com.example.ffmpegvideorecord A/libc: Fatal signal 11 (SIGSEGV), code 1, fault addr 0x54 in tid 24324 (Thread-32239)
+05-19 14:31:06.860 6507-6507/? A/DEBUG: pid: 22871, tid: 24324, name: Thread-32239  >>> com.example.driverassistance <<<
+05-19 14:31:06.880 6507-6507/? A/DEBUG:     #00 pc 00678808  /data/app/com.example.driverassistance-1/lib/arm/libavcodec.so (avcodec_encode_audio2+32)
+05-19 14:31:06.880 6507-6507/? A/DEBUG:     #01 pc 00068f94  /data/app/com.example.driverassistance-1/lib/arm/libjniavcodec.so (Java_org_bytedeco_javacpp_avcodec_avcodec_1encode_1audio2__Lorg_bytedeco_javacpp_avcodec_00024AVCodecContext_2Lorg_bytedeco_javacpp_avcodec_00024AVPacket_2Lorg_bytedeco_javacpp_avutil_00024AVFrame_2_3I+296)
+05-19 14:31:06.880 6507-6507/? A/DEBUG:     #02 pc 00006a5f  /data/data/com.example.driverassistance/cache/slice-ffmpeg-3.2.1-1.3_e3128a5b50aeace251d3aa308a4b04261bbb0d49-classes.dex (offset 0x50000)
+
+```

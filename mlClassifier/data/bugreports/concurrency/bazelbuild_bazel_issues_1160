@@ -1,0 +1,4 @@
+Insane(100%) consumption of resources
+I tried to build tensorflow source using bazel. I was assuming bazel would take care of parallelisation in a smart way by having a balance between performance and judicious usage. But it was using 100% of all the cores and 95% RAM. This is in no way a good approach. I had to hard boot the  system.
+
+Under default cases, Bazel should use resources in more smarter way.

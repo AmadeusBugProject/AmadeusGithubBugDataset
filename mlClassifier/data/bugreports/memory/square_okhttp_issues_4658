@@ -1,0 +1,22 @@
+Connection leaks if WebSocket handshake fails
+This is a recent regression bisected to dd70407455f09f3eda7288f0bb9610f8943af03e.
+
+It may be the cause for the recent increase in test flakiness.
+
+To reproduce, run this modified test:
+```
+  @Test public void missingConnectionHeader() throws IOException {
+    webServer.enqueue(new MockResponse()
+        .setResponseCode(101)
+        .setHeader("Upgrade", "websocket")
+        .setHeader("Sec-WebSocket-Accept", "ujmZX4KXZqjwy6vi1aQFH5p4Ygk="));
+    newWebSocket();
+
+    clientListener.assertFailure(101, null, ProtocolException.class,
+        "Expected 'Connection' header value 'Upgrade' but was 'null'");
+
+    client.connectionPool().evictAll();
+    assertEquals(0, client.connectionPool().connectionCount());
+  }
+```
+

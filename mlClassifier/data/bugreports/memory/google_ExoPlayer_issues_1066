@@ -1,0 +1,177 @@
+Resource leak: E/Surface(3163): dequeueBuffer: IGraphicBufferProducer::requestBuffer failed: -22
+It seems that there is some kind of leak in `ExoPlayer`. I'm working on project for Android set-top box so the application should be able to work for a long time without being stopped.
+I want to be able to create many `ExoPlayer` instances in a single activity, too.
+So I'm experiencing the following issue after about 227 of start-release cycles of `ExoPlayer` in the same activity:
+
+```
+12-15 16:12:16.210: I/OMXClient(3163): Using client-side OMX mux.
+12-15 16:12:16.210: D/EventLogger(3163): state [0.19, true, B]
+12-15 16:12:16.210: E/ACodec(3163): [OMX.Intel.VideoDecoder.AVC] storeMetaDataInBuffers failed w/ err -2147483648
+12-15 16:12:16.210: D/EventLogger(3163): videoFormat [0.19, 0, 0]
+12-15 16:12:16.260: D/EventLogger(3163): decoderInitialized [0.25, OMX.Intel.VideoDecoder.AVC]
+12-15 16:12:16.270: I/OMXClient(3163): Using client-side OMX mux.
+12-15 16:12:16.280: D/EventLogger(3163): decoderInitialized [0.27, OMX.Intel.aac.decoder]
+12-15 16:12:16.360: E/Surface(3163): dequeueBuffer: IGraphicBufferProducer::requestBuffer failed: -22
+12-15 16:12:16.360: E/ACodec(3163): dequeueBuffer failed: Invalid argument (22)
+12-15 16:12:16.360: E/ACodec(3163): Failed to allocate output port buffers after port reconfiguration (error 0xffffffea)
+12-15 16:12:16.360: E/MediaCodec(3163): Codec reported an error. (omx error 0x80001001, internalError -22)
+12-15 16:12:16.370: E/ExoPlayerImplInternal(3163): Internal runtime error.
+12-15 16:12:16.370: E/ExoPlayerImplInternal(3163): java.lang.IllegalStateException
+12-15 16:12:16.370: E/ExoPlayerImplInternal(3163):  at android.media.MediaCodec.dequeueOutputBuffer(Native Method)
+12-15 16:12:16.370: E/ExoPlayerImplInternal(3163):  at com.google.android.exoplayer.MediaCodecTrackRenderer.drainOutputBuffer(MediaCodecTrackRenderer.java:816)
+12-15 16:12:16.370: E/ExoPlayerImplInternal(3163):  at com.google.android.exoplayer.MediaCodecTrackRenderer.doSomeWork(MediaCodecTrackRenderer.java:472)
+12-15 16:12:16.370: E/ExoPlayerImplInternal(3163):  at com.google.android.exoplayer.ExoPlayerImplInternal.doSomeWork(ExoPlayerImplInternal.java:431)
+12-15 16:12:16.370: E/ExoPlayerImplInternal(3163):  at com.google.android.exoplayer.ExoPlayerImplInternal.handleMessage(ExoPlayerImplInternal.java:213)
+12-15 16:12:16.370: E/ExoPlayerImplInternal(3163):  at android.os.Handler.dispatchMessage(Handler.java:98)
+12-15 16:12:16.370: E/ExoPlayerImplInternal(3163):  at android.os.Looper.loop(Looper.java:149)
+12-15 16:12:16.370: E/ExoPlayerImplInternal(3163):  at android.os.HandlerThread.run(HandlerThread.java:61)
+12-15 16:12:16.370: E/ExoPlayerImplInternal(3163):  at com.google.android.exoplayer.util.PriorityHandlerThread.run(PriorityHandlerThread.java:40)
+12-15 16:12:16.380: E/EventLogger(3163): playerFailed [0.36]
+12-15 16:12:16.380: E/EventLogger(3163): com.google.android.exoplayer.ExoPlaybackException: java.lang.IllegalStateException
+12-15 16:12:16.380: E/EventLogger(3163):    at com.google.android.exoplayer.ExoPlayerImplInternal.handleMessage(ExoPlayerImplInternal.java:246)
+12-15 16:12:16.380: E/EventLogger(3163):    at android.os.Handler.dispatchMessage(Handler.java:98)
+12-15 16:12:16.380: E/EventLogger(3163):    at android.os.Looper.loop(Looper.java:149)
+12-15 16:12:16.380: E/EventLogger(3163):    at android.os.HandlerThread.run(HandlerThread.java:61)
+12-15 16:12:16.380: E/EventLogger(3163):    at com.google.android.exoplayer.util.PriorityHandlerThread.run(PriorityHandlerThread.java:40)
+12-15 16:12:16.380: E/EventLogger(3163): Caused by: java.lang.IllegalStateException
+12-15 16:12:16.380: E/EventLogger(3163):    at android.media.MediaCodec.dequeueOutputBuffer(Native Method)
+12-15 16:12:16.380: E/EventLogger(3163):    at com.google.android.exoplayer.MediaCodecTrackRenderer.drainOutputBuffer(MediaCodecTrackRenderer.java:816)
+12-15 16:12:16.380: E/EventLogger(3163):    at com.google.android.exoplayer.MediaCodecTrackRenderer.doSomeWork(MediaCodecTrackRenderer.java:472)
+12-15 16:12:16.380: E/EventLogger(3163):    at com.google.android.exoplayer.ExoPlayerImplInternal.doSomeWork(ExoPlayerImplInternal.java:431)
+12-15 16:12:16.380: E/EventLogger(3163):    at com.google.android.exoplayer.ExoPlayerImplInternal.handleMessage(ExoPlayerImplInternal.java:213)
+12-15 16:12:16.380: E/EventLogger(3163):    ... 4 more
+12-15 16:12:17.360: A/ACodec(3163): frameworks/av/media/libstagefright/ACodec.cpp:4301 CHECK_EQ( mCodec->mOMX->freeNode(mCodec->mNode),(status_t)OK) failed: -2147483648 vs. 0
+12-15 16:12:17.370: A/libc(3163): Fatal signal 4 (SIGILL) at 0x4004829d (code=2), thread 7429 (CodecLooper)
+12-15 16:12:18.680: E/IMGSRV(7440): :0: PVRDRMOpen: TP3, ret = 50
+12-15 16:12:18.680: E/IMGSRV(7440): :0: PVRDRMOpen: TP3, ret = 53
+12-15 16:12:18.680: E/IMGSRV(7440): :0: PVRDRMOpen: TP3, ret = 54
+12-15 16:12:18.680: E/IMGSRV(7440): :0: PVRDRMOpen: TP3, ret = 54
+12-15 16:12:18.680: E/IMGSRV(7440): :0: PVRDRMOpen: TP3, ret = 54
+12-15 16:12:18.690: E/IMGSRV(7440): :0: PVRDRMOpen: TP3, ret = 56
+12-15 16:12:18.720: D/OpenGLRenderer(7440): Enabling debug mode 0
+```
+
+The application is able to switch many sources when I'm using a single instance of `ExoPlayer` (start-stop-change url) so I think that calling `release()` of `ExoPlayer` does not actually release all resources.
+I have tried to investigate and debug `ExoPlayer` implementation and as a result I have found that the problem is potentially in `VideoFrameReleaseTimeHelper->Choreographer`.
+The very fast fix is to remove `context` passing when creating `VideoFrameReleaseTimeHelper` in `MediaCodecVideoTrackRenderer` constructor:
+    `this.frameReleaseTimeHelper = new VideoFrameReleaseTimeHelper(context);`
+to be
+    `this.frameReleaseTimeHelper = new VideoFrameReleaseTimeHelper();`
+
+I know that this changes the way `Choreographer` is used, but allow me to do more than 227 start-release cycles.
+
+To demonstrate the problem I have changed the project in `ExoPlayer/demo` - I'm creating a new `ExoPlayer` every single second and then I'm releasing that instance. My tests are using "Apple TS media playlist" stream from the URL list.
+
+``` java
+diff --git a/demo/src/main/java/com/google/android/exoplayer/demo/PlayerActivity.java b/demo/src/main/java/com/google/android/exoplayer/demo/PlayerActivity.java
+index d515873..eb7355e 100644
+--- a/demo/src/main/java/com/google/android/exoplayer/demo/PlayerActivity.java
++++ b/demo/src/main/java/com/google/android/exoplayer/demo/PlayerActivity.java
+@@ -49,6 +49,7 @@
+ import android.content.pm.PackageManager;
+ import android.net.Uri;
+ import android.os.Bundle;
++import android.os.Handler;
+ import android.text.TextUtils;
+ import android.util.Log;
+ import android.view.KeyEvent;
+@@ -214,6 +215,7 @@
+     if (player == null) {
+       if (!maybeRequestPermission()) {
+         preparePlayer(true);
++        startReleaseAgain();
+       }
+     } else {
+       player.setBackgrounded(false);
+@@ -348,6 +350,21 @@
+     player.setPlayWhenReady(playWhenReady);
+   }
+
++  private int startReleaseCount = 0;
++  private void startReleaseAgain() {
++    startReleaseCount++;
++    Log.e(TAG, "count is "+startReleaseCount);
++    final Handler handler = new Handler();
++    handler.postDelayed(new Runnable() {
++      @Override
++      public void run() {
++        releasePlayer();
++        preparePlayer(true);
++        startReleaseAgain();
++      }
++    }, 1000);
++  }
++
+   private void releasePlayer() {
+    if (player != null) {
+      debugViewHelper.stop();
+      debugViewHelper = null;
+      playerPosition = player.getCurrentPosition();
+      player.release();
+      player = null;
+      eventLogger.endSession();
+      eventLogger = null;
+    }
+```
+
+Last thing I noticed while searching for leaks - if I comment the lines bellow I can create-release many `ExoPlayers` without problems:
+
+``` java
+diff --git a/library/src/main/java/com/google/android/exoplayer/VideoFrameReleaseTimeHelper.java b/library/src/main/java/com/google/android/exoplayer/VideoFrameReleaseTimeHelper.java
+index 7aeff78..d4c1fa8 100644
+--- a/library/src/main/java/com/google/android/exoplayer/VideoFrameReleaseTimeHelper.java
++++ b/library/src/main/java/com/google/android/exoplayer/VideoFrameReleaseTimeHelper.java
+@@ -86,8 +86,8 @@
+     haveSync = false;
+     if (useDefaultDisplayVsync) {
+       sampledVsyncTimeNs = 0;
+-      choreographer = Choreographer.getInstance();
+-      choreographer.postFrameCallback(this);
++      // choreographer = Choreographer.getInstance();
++      // choreographer.postFrameCallback(this);
+     }
+   }
+
+@@ -96,7 +96,7 @@
+    */
+   public void disable() {
+     if (useDefaultDisplayVsync) {
+-      choreographer.removeFrameCallback(this);
++      // choreographer.removeFrameCallback(this);
+       choreographer = null;
+     }
+   }
+@@ -104,7 +104,8 @@
+   @Override
+   public void doFrame(long vsyncTimeNs) {
+     sampledVsyncTimeNs = vsyncTimeNs;
+-    choreographer.postFrameCallbackDelayed(this, CHOREOGRAPHER_SAMPLE_DELAY_MILLIS);
++    
++    // choreographer.postFrameCallbackDelayed(this, CHOREOGRAPHER_SAMPLE_DELAY_MILLIS);
+   }
+
+   /**
+```
+
+but if I uncomment
+`+      // choreographer = Choreographer.getInstance();`
+
+then the problem occurs - `Choreographer` creates instance in `ThreadLocal` `initValue()`:
+
+``` java
+    private static final ThreadLocal<Choreographer> sThreadInstance =
+            new ThreadLocal<Choreographer>() {
+        @Override
+        protected Choreographer initialValue() {
+            Looper looper = Looper.myLooper();
+            if (looper == null) {
+                throw new IllegalStateException("The current thread must have a looper!");
+            }
+            return new Choreographer(looper);
+        }
+    };
+```
+
+`MediaCodecVideoTrackRenderer.onEnabled()` is called in new thread (`ExoPlayerImplInternal:Handler`) for each `ExoPlayer` so new `Choreographer` is created but I'm not sure what remains after garbage collection and causes the problem...
+
+For these tests I'm using `dev-1.5.3-rc` commit `345e4ec74e81c4413022d5952017e9e71f3c6af6` on Nexus 5 Android 6. The same problem exists in other devices (Android 4.2 and 4.4), too.

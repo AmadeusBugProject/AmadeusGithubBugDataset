@@ -1,0 +1,4 @@
+Potential resource leak in SslHandler
+`SslHandler.closeOutboundAndChannel(...)`, does not send the specified event downstream at all if `SslEngine.isInboundDone()` returns `true`.  If a user relies on the future of the specified event, the user will never be notified.  Also, if the peer does not close the connection after sending `close_notify`, the connection will never be closed, although all well-behaving peers will do.
+
+This issue was introduced by beadadecf7489dbcc43d7939f796cc4017340a49.

@@ -1,0 +1,25 @@
+RestTemplateBuilder auto detecting netty results in broken ssl
+Hi,
+
+I was playing around with `RestTemplateBuilder` and it's `RequestFactory` auto detection.
+While doing this I noticed that for netty, the resulting `Netty4ClientHttpRequestFactory` will be misconfigured, resulting in ssl/https calls being broken with such a client.
+
+The reason is that `Netty4ClientHttpRequestFactory` sets up it's sslContext in an `afterPropertiesSet` method, which the `RestTemplateBuilder` never calls.
+
+Declaring `Netty4ClientHttpRequestFactory` as a bean an setting it on the builder via `requestFactory(ClientHttpRequestFactory requestFactory)` will result in a working RestTemplate.
+
+Affected versions:
+* Verified on Spring boot 1.5.4
+* Looking at the code, seems to be still in 2.0.0
+
+Steps to reproduce:
+* Have spring-boot-starter-web and netty-all on the classpath.
+* Construct a Resttemplate via `new RestTemplateBuilder().build()`
+* Try to access an HTTPS Url
+
+Result:
+```
+2017-07-19 23:30:00.864  WARN 11639 --- [ntLoopGroup-2-1] io.netty.channel.ChannelInitializer      : Failed to initialize a channel. Closing: [id: 0x98b62de7]
+
+java.lang.IllegalArgumentException: sslContext should not be null
+```

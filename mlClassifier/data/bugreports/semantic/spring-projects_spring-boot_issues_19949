@@ -1,0 +1,72 @@
+Image building ignores failures in CNB build phases
+Currently, when attempting to use the Maven plugin to build an image using Cloud Native Buildpacks (`spring-boot:build-image`) if one of the phases results in a failure, the plugin continues on rather than failing immediately.  As an example, specifying an invalid value for  `$BP_JAVA_VERSION` results in the build failing but some sort of image being exported:
+
+```shell
+ > Running builder
+    [builder]     
+    [builder]     Cloud Foundry OpenJDK Buildpack v1.0.80
+    [builder]     
+    [builder]     Cloud Foundry OpenJDK Buildpack v1.0.80
+    [builder]       no valid dependencies for openjdk-jre, 13.0.2, and io.buildpacks.stacks.bionic in [(openjdk-jre, 8.0.232, [io.buildpacks.stacks.bionic org.cloudfoundry.stacks.cflinuxfs3]), (openjdk-jre, 11.0.5, [io.buildpacks.stacks.bionic org.cloudfoundry.stacks.cflinuxfs3]), (openjdk-jre, 13.0.1, [io.buildpacks.stacks.bionic org.cloudfoundry.stacks.cflinuxfs3]), (openjdk-jdk, 8.0.232, [io.buildpacks.stacks.bionic org.cloudfoundry.stacks.cflinuxfs3]), (openjdk-jdk, 11.0.5, [io.buildpacks.stacks.bionic org.cloudfoundry.stacks.cflinuxfs3]), (openjdk-jdk, 13.0.1, [io.buildpacks.stacks.bionic org.cloudfoundry.stacks.cflinuxfs3])]
+    [builder]     ERROR: failed to build: exit status 102
+ > Running exporter
+    [exporter]    Adding layer 'app'
+    [exporter]    Adding layer 'config'
+    [exporter]    Reusing layer 'launcher'
+    [exporter]    Reusing layer 'org.cloudfoundry.openjdk:openjdk-jre'
+    [exporter]    Reusing layer 'org.cloudfoundry.jvmapplication:executable-jar'
+    [exporter]    Reusing layer 'org.cloudfoundry.springboot:spring-boot'
+    [exporter]    Reusing layer 'org.cloudfoundry.springautoreconfiguration:auto-reconfiguration'
+    [exporter]    ERROR: failed to export: read build metadata: open /layers/config/metadata.toml: no such file or directory
+ > Running cacher
+    [cacher]      Reusing layer 'org.cloudfoundry.openjdk:2f08c469c9a8adea1b6ee3444ba2a8242a7e99d87976a077faf037a9eb7f884b'
+    [cacher]      Reusing layer 'org.cloudfoundry.jvmapplication:executable-jar'
+    [cacher]      Reusing layer 'org.cloudfoundry.springboot:spring-boot'
+    [cacher]      Reusing layer 'org.cloudfoundry.springautoreconfiguration:46ab131165317d91fd4ad3186abf755222744e2d277dc413def06f3ad45ab150'
+Successfully built image 'docker.io/library/build-image-test:0.0.1-SNAPSHOT'
+```
+
+The same failure simulated on `pack` results in the following:
+
+```shell
+$ pack build applications/jar --path applications/jar --builder cloudfoundry/cnb:bionic --env BP_JAVA_VERSION="13.0.1"
+bionic: Pulling from cloudfoundry/cnb
+Digest: sha256:efe9b17ac151ab53d8eaa1149d0fd44357f9cd0842a7bfb5a2894c02ae143ab7
+Status: Image is up to date for cloudfoundry/cnb:bionic
+base-cnb: Pulling from cloudfoundry/run
+Digest: sha256:ba9998ae4bb32ab43a7966c537aa1be153092ab0c7536eeef63bcd6336cbd0db
+Status: Image is up to date for cloudfoundry/run:base-cnb
+===> DETECTING
+[detector] 6 of 13 buildpacks participating
+[detector] org.cloudfoundry.openjdk                   v1.1.8
+[detector] org.cloudfoundry.jvmapplication            v1.0.136
+[detector] org.cloudfoundry.tomcat                    v1.1.102
+[detector] org.cloudfoundry.springboot                v1.1.2
+[detector] org.cloudfoundry.distzip                   v1.0.171
+[detector] org.cloudfoundry.springautoreconfiguration v1.0.187
+===> ANALYZING
+[analyzer] Restoring metadata for "org.cloudfoundry.openjdk:java-security-properties" from app image
+[analyzer] Restoring metadata for "org.cloudfoundry.openjdk:jvmkill" from app image
+[analyzer] Restoring metadata for "org.cloudfoundry.openjdk:link-local-dns" from app image
+[analyzer] Restoring metadata for "org.cloudfoundry.openjdk:memory-calculator" from app image
+[analyzer] Restoring metadata for "org.cloudfoundry.openjdk:openjdk-jre" from app image
+[analyzer] Restoring metadata for "org.cloudfoundry.openjdk:security-provider-configurer" from app image
+[analyzer] Restoring metadata for "org.cloudfoundry.openjdk:class-counter" from app image
+[analyzer] Restoring metadata for "org.cloudfoundry.openjdk:a3092627b082cb3cdbbe4b255d35687126aa604e6b613dcda33be9f7e1277162" from cache
+[analyzer] Restoring metadata for "org.cloudfoundry.openjdk:897f16fe8e056395209e35d2384013bd1ff250e717465769079e3f4793628c34" from cache
+[analyzer] Restoring metadata for "org.cloudfoundry.openjdk:90d40eab6959a7b4059c6409c4505040e8a04f75a481f7282e53430df3edda3e" from cache
+===> RESTORING
+[restorer] Restoring data for "org.cloudfoundry.openjdk:897f16fe8e056395209e35d2384013bd1ff250e717465769079e3f4793628c34" from cache
+[restorer] Restoring data for "org.cloudfoundry.openjdk:90d40eab6959a7b4059c6409c4505040e8a04f75a481f7282e53430df3edda3e" from cache
+[restorer] Restoring data for "org.cloudfoundry.openjdk:a3092627b082cb3cdbbe4b255d35687126aa604e6b613dcda33be9f7e1277162" from cache
+===> BUILDING
+[builder] 
+[builder] Cloud Foundry OpenJDK Buildpack v1.1.8
+[builder] 
+[builder] Cloud Foundry OpenJDK Buildpack v1.1.8
+[builder]   no valid dependencies for openjdk-jre, 13.0.1, and io.buildpacks.stacks.bionic in [(openjdk-jre, 8.0.242, [io.buildpacks.stacks.bionic org.cloudfoundry.stacks.cflinuxfs3]), (openjdk-jre, 11.0.6, [io.buildpacks.stacks.bionic org.cloudfoundry.stacks.cflinuxfs3]), (openjdk-jre, 13.0.2, [io.buildpacks.stacks.bionic org.cloudfoundry.stacks.cflinuxfs3]), (openjdk-jdk, 8.0.242, [io.buildpacks.stacks.bionic org.cloudfoundry.stacks.cflinuxfs3]), (openjdk-jdk, 11.0.6, [io.buildpacks.stacks.bionic org.cloudfoundry.stacks.cflinuxfs3]), (openjdk-jdk, 13.0.2, [io.buildpacks.stacks.bionic org.cloudfoundry.stacks.cflinuxfs3]), (jvmkill, 1.16.0, [io.buildpacks.stacks.bionic org.cloudfoundry.stacks.cflinuxfs3]), (memory-calculator, 4.0.0, [io.buildpacks.stacks.bionic org.cloudfoundry.stacks.cflinuxfs3])]
+[builder] ERROR: failed to build: exit status 102
+ERROR: failed with status code: 7
+```
+
+Any failure state generated by the lifecycle should cause failure of the build of the image.

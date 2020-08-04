@@ -1,0 +1,7 @@
+Refactoring accessors using only getters and setters
+We want to clean up the code and use only _standard_ accessors (gettters and setters).
+So we remove old non standard accessors.
+
+Current request builders to build request with elasticsearch stay the same, and its the recommended way to execute APIs with elasticsearch. The pure "request" APIs have changed, and now have setters methods instead of the non setters options, code will need to change if pure Request objects/api are used.
+
+Last, all response levels objects now only expose the getter API variant. We have had both variants (getter and non getter) for some time, and its time to clean it up as it creates both confusion and overhead on our end to maintain it.

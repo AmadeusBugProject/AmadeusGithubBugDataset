@@ -1,0 +1,33 @@
+Improve close behavior for failed pending writes
+When a write is pending, and the callback is failed, we have this stack trace:
+
+```
+"qtp1321203216-579" #579 prio=5 os_prio=0 tid=0x00007ff48c012800 nid=0x635 waiting on condition [0x00007ff2d423e000]
+   java.lang.Thread.State: WAITING (parking)
+    at sun.misc.Unsafe.park(Native Method)
+    - parking to wait for  <0x00000006fd24d518> (a java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject)
+    at java.util.concurrent.locks.LockSupport.park(LockSupport.java:175)
+    at java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(AbstractQueuedSynchronizer.java:2039)
+    at org.eclipse.jetty.util.SharedBlockingCallback$Blocker.block(SharedBlockingCallback.java:210)
+    at org.eclipse.jetty.server.HttpOutput.write(HttpOutput.java:164)
+    at org.eclipse.jetty.server.HttpOutput.close(HttpOutput.java:211)
+    at org.eclipse.jetty.server.Response.closeOutput(Response.java:987)
+    at org.eclipse.jetty.server.HttpOutput.closed(HttpOutput.java:256)
+    at org.eclipse.jetty.server.HttpChannel$CommitCallback.failed(HttpChannel.java:791)
+    at org.eclipse.jetty.io.AbstractConnection.failedCallback(AbstractConnection.java:91)
+    at org.eclipse.jetty.server.HttpConnection.access$1200(HttpConnection.java:50)
+    at org.eclipse.jetty.server.HttpConnection$SendCallback.onCompleteFailure(HttpConnection.java:799)
+    at org.eclipse.jetty.util.IteratingCallback.failed(IteratingCallback.java:401)
+    at org.eclipse.jetty.io.WriteFlusher$PendingState.fail(WriteFlusher.java:260)
+    at org.eclipse.jetty.io.WriteFlusher.completeWrite(WriteFlusher.java:401)
+    at org.eclipse.jetty.io.SelectChannelEndPoint$3.run(SelectChannelEndPoint.java:89)
+    at org.eclipse.jetty.io.SelectChannelEndPoint.onSelected(SelectChannelEndPoint.java:177)
+    at org.eclipse.jetty.io.ManagedSelector$SelectorProducer.processSelected(ManagedSelector.java:272)
+    at org.eclipse.jetty.io.ManagedSelector$SelectorProducer.produce(ManagedSelector.java:170)
+    at org.eclipse.jetty.util.thread.strategy.ProduceExecuteConsume.execute(ProduceExecuteConsume.java:50)
+    at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.run(ExecuteProduceConsume.java:143)
+```
+
+The stack trace shows that `WriteFlusher$PendingState.fail()` is called, so there was a write which got congested and when the callback fails we should not try to write more via `HttpOutput.closed()` because we know that the previous write was already congested.
+
+We should just hard close the connection.

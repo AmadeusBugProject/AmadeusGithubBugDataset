@@ -1,0 +1,35 @@
+ReadableBuffers.BufferInputStream does not release buffer on close()
+**gRPC Version used: 1.7.0
+Netty Version used: 4.1.16.Final
+Java version: 1.8.0_161**
+
+Context:
+Observed Netty leak detector complaining of bytebuf leaks on the gRPC server configured with Netty Epoll. This occurs more often, a few minutes after the service restarts on a prod machine. Here is the full trace of all 25 access for the bytebuf:
+ [netty_buf_leak_trace.txt](https://github.com/grpc/grpc-java/files/1795622/netty_buf_leak_trace.txt)
+
+The most recent access to the leaked bytebuf occurs at `io.netty.handler.codec.ByteToMessageDecoder.channelRead(ByteToMessageDecoder.java:273)` but the bytebuf is actually released here.  Not sure what is causing the leak.
+
+```
+ ERROR [2018-03-09 02:25:49,034] io.netty.util.ResourceLeakDetector: LEAK: ByteBuf.release() was not called before it's garbage-collected. See http://netty.io/wiki/reference-counted-objects.html for more information.
+ Recent access records: 25
+ #25:
+ 	io.netty.handler.codec.ByteToMessageDecoder.channelRead(ByteToMessageDecoder.java:273)
+ 	io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:362)
+ 	io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:348)
+ 	io.netty.channel.AbstractChannelHandlerContext.fireChannelRead(AbstractChannelHandlerContext.java:340)
+ 	io.netty.channel.DefaultChannelPipeline$HeadContext.channelRead(DefaultChannelPipeline.java:1359)
+ 	io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:362)
+ 	io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:348)
+ 	io.netty.channel.DefaultChannelPipeline.fireChannelRead(DefaultChannelPipeline.java:935)
+ 	io.netty.channel.epoll.AbstractEpollStreamChannel$EpollStreamUnsafe.epollInReady(AbstractEpollStreamChannel.java:797)
+ 	io.netty.channel.epoll.EpollEventLoop.processReady(EpollEventLoop.java:404)
+ 	io.netty.channel.epoll.EpollEventLoop.run(EpollEventLoop.java:304)
+ 	io.netty.util.concurrent.SingleThreadEventExecutor$5.run(SingleThreadEventExecutor.java:858)
+ 	io.netty.util.concurrent.DefaultThreadFactory$DefaultRunnableDecorator.run(DefaultThreadFactory.java:138)
+ 	java.lang.Thread.run(Thread.java:748)
+```
+
+
+
+
+

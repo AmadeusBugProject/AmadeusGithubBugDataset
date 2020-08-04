@@ -1,0 +1,4 @@
+Cannot compare persisted UUID
+Version used: 1.0.0
+
+UUID (persisted as `ByteArray`) cannot be used with `eq` method. Are byte arrays compared by reference?

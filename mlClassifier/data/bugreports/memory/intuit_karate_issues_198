@@ -1,0 +1,30 @@
+Parallel runner logger - java.lang.OutOfMemoryError: Java heap space
+This  was just reported.
+
+```
+java.lang.OutOfMemoryError: Java heap space
+    at java.util.Arrays.copyOf(Arrays.java:3332)
+    at java.lang.AbstractStringBuilder.expandCapacity(AbstractStringBuilder.java:137)
+    at java.lang.AbstractStringBuilder.ensureCapacityInternal(AbstractStringBuilder.java:121)
+    at java.lang.AbstractStringBuilder.append(AbstractStringBuilder.java:421)
+    at java.lang.StringBuilder.append(StringBuilder.java:136)
+    at ch.qos.logback.core.pattern.FormattingConverter.write(FormattingConverter.java:39)
+    at ch.qos.logback.core.pattern.PatternLayoutBase.writeLoopOnConverters(PatternLayoutBase.java:115)
+    at ch.qos.logback.classic.PatternLayout.doLayout(PatternLayout.java:141)
+    at ch.qos.logback.classic.PatternLayout.doLayout(PatternLayout.java:39)
+    at ch.qos.logback.core.encoder.LayoutWrappingEncoder.encode(LayoutWrappingEncoder.java:115)
+    at com.intuit.karate.cucumber.ReporterLogAppender.append(ReporterLogAppender.java:72)
+    at com.intuit.karate.cucumber.ReporterLogAppender.append(ReporterLogAppender.java:38)
+    at ch.qos.logback.core.AppenderBase.doAppend(AppenderBase.java:82)
+    at ch.qos.logback.core.spi.AppenderAttachableImpl.appendLoopOnAppenders(AppenderAttachableImpl.java:51)
+    at ch.qos.logback.classic.Logger.appendLoopOnAppenders(Logger.java:270)
+    at ch.qos.logback.classic.Logger.callAppenders(Logger.java:257)
+    at ch.qos.logback.classic.Logger.buildLoggingEventAndAppend(Logger.java:421)
+    at ch.qos.logback.classic.Logger.filterAndLog_0_Or3Plus(Logger.java:383)
+    at ch.qos.logback.classic.Logger.error(Logger.java:534)
+    at com.intuit.karate.cucumber.CucumberUtils.afterStep(CucumberUtils.java:152)
+    at com.intuit.karate.cucumber.CucumberUtils.runStep(CucumberUtils.java:126)
+    at com.intuit.karate.cucumber.CucumberUtils.runStep(CucumberUtils.java:106)
+    at com.intuit.karate.cucumber.CucumberUtils.call(CucumberUtils.java:96)
+    at com.intuit.karate.cucumber.CucumberUtils.call(CucumberUtils.java:88)
+```

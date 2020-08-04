@@ -1,0 +1,68 @@
+ConcurrentModificationException in THashIterator
+I've just caught the following exception:
+```
+null
+java.util.ConcurrentModificationException
+	at gnu.trove.THashIterator.nextIndex(THashIterator.java:83)
+	at gnu.trove.TIterator.moveToNextIndex(TIterator.java:88)
+	at gnu.trove.THashIterator.next(THashIterator.java:67)
+	at com.intellij.util.containers.RefHashMap$EntrySet$1.hasNext(RefHashMap.java:308)
+	at com.intellij.util.containers.RefHashMap$EntrySet.isEmpty(RefHashMap.java:340)
+	at com.intellij.util.containers.RefHashMap.isEmpty(RefHashMap.java:205)
+	at com.intellij.util.containers.WeakHashMap.isEmpty(WeakHashMap.java:36)
+	at mobi.hsz.idea.gitignore.IgnoreManager.isFileTracked(IgnoreManager.java:369)
+	at mobi.hsz.idea.gitignore.projectView.IgnoreViewNodeDecorator.decorate(IgnoreViewNodeDecorator.java:89)
+	at com.intellij.ide.projectView.impl.nodes.AbstractPsiBasedNode.a(AbstractPsiBasedNode.java:169)
+	at com.intellij.openapi.application.impl.ApplicationImpl.runReadAction(ApplicationImpl.java:934)
+	at com.intellij.ide.projectView.impl.nodes.AbstractPsiBasedNode.update(AbstractPsiBasedNode.java:139)
+	at com.intellij.ide.util.treeView.PresentableNodeDescriptor.getUpdatedPresentation(PresentableNodeDescriptor.java:88)
+	at com.intellij.ide.util.treeView.PresentableNodeDescriptor.update(PresentableNodeDescriptor.java:41)
+	at com.intellij.ide.util.treeView.AbstractTreeBuilder.updateNodeDescriptor(AbstractTreeBuilder.java:577)
+	at com.intellij.ide.util.treeView.AbstractTreeUi$22.perform(AbstractTreeUi.java:935)
+	at com.intellij.ide.util.treeView.TreeRunnable.run(TreeRunnable.java:36)
+	at com.intellij.ide.util.treeView.AbstractTreeUi.execute(AbstractTreeUi.java:1856)
+	at com.intellij.ide.util.treeView.AbstractTreeUi.update(AbstractTreeUi.java:931)
+	at com.intellij.ide.util.treeView.AbstractTreeUi.update(AbstractTreeUi.java:883)
+	at com.intellij.ide.util.treeView.AbstractTreeUi.access$1600(AbstractTreeUi.java:64)
+	at com.intellij.ide.util.treeView.AbstractTreeUi$24$1.run(AbstractTreeUi.java:1092)
+	at com.intellij.ide.util.treeView.AbstractTreeUi.execute(AbstractTreeUi.java:1835)
+	at com.intellij.ide.util.treeView.AbstractTreeUi.access$5200(AbstractTreeUi.java:64)
+	at com.intellij.ide.util.treeView.AbstractTreeUi$33.perform(AbstractTreeUi.java:1801)
+	at com.intellij.ide.util.treeView.TreeRunnable.run(TreeRunnable.java:36)
+	at com.intellij.ide.util.treeView.AbstractTreeUi.executeYieldingRequest(AbstractTreeUi.java:2090)
+	at com.intellij.ide.util.treeView.AbstractTreeUi.access$5800(AbstractTreeUi.java:64)
+	at com.intellij.ide.util.treeView.AbstractTreeUi$36$1.perform(AbstractTreeUi.java:2002)
+	at com.intellij.ide.util.treeView.TreeRunnable.run(TreeRunnable.java:36)
+	at com.intellij.ide.util.treeView.AbstractTreeBuilder.runOnYeildingDone(AbstractTreeBuilder.java:433)
+	at com.intellij.ide.util.treeView.AbstractTreeUi.runOnYieldingDone(AbstractTreeUi.java:2185)
+	at com.intellij.ide.util.treeView.AbstractTreeUi$36.perform(AbstractTreeUi.java:1997)
+	at com.intellij.ide.util.treeView.TreeRunnable.run(TreeRunnable.java:36)
+	at com.intellij.ide.util.treeView.AbstractTreeBuilder.lambda$new$0(AbstractTreeBuilder.java:51)
+	at com.intellij.util.containers.TransferToEDTQueue.processNext(TransferToEDTQueue.java:102)
+	at com.intellij.util.containers.TransferToEDTQueue.access$300(TransferToEDTQueue.java:37)
+	at com.intellij.util.containers.TransferToEDTQueue$1.run(TransferToEDTQueue.java:57)
+	at java.awt.event.InvocationEvent.dispatch(InvocationEvent.java:311)
+	at java.awt.EventQueue.dispatchEventImpl(EventQueue.java:762)
+	at java.awt.EventQueue.access$500(EventQueue.java:98)
+	at java.awt.EventQueue$3.run(EventQueue.java:715)
+	at java.awt.EventQueue$3.run(EventQueue.java:709)
+	at java.security.AccessController.doPrivileged(Native Method)
+	at java.security.ProtectionDomain$JavaSecurityAccessImpl.doIntersectionPrivilege(ProtectionDomain.java:80)
+	at java.awt.EventQueue.dispatchEvent(EventQueue.java:732)
+	at com.intellij.ide.IdeEventQueue.e(IdeEventQueue.java:821)
+	at com.intellij.ide.IdeEventQueue._dispatchEvent(IdeEventQueue.java:649)
+	at com.intellij.ide.IdeEventQueue.dispatchEvent(IdeEventQueue.java:365)
+	at java.awt.EventDispatchThread.pumpOneEventForFilters(EventDispatchThread.java:201)
+	at java.awt.EventDispatchThread.pumpEventsForFilter(EventDispatchThread.java:116)
+	at java.awt.EventDispatchThread.pumpEventsForHierarchy(EventDispatchThread.java:105)
+	at java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:101)
+	at java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:93)
+	at java.awt.EventDispatchThread.run(EventDispatchThread.java:82)
+```
+
+IntelliJ IDEA 2017.2.1
+Build #IU-172.3544.35, built on July 31, 2017
+
+JRE: 1.8.0_152-release-915-b6 x86_64
+JVM: OpenJDK 64-Bit Server VM by JetBrains s.r.o
+Mac OS X 10.12.6

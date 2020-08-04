@@ -1,0 +1,23 @@
+[core] xmlgen throws ArrayIndexOutOfBoundsException
+**Checks before report**
+- [+] check [latest unstable build](https://bintray.com/skylot/jadx/unstable/_latestVersion#files) (maybe issue already fixed)
+- [+] search existing issues by exception message
+- [+] check [Troubleshooting Q&A](https://github.com/skylot/jadx/wiki/Troubleshooting-Q&A) section on wiki
+
+**Describe error**
+Open ``` AndroidManifest.xml ```, its contents
+```
+Error decode manifest
+java.lang.ArrayIndexOutOfBoundsException: Index 6286 out of bounds for length 6284
+	at jadx.core.xmlgen.CommonBinaryParser.skipStrLen8(CommonBinaryParser.java:89)
+	at jadx.core.xmlgen.CommonBinaryParser.extractString8(CommonBinaryParser.java:59)
+	at jadx.core.xmlgen.CommonBinaryParser.parseStringPoolNoType(CommonBinaryParser.java:37)
+	at jadx.core.xmlgen.BinaryXMLParser.decode(BinaryXMLParser.java:117)
+	at jadx.core.xmlgen.BinaryXMLParser.parse(BinaryXMLParser.java:92)
+	at jadx.api.ResourcesLoader.loadContent(ResourcesLoader.java:97)
+	at jadx.api.ResourcesLoader.lambda$loadContent$0(ResourcesLoader.java:82)
+	at jadx.api.ResourcesLoader.decodeStream(ResourcesLoader.java:71)
+	at jadx.api.ResourcesLoader.loadContent(ResourcesLoader.java:82)
+	at jadx.api.ResourceFile.loadContent(ResourceFile.java:60)
+```
+APK: https://drive.google.com/file/d/1z12cxMHh_ifo0tIzfGmQLxnGsa2jPZSv/view?usp=sharing

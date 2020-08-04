@@ -1,0 +1,13 @@
+NPE in correction proposals
+Not quite #1708 
+
+```
+java.lang.NullPointerException
+    at com.redhat.ceylon.eclipse.code.correct.ChangeDeclarationProposal.addChangeDeclarationProposal(ChangeDeclarationProposal.java:32)
+    at com.redhat.ceylon.eclipse.code.correct.CeylonCorrectionProcessor.addProposals(CeylonCorrectionProcessor.java:738)
+    at com.redhat.ceylon.eclipse.code.correct.CeylonCorrectionProcessor.collectCorrections(CeylonCorrectionProcessor.java:517)
+    at com.redhat.ceylon.eclipse.code.hover.AnnotationInfo.collectProposals(AnnotationInfo.java:143)
+    at com.redhat.ceylon.eclipse.code.hover.AnnotationInfo.getCompletionProposals(AnnotationInfo.java:96)
+    at com.redhat.ceylon.eclipse.code.hover.AnnotationInformationControl$2.run(AnnotationInformationControl.java:256)
+    at org.eclipse.core.internal.jobs.Worker.run(Worker.java:55)
+```

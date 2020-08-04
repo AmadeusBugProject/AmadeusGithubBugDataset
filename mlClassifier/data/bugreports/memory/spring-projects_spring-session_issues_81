@@ -1,0 +1,2 @@
+websocket sample does not receive session expired events
+The websocket sample is not receiving session destroyed events from Redis despite being configured to receive keyspace notifications.

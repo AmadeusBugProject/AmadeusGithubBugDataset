@@ -1,0 +1,45 @@
+Issue on SslHandler with Netty 3.9.0
+Hi,
+
+I tried to upgrade to Netty 3.9.0 this morning, but I found out a blocking issue on SSL support. I check the change from 3.8.0 (where it works like a charm), and I only found the changes related to issue #1905 .
+
+I have great difficulties to find out what is going on, but here are however what I've seen:
+- The connection is opened
+- The sslHandler is created correctly
+- Then it blocks and never answer
+- After a while (a time-out in my application), the channel is forcely closed and I get this exception 
+  
+    05/01/2014/12:06:36.501 DEBUG [org.jboss.netty.handler.ssl.SslHandler] [New I/O worker #125] org.jboss.netty.logging.InternalLoggerFactory$1.debug(InternalLoggerFactory.java:85) : Swallowing an exception raised while writing non-app data
+  java.nio.channels.ClosedChannelException: null
+  at org.jboss.netty.channel.socket.nio.AbstractNioWorker.cleanUpWriteBuffer(AbstractNioWorker.java:433) ~[netty-3.9.0.Final.jar:na]
+  at org.jboss.netty.channel.socket.nio.AbstractNioWorker.writeFromUserCode(AbstractNioWorker.java:128) ~[netty-3.9.0.Final.jar:na]
+  at org.jboss.netty.channel.socket.nio.NioServerSocketPipelineSink.handleAcceptedSocket(NioServerSocketPipelineSink.java:99) ~[netty-3.9.0.Final.jar:na]
+  at org.jboss.netty.channel.socket.nio.NioServerSocketPipelineSink.eventSunk(NioServerSocketPipelineSink.java:36) ~[netty-3.9.0.Final.jar:na]
+  at org.jboss.netty.channel.Channels.write(Channels.java:725) ~[netty-3.9.0.Final.jar:na]
+  at org.jboss.netty.channel.Channels.write(Channels.java:686) ~[netty-3.9.0.Final.jar:na]
+  at org.jboss.netty.handler.ssl.SslHandler.wrapNonAppData(SslHandler.java:1177) ~[netty-3.9.0.Final.jar:na]
+  at org.jboss.netty.handler.ssl.SslHandler.unwrap(SslHandler.java:1294) ~[netty-3.9.0.Final.jar:na]
+  at org.jboss.netty.handler.ssl.SslHandler.channelDisconnected(SslHandler.java:668) ~[netty-3.9.0.Final.jar:na]
+  at org.jboss.netty.channel.Channels.fireChannelDisconnected(Channels.java:396) ~[netty-3.9.0.Final.jar:na]
+  at org.jboss.netty.channel.socket.nio.AbstractNioWorker.close(AbstractNioWorker.java:360) ~[netty-3.9.0.Final.jar:na]
+  at org.jboss.netty.channel.socket.nio.NioWorker.read(NioWorker.java:93) ~[netty-3.9.0.Final.jar:na]
+  at org.jboss.netty.channel.socket.nio.AbstractNioWorker.process(AbstractNioWorker.java:108) ~[netty-3.9.0.Final.jar:na]
+  at org.jboss.netty.channel.socket.nio.AbstractNioSelector.run(AbstractNioSelector.java:318) ~[netty-3.9.0.Final.jar:na]
+  at org.jboss.netty.channel.socket.nio.AbstractNioWorker.run(AbstractNioWorker.java:89) ~[netty-3.9.0.Final.jar:na]
+  at org.jboss.netty.channel.socket.nio.NioWorker.run(NioWorker.java:178) ~[netty-3.9.0.Final.jar:na]
+  at java.util.concurrent.ThreadPoolExecutor$Worker.runTask(ThreadPoolExecutor.java:895) [na:1.6.0_43]
+  at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:918) [na:1.6.0_43]
+  at java.lang.Thread.run(Thread.java:662) [na:1.6.0_43]
+
+I tested this issue with several ways:
+- using an http client (Firefox, Chrome)
+- using native Netty client
+
+But when I tried the native HTTP Netty server example, it works like a charm. So I'm lost. I checked most of the code, trying various ways:
+- enabling (default)/disabling automatic handshake
+- enabling / disabling (default) renegociation
+  When putting some logs in Netty, it appears that it never goes further than the handshake (the handshake never finished, except in error).
+
+Any idea ?
+
+Frederic

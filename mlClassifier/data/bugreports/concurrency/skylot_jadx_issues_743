@@ -1,0 +1,546 @@
+[core] Deadlock
+Hi @skylot,
+
+I've noticed that a lot of apps are not decompiled completely. I caught one of them with a deadlock 
+
+jadx-cli args
+```
+--no-replace-consts --show-bad-code --threads-count 8 --no-inline-anonymous --no-imports --deobf --deobf-min 2 --deobf-rewrite-cfg
+```
+
+Output of ``` jstack ```
+```
+Full thread dump Java HotSpot(TM) 64-Bit Server VM (12.0.2+10 mixed mode, sharing):
+
+Threads class SMR info:
+_java_thread_list=0x00007ffec3f45cc0, length=21, elements={
+0x00007ffec200b000, 0x00007ffec60b1800, 0x00007ffec2004000, 0x00007ffec5834000,
+0x00007ffec5833000, 0x00007ffec5837000, 0x00007ffec5008800, 0x00007ffec5860000,
+0x00007ffec508f800, 0x00007ffec2923000, 0x00007ffec662e000, 0x00007ffec7755000,
+0x00007ffec30af000, 0x00007ffec30b2000, 0x00007ffec4115000, 0x00007ffec32f3800,
+0x00007ffec4116000, 0x00007ffec32fe800, 0x00007ffec5a9a000, 0x00007ffec742f000,
+0x00007ffec8341800
+}
+
+"main" #1 prio=5 os_prio=31 cpu=6028.67ms elapsed=150.42s tid=0x00007ffec200b000 nid=0x2203 waiting on condition  [0x000070000eb68000]
+   java.lang.Thread.State: TIMED_WAITING (parking)
+	at jdk.internal.misc.Unsafe.park(java.base@12.0.2/Native Method)
+	- parking to wait for  <0x000000046b2754d0> (a java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject)
+	at java.util.concurrent.locks.LockSupport.parkNanos(java.base@12.0.2/LockSupport.java:235)
+	at java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.awaitNanos(java.base@12.0.2/AbstractQueuedSynchronizer.java:2123)
+	at java.util.concurrent.ThreadPoolExecutor.awaitTermination(java.base@12.0.2/ThreadPoolExecutor.java:1454)
+	at jadx.api.JadxDecompiler.save(JadxDecompiler.java:143)
+	at jadx.api.JadxDecompiler.save(JadxDecompiler.java:128)
+	at jadx.cli.JadxCLI.processAndSave(JadxCLI.java:39)
+	at jadx.cli.JadxCLI.main(JadxCLI.java:19)
+
+   Locked ownable synchronizers:
+	- None
+
+"Reference Handler" #2 daemon prio=10 os_prio=31 cpu=1.32ms elapsed=150.40s tid=0x00007ffec60b1800 nid=0x4403 waiting on condition  [0x000070001007d000]
+   java.lang.Thread.State: RUNNABLE
+	at java.lang.ref.Reference.waitForReferencePendingList(java.base@12.0.2/Native Method)
+	at java.lang.ref.Reference.processPendingReferences(java.base@12.0.2/Reference.java:241)
+	at java.lang.ref.Reference$ReferenceHandler.run(java.base@12.0.2/Reference.java:213)
+
+   Locked ownable synchronizers:
+	- None
+
+"Finalizer" #3 daemon prio=8 os_prio=31 cpu=0.20ms elapsed=150.40s tid=0x00007ffec2004000 nid=0x3703 in Object.wait()  [0x0000700010f80000]
+   java.lang.Thread.State: WAITING (on object monitor)
+	at java.lang.Object.wait(java.base@12.0.2/Native Method)
+	- waiting on <0x000000044479a3d0> (a java.lang.ref.ReferenceQueue$Lock)
+	at java.lang.ref.ReferenceQueue.remove(java.base@12.0.2/ReferenceQueue.java:155)
+	- locked <0x000000044479a3d0> (a java.lang.ref.ReferenceQueue$Lock)
+	at java.lang.ref.ReferenceQueue.remove(java.base@12.0.2/ReferenceQueue.java:176)
+	at java.lang.ref.Finalizer$FinalizerThread.run(java.base@12.0.2/Finalizer.java:170)
+
+   Locked ownable synchronizers:
+	- None
+
+"Signal Dispatcher" #4 daemon prio=9 os_prio=31 cpu=0.26ms elapsed=150.40s tid=0x00007ffec5834000 nid=0x3d03 runnable  [0x0000000000000000]
+   java.lang.Thread.State: RUNNABLE
+
+   Locked ownable synchronizers:
+	- None
+
+"C2 CompilerThread0" #5 daemon prio=9 os_prio=31 cpu=9832.54ms elapsed=150.40s tid=0x00007ffec5833000 nid=0xa903 waiting on condition  [0x0000000000000000]
+   java.lang.Thread.State: RUNNABLE
+   No compile task
+
+   Locked ownable synchronizers:
+	- None
+
+"C1 CompilerThread0" #8 daemon prio=9 os_prio=31 cpu=3159.32ms elapsed=150.40s tid=0x00007ffec5837000 nid=0x5603 waiting on condition  [0x0000000000000000]
+   java.lang.Thread.State: RUNNABLE
+   No compile task
+
+   Locked ownable synchronizers:
+	- None
+
+"Sweeper thread" #9 daemon prio=9 os_prio=31 cpu=82.48ms elapsed=150.40s tid=0x00007ffec5008800 nid=0xa603 runnable  [0x0000000000000000]
+   java.lang.Thread.State: RUNNABLE
+
+   Locked ownable synchronizers:
+	- None
+
+"Service Thread" #10 daemon prio=9 os_prio=31 cpu=4.99ms elapsed=150.38s tid=0x00007ffec5860000 nid=0x5903 runnable  [0x0000000000000000]
+   java.lang.Thread.State: RUNNABLE
+
+   Locked ownable synchronizers:
+	- None
+
+"Common-Cleaner" #11 daemon prio=8 os_prio=31 cpu=1.34ms elapsed=150.38s tid=0x00007ffec508f800 nid=0x5c03 in Object.wait()  [0x0000700014e95000]
+   java.lang.Thread.State: TIMED_WAITING (on object monitor)
+	at java.lang.Object.wait(java.base@12.0.2/Native Method)
+	- waiting on <no object reference available>
+	at java.lang.ref.ReferenceQueue.remove(java.base@12.0.2/ReferenceQueue.java:155)
+	- locked <0x000000044479ad88> (a java.lang.ref.ReferenceQueue$Lock)
+	at jdk.internal.ref.CleanerImpl.run(java.base@12.0.2/CleanerImpl.java:148)
+	at java.lang.Thread.run(java.base@12.0.2/Thread.java:835)
+	at jdk.internal.misc.InnocuousThread.run(java.base@12.0.2/InnocuousThread.java:134)
+
+   Locked ownable synchronizers:
+	- None
+
+"pool-1-thread-1" #12 prio=5 os_prio=31 cpu=2235.01ms elapsed=143.88s tid=0x00007ffec2923000 nid=0x8f03 waiting for monitor entry  [0x0000700016ecb000]
+   java.lang.Thread.State: BLOCKED (on object monitor)
+	at jadx.core.ProcessClass.process(ProcessClass.java:35)
+	- waiting to lock <0x0000000444a58f28> (a jadx.core.dex.info.ClassInfo)
+	at jadx.core.ProcessClass$$Lambda$153/0x000000080127a840.accept(Unknown Source)
+	at java.util.ArrayList.forEach(java.base@12.0.2/ArrayList.java:1540)
+	at jadx.core.ProcessClass.generateCode(ProcessClass.java:61)
+	at jadx.core.dex.nodes.ClassNode.decompile(ClassNode.java:262)
+	- locked <0x00000004423df9f0> (a jadx.core.dex.nodes.ClassNode)
+	at jadx.api.JavaClass.getCodeInfo(JavaClass.java:53)
+	at jadx.api.JadxDecompiler.lambda$appendSourcesSave$0(JadxDecompiler.java:201)
+	at jadx.api.JadxDecompiler$$Lambda$74/0x00000008011f0040.run(Unknown Source)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(java.base@12.0.2/ThreadPoolExecutor.java:1128)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(java.base@12.0.2/ThreadPoolExecutor.java:628)
+	at java.lang.Thread.run(java.base@12.0.2/Thread.java:835)
+
+   Locked ownable synchronizers:
+	- <0x000000046b276298> (a java.util.concurrent.ThreadPoolExecutor$Worker)
+
+"pool-1-thread-2" #13 prio=5 os_prio=31 cpu=4026.55ms elapsed=143.88s tid=0x00007ffec662e000 nid=0x8c03 waiting for monitor entry  [0x0000700017dce000]
+   java.lang.Thread.State: BLOCKED (on object monitor)
+	at jadx.core.ProcessClass.process(ProcessClass.java:35)
+	- waiting to lock <0x0000000444a53c20> (a jadx.core.dex.info.ClassInfo)
+	at jadx.core.ProcessClass$$Lambda$153/0x000000080127a840.accept(Unknown Source)
+	at java.util.ArrayList.forEach(java.base@12.0.2/ArrayList.java:1540)
+	at jadx.core.ProcessClass.generateCode(ProcessClass.java:61)
+	at jadx.core.dex.nodes.ClassNode.decompile(ClassNode.java:262)
+	- locked <0x00000004423d76b8> (a jadx.core.dex.nodes.ClassNode)
+	at jadx.api.JavaClass.getCodeInfo(JavaClass.java:53)
+	at jadx.api.JadxDecompiler.lambda$appendSourcesSave$0(JadxDecompiler.java:201)
+	at jadx.api.JadxDecompiler$$Lambda$74/0x00000008011f0040.run(Unknown Source)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(java.base@12.0.2/ThreadPoolExecutor.java:1128)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(java.base@12.0.2/ThreadPoolExecutor.java:628)
+	at java.lang.Thread.run(java.base@12.0.2/Thread.java:835)
+
+   Locked ownable synchronizers:
+	- <0x000000046b2eadd8> (a java.util.concurrent.ThreadPoolExecutor$Worker)
+
+"pool-1-thread-3" #14 prio=5 os_prio=31 cpu=2233.49ms elapsed=143.88s tid=0x00007ffec7755000 nid=0x7003 waiting for monitor entry  [0x0000700018cd0000]
+   java.lang.Thread.State: BLOCKED (on object monitor)
+	at jadx.core.ProcessClass.process(ProcessClass.java:35)
+	- waiting to lock <0x0000000444a58f28> (a jadx.core.dex.info.ClassInfo)
+	at jadx.core.dex.nodes.ClassNode.loadAndProcess(ClassNode.java:251)
+	at jadx.core.dex.nodes.RootNode.getClassGenerics(RootNode.java:279)
+	at jadx.core.utils.TypeUtils.replaceClassGenerics(TypeUtils.java:35)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate.invokeListener(TypeUpdate.java:296)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate$$Lambda$45/0x00000008011adc40.update(Unknown Source)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate.runListeners(TypeUpdate.java:190)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate.requestUpdate(TypeUpdate.java:171)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate.requestUpdateForSsaVar(TypeUpdate.java:148)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate.updateTypeForSsaVar(TypeUpdate.java:136)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate.updateTypeChecked(TypeUpdate.java:116)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate.apply(TypeUpdate.java:73)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate.apply(TypeUpdate.java:50)
+	at jadx.core.dex.visitors.typeinference.TypeInferenceVisitor.applyImmutableType(TypeInferenceVisitor.java:155)
+	at jadx.core.dex.visitors.typeinference.TypeInferenceVisitor.setImmutableType(TypeInferenceVisitor.java:136)
+	at jadx.core.dex.visitors.typeinference.TypeInferenceVisitor$$Lambda$126/0x000000080126b840.accept(Unknown Source)
+	at java.util.ArrayList.forEach(java.base@12.0.2/ArrayList.java:1540)
+	at jadx.core.dex.visitors.typeinference.TypeInferenceVisitor.runTypePropagation(TypeInferenceVisitor.java:102)
+	at jadx.core.dex.visitors.typeinference.TypeInferenceVisitor.visit(TypeInferenceVisitor.java:71)
+	at jadx.core.dex.visitors.DepthTraversal.visit(DepthTraversal.java:30)
+	at jadx.core.dex.visitors.DepthTraversal.lambda$visit$1(DepthTraversal.java:15)
+	at jadx.core.dex.visitors.DepthTraversal$$Lambda$90/0x0000000801246840.accept(Unknown Source)
+	at java.util.ArrayList.forEach(java.base@12.0.2/ArrayList.java:1540)
+	at jadx.core.dex.visitors.DepthTraversal.visit(DepthTraversal.java:15)
+	at jadx.core.dex.visitors.DepthTraversal.lambda$visit$0(DepthTraversal.java:14)
+	at jadx.core.dex.visitors.DepthTraversal$$Lambda$89/0x0000000801247440.accept(Unknown Source)
+	at java.util.ArrayList.forEach(java.base@12.0.2/ArrayList.java:1540)
+	at jadx.core.dex.visitors.DepthTraversal.visit(DepthTraversal.java:14)
+	at jadx.core.ProcessClass.process(ProcessClass.java:43)
+	- locked <0x0000000444a53c20> (a jadx.core.dex.info.ClassInfo)
+	at jadx.core.ProcessClass$$Lambda$153/0x000000080127a840.accept(Unknown Source)
+	at java.util.ArrayList.forEach(java.base@12.0.2/ArrayList.java:1540)
+	at jadx.core.ProcessClass.generateCode(ProcessClass.java:61)
+	at jadx.core.dex.nodes.ClassNode.decompile(ClassNode.java:262)
+	- locked <0x00000004422eb2f0> (a jadx.core.dex.nodes.ClassNode)
+	at jadx.api.JavaClass.getCodeInfo(JavaClass.java:53)
+	at jadx.api.JadxDecompiler.lambda$appendSourcesSave$0(JadxDecompiler.java:201)
+	at jadx.api.JadxDecompiler$$Lambda$74/0x00000008011f0040.run(Unknown Source)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(java.base@12.0.2/ThreadPoolExecutor.java:1128)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(java.base@12.0.2/ThreadPoolExecutor.java:628)
+	at java.lang.Thread.run(java.base@12.0.2/Thread.java:835)
+
+   Locked ownable synchronizers:
+	- <0x000000046b3604f8> (a java.util.concurrent.ThreadPoolExecutor$Worker)
+
+"pool-1-thread-4" #15 prio=5 os_prio=31 cpu=2264.72ms elapsed=143.88s tid=0x00007ffec30af000 nid=0x8703 waiting for monitor entry  [0x0000700019bd4000]
+   java.lang.Thread.State: BLOCKED (on object monitor)
+	at jadx.core.ProcessClass.process(ProcessClass.java:35)
+	- waiting to lock <0x0000000444a58f28> (a jadx.core.dex.info.ClassInfo)
+	at jadx.core.ProcessClass$$Lambda$153/0x000000080127a840.accept(Unknown Source)
+	at java.util.ArrayList.forEach(java.base@12.0.2/ArrayList.java:1540)
+	at jadx.core.ProcessClass.generateCode(ProcessClass.java:61)
+	at jadx.core.dex.nodes.ClassNode.decompile(ClassNode.java:262)
+	- locked <0x00000004423f94e8> (a jadx.core.dex.nodes.ClassNode)
+	at jadx.api.JavaClass.getCodeInfo(JavaClass.java:53)
+	at jadx.api.JadxDecompiler.lambda$appendSourcesSave$0(JadxDecompiler.java:201)
+	at jadx.api.JadxDecompiler$$Lambda$74/0x00000008011f0040.run(Unknown Source)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(java.base@12.0.2/ThreadPoolExecutor.java:1128)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(java.base@12.0.2/ThreadPoolExecutor.java:628)
+	at java.lang.Thread.run(java.base@12.0.2/Thread.java:835)
+
+   Locked ownable synchronizers:
+	- <0x000000046b3d5550> (a java.util.concurrent.ThreadPoolExecutor$Worker)
+
+"pool-1-thread-5" #16 prio=5 os_prio=31 cpu=2017.32ms elapsed=143.88s tid=0x00007ffec30b2000 nid=0x7203 waiting for monitor entry  [0x000070001aad7000]
+   java.lang.Thread.State: BLOCKED (on object monitor)
+	at jadx.core.ProcessClass.process(ProcessClass.java:35)
+	- waiting to lock <0x0000000444a53c20> (a jadx.core.dex.info.ClassInfo)
+	at jadx.core.ProcessClass$$Lambda$153/0x000000080127a840.accept(Unknown Source)
+	at java.util.ArrayList.forEach(java.base@12.0.2/ArrayList.java:1540)
+	at jadx.core.ProcessClass.generateCode(ProcessClass.java:61)
+	at jadx.core.dex.nodes.ClassNode.decompile(ClassNode.java:262)
+	- locked <0x00000004423a1f28> (a jadx.core.dex.nodes.ClassNode)
+	at jadx.api.JavaClass.getCodeInfo(JavaClass.java:53)
+	at jadx.api.JadxDecompiler.lambda$appendSourcesSave$0(JadxDecompiler.java:201)
+	at jadx.api.JadxDecompiler$$Lambda$74/0x00000008011f0040.run(Unknown Source)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(java.base@12.0.2/ThreadPoolExecutor.java:1128)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(java.base@12.0.2/ThreadPoolExecutor.java:628)
+	at java.lang.Thread.run(java.base@12.0.2/Thread.java:835)
+
+   Locked ownable synchronizers:
+	- <0x000000046b000360> (a java.util.concurrent.ThreadPoolExecutor$Worker)
+
+"pool-1-thread-6" #17 prio=5 os_prio=31 cpu=2136.99ms elapsed=143.88s tid=0x00007ffec4115000 nid=0x7303 waiting for monitor entry  [0x000070001b9da000]
+   java.lang.Thread.State: BLOCKED (on object monitor)
+	at jadx.core.ProcessClass.process(ProcessClass.java:35)
+	- waiting to lock <0x0000000444a53c20> (a jadx.core.dex.info.ClassInfo)
+	at jadx.core.ProcessClass.generateCode(ProcessClass.java:60)
+	at jadx.core.dex.nodes.ClassNode.decompile(ClassNode.java:262)
+	- locked <0x000000044243a208> (a jadx.core.dex.nodes.ClassNode)
+	at jadx.api.JavaClass.getCodeInfo(JavaClass.java:53)
+	at jadx.api.JadxDecompiler.lambda$appendSourcesSave$0(JadxDecompiler.java:201)
+	at jadx.api.JadxDecompiler$$Lambda$74/0x00000008011f0040.run(Unknown Source)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(java.base@12.0.2/ThreadPoolExecutor.java:1128)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(java.base@12.0.2/ThreadPoolExecutor.java:628)
+	at java.lang.Thread.run(java.base@12.0.2/Thread.java:835)
+
+   Locked ownable synchronizers:
+	- <0x000000046b0eac38> (a java.util.concurrent.ThreadPoolExecutor$Worker)
+
+"pool-1-thread-7" #18 prio=5 os_prio=31 cpu=2134.24ms elapsed=143.88s tid=0x00007ffec32f3800 nid=0x7403 waiting for monitor entry  [0x000070001c8db000]
+   java.lang.Thread.State: BLOCKED (on object monitor)
+	at jadx.core.ProcessClass.process(ProcessClass.java:35)
+	- waiting to lock <0x0000000444a53c20> (a jadx.core.dex.info.ClassInfo)
+	at jadx.core.ProcessClass.process(ProcessClass.java:27)
+	at jadx.core.dex.nodes.ClassNode.loadAndProcess(ClassNode.java:251)
+	at jadx.core.dex.nodes.RootNode.getClassGenerics(RootNode.java:279)
+	at jadx.core.utils.TypeUtils.replaceClassGenerics(TypeUtils.java:35)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate.invokeListener(TypeUpdate.java:296)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate$$Lambda$45/0x00000008011adc40.update(Unknown Source)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate.runListeners(TypeUpdate.java:190)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate.requestUpdate(TypeUpdate.java:171)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate.requestUpdateForSsaVar(TypeUpdate.java:148)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate.updateTypeForSsaVar(TypeUpdate.java:136)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate.updateTypeChecked(TypeUpdate.java:116)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate.moveListener(TypeUpdate.java:324)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate$$Lambda$36/0x00000008011af840.update(Unknown Source)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate.runListeners(TypeUpdate.java:190)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate.requestUpdate(TypeUpdate.java:171)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate.requestUpdateForSsaVar(TypeUpdate.java:148)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate.updateTypeForSsaVar(TypeUpdate.java:136)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate.updateTypeChecked(TypeUpdate.java:116)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate.moveListener(TypeUpdate.java:324)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate$$Lambda$36/0x00000008011af840.update(Unknown Source)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate.runListeners(TypeUpdate.java:190)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate.requestUpdate(TypeUpdate.java:171)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate.requestUpdateForSsaVar(TypeUpdate.java:142)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate.updateTypeForSsaVar(TypeUpdate.java:136)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate.updateTypeChecked(TypeUpdate.java:116)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate.moveListener(TypeUpdate.java:324)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate$$Lambda$36/0x00000008011af840.update(Unknown Source)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate.runListeners(TypeUpdate.java:190)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate.requestUpdate(TypeUpdate.java:171)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate.requestUpdateForSsaVar(TypeUpdate.java:148)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate.updateTypeForSsaVar(TypeUpdate.java:136)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate.updateTypeChecked(TypeUpdate.java:116)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate.apply(TypeUpdate.java:73)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate.apply(TypeUpdate.java:50)
+	at jadx.core.dex.visitors.typeinference.TypeInferenceVisitor.applyImmutableType(TypeInferenceVisitor.java:155)
+	at jadx.core.dex.visitors.typeinference.TypeInferenceVisitor.setImmutableType(TypeInferenceVisitor.java:136)
+	at jadx.core.dex.visitors.typeinference.TypeInferenceVisitor$$Lambda$126/0x000000080126b840.accept(Unknown Source)
+	at java.util.ArrayList.forEach(java.base@12.0.2/ArrayList.java:1540)
+	at jadx.core.dex.visitors.typeinference.TypeInferenceVisitor.runTypePropagation(TypeInferenceVisitor.java:102)
+	at jadx.core.dex.visitors.typeinference.TypeInferenceVisitor.visit(TypeInferenceVisitor.java:71)
+	at jadx.core.dex.visitors.DepthTraversal.visit(DepthTraversal.java:30)
+	at jadx.core.dex.visitors.DepthTraversal.lambda$visit$1(DepthTraversal.java:15)
+	at jadx.core.dex.visitors.DepthTraversal$$Lambda$90/0x0000000801246840.accept(Unknown Source)
+	at java.util.ArrayList.forEach(java.base@12.0.2/ArrayList.java:1540)
+	at jadx.core.dex.visitors.DepthTraversal.visit(DepthTraversal.java:15)
+	at jadx.core.ProcessClass.process(ProcessClass.java:43)
+	- locked <0x0000000444a58f28> (a jadx.core.dex.info.ClassInfo)
+	at jadx.core.ProcessClass.generateCode(ProcessClass.java:60)
+	at jadx.core.dex.nodes.ClassNode.decompile(ClassNode.java:262)
+	- locked <0x00000004423a5b08> (a jadx.core.dex.nodes.ClassNode)
+	at jadx.api.JavaClass.getCodeInfo(JavaClass.java:53)
+	at jadx.api.JadxDecompiler.lambda$appendSourcesSave$0(JadxDecompiler.java:201)
+	at jadx.api.JadxDecompiler$$Lambda$74/0x00000008011f0040.run(Unknown Source)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(java.base@12.0.2/ThreadPoolExecutor.java:1128)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(java.base@12.0.2/ThreadPoolExecutor.java:628)
+	at java.lang.Thread.run(java.base@12.0.2/Thread.java:835)
+
+   Locked ownable synchronizers:
+	- <0x000000046b075828> (a java.util.concurrent.ThreadPoolExecutor$Worker)
+
+"pool-1-thread-8" #19 prio=5 os_prio=31 cpu=2154.06ms elapsed=143.87s tid=0x00007ffec4116000 nid=0x8003 waiting for monitor entry  [0x000070001d7e0000]
+   java.lang.Thread.State: BLOCKED (on object monitor)
+	at jadx.core.ProcessClass.process(ProcessClass.java:35)
+	- waiting to lock <0x0000000444a58f28> (a jadx.core.dex.info.ClassInfo)
+	at jadx.core.ProcessClass$$Lambda$153/0x000000080127a840.accept(Unknown Source)
+	at java.util.ArrayList.forEach(java.base@12.0.2/ArrayList.java:1540)
+	at jadx.core.ProcessClass.generateCode(ProcessClass.java:61)
+	at jadx.core.dex.nodes.ClassNode.decompile(ClassNode.java:262)
+	- locked <0x0000000446a769b8> (a jadx.core.dex.nodes.ClassNode)
+	at jadx.api.JavaClass.getCodeInfo(JavaClass.java:53)
+	at jadx.api.JadxDecompiler.lambda$appendSourcesSave$0(JadxDecompiler.java:201)
+	at jadx.api.JadxDecompiler$$Lambda$74/0x00000008011f0040.run(Unknown Source)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(java.base@12.0.2/ThreadPoolExecutor.java:1128)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(java.base@12.0.2/ThreadPoolExecutor.java:628)
+	at java.lang.Thread.run(java.base@12.0.2/Thread.java:835)
+
+   Locked ownable synchronizers:
+	- <0x000000046b2eb100> (a java.util.concurrent.ThreadPoolExecutor$Worker)
+
+"Java2D Disposer" #21 daemon prio=10 os_prio=31 cpu=1.86ms elapsed=141.24s tid=0x00007ffec32fe800 nid=0x7907 in Object.wait()  [0x000070001e6e3000]
+   java.lang.Thread.State: WAITING (on object monitor)
+	at java.lang.Object.wait(java.base@12.0.2/Native Method)
+	- waiting on <0x000000046b3d56f8> (a java.lang.ref.ReferenceQueue$Lock)
+	at java.lang.ref.ReferenceQueue.remove(java.base@12.0.2/ReferenceQueue.java:155)
+	- locked <0x000000046b3d56f8> (a java.lang.ref.ReferenceQueue$Lock)
+	at java.lang.ref.ReferenceQueue.remove(java.base@12.0.2/ReferenceQueue.java:176)
+	at sun.java2d.Disposer.run(java.desktop@12.0.2/Disposer.java:144)
+	at java.lang.Thread.run(java.base@12.0.2/Thread.java:835)
+
+   Locked ownable synchronizers:
+	- None
+
+"AppKit Thread" #22 daemon prio=5 os_prio=31 cpu=264.56ms elapsed=141.21s tid=0x00007ffec5a9a000 nid=0x307 runnable  [0x0000000000000000]
+   java.lang.Thread.State: RUNNABLE
+
+   Locked ownable synchronizers:
+	- None
+
+"Java2D Queue Flusher" #24 daemon prio=10 os_prio=31 cpu=83.59ms elapsed=140.95s tid=0x00007ffec742f000 nid=0xf507 in Object.wait()  [0x00007000207fb000]
+   java.lang.Thread.State: TIMED_WAITING (on object monitor)
+	at java.lang.Object.wait(java.base@12.0.2/Native Method)
+	- waiting on <no object reference available>
+	at sun.java2d.opengl.OGLRenderQueue$QueueFlusher.run(java.desktop@12.0.2/OGLRenderQueue.java:205)
+	- locked <0x000000046b075b48> (a sun.java2d.opengl.OGLRenderQueue$QueueFlusher)
+	at java.lang.Thread.run(java.base@12.0.2/Thread.java:835)
+
+   Locked ownable synchronizers:
+	- None
+
+"Attach Listener" #54 daemon prio=9 os_prio=31 cpu=0.61ms elapsed=0.57s tid=0x00007ffec8341800 nid=0xc063 waiting on condition  [0x0000000000000000]
+   java.lang.Thread.State: RUNNABLE
+
+   Locked ownable synchronizers:
+	- None
+
+"VM Thread" os_prio=31 cpu=583.42ms elapsed=150.41s tid=0x00007ffec5832000 nid=0x4503 runnable  
+
+"GC Thread#0" os_prio=31 cpu=357.17ms elapsed=150.42s tid=0x00007ffec581e800 nid=0x4f03 runnable  
+
+"GC Thread#1" os_prio=31 cpu=372.99ms elapsed=149.43s tid=0x00007ffec60a1800 nid=0x5f07 runnable  
+
+"GC Thread#2" os_prio=31 cpu=364.40ms elapsed=149.43s tid=0x00007ffec6158000 nid=0x5e07 runnable  
+
+"GC Thread#3" os_prio=31 cpu=363.83ms elapsed=149.43s tid=0x00007ffec6159000 nid=0x6207 runnable  
+
+"GC Thread#4" os_prio=31 cpu=378.84ms elapsed=149.43s tid=0x00007ffec2018000 nid=0xa003 runnable  
+
+"GC Thread#5" os_prio=31 cpu=374.66ms elapsed=149.43s tid=0x00007ffec6152000 nid=0x6403 runnable  
+
+"GC Thread#6" os_prio=31 cpu=245.64ms elapsed=148.57s tid=0x00007ffec290d000 nid=0x6e03 runnable  
+
+"GC Thread#7" os_prio=31 cpu=247.52ms elapsed=148.57s tid=0x00007ffec304e000 nid=0x9103 runnable  
+
+"G1 Main Marker" os_prio=31 cpu=0.56ms elapsed=150.42s tid=0x00007ffec500a000 nid=0x4d03 runnable  
+
+"G1 Conc#0" os_prio=31 cpu=230.08ms elapsed=150.42s tid=0x00007ffec581f800 nid=0x4a03 runnable  
+
+"G1 Conc#1" os_prio=31 cpu=235.44ms elapsed=148.63s tid=0x00007ffec49d7800 nid=0x6d03 runnable  
+
+"G1 Refine#0" os_prio=31 cpu=285.65ms elapsed=150.41s tid=0x00007ffec60a0000 nid=0x3003 runnable  
+
+"G1 Refine#1" os_prio=31 cpu=116.28ms elapsed=148.85s tid=0x00007ffec3099000 nid=0x9b03 runnable  
+
+"G1 Refine#2" os_prio=31 cpu=81.27ms elapsed=148.85s tid=0x00007ffec5861800 nid=0x9a03 runnable  
+
+"G1 Refine#3" os_prio=31 cpu=56.36ms elapsed=148.85s tid=0x00007ffec309a000 nid=0x9803 runnable  
+
+"G1 Refine#4" os_prio=31 cpu=50.29ms elapsed=148.85s tid=0x00007ffec291f000 nid=0x9603 runnable  
+
+"G1 Refine#5" os_prio=31 cpu=27.60ms elapsed=148.85s tid=0x00007ffec40c3800 nid=0x6a03 runnable  
+
+"G1 Refine#6" os_prio=31 cpu=26.09ms elapsed=148.85s tid=0x00007ffec309a800 nid=0x9403 runnable  
+
+"G1 Refine#7" os_prio=31 cpu=27.13ms elapsed=148.84s tid=0x00007ffec309b800 nid=0x6b03 runnable  
+
+"G1 Young RemSet Sampling" os_prio=31 cpu=129.26ms elapsed=150.41s tid=0x00007ffec60a1000 nid=0x4803 runnable  
+"VM Periodic Task Thread" os_prio=31 cpu=118.62ms elapsed=150.38s tid=0x00007ffec508e800 nid=0xa303 waiting on condition  
+
+JNI global refs: 77, weak refs: 2
+
+
+Found one Java-level deadlock:
+=============================
+"pool-1-thread-1":
+  waiting to lock monitor 0x000000014600b200 (object 0x0000000444a58f28, a jadx.core.dex.info.ClassInfo),
+  which is held by "pool-1-thread-7"
+"pool-1-thread-7":
+  waiting to lock monitor 0x0000000145e9ee00 (object 0x0000000444a53c20, a jadx.core.dex.info.ClassInfo),
+  which is held by "pool-1-thread-3"
+"pool-1-thread-3":
+  waiting to lock monitor 0x000000014600b200 (object 0x0000000444a58f28, a jadx.core.dex.info.ClassInfo),
+  which is held by "pool-1-thread-7"
+
+Java stack information for the threads listed above:
+===================================================
+"pool-1-thread-1":
+	at jadx.core.ProcessClass.process(ProcessClass.java:35)
+	- waiting to lock <0x0000000444a58f28> (a jadx.core.dex.info.ClassInfo)
+	at jadx.core.ProcessClass$$Lambda$153/0x000000080127a840.accept(Unknown Source)
+	at java.util.ArrayList.forEach(java.base@12.0.2/ArrayList.java:1540)
+	at jadx.core.ProcessClass.generateCode(ProcessClass.java:61)
+	at jadx.core.dex.nodes.ClassNode.decompile(ClassNode.java:262)
+	- locked <0x00000004423df9f0> (a jadx.core.dex.nodes.ClassNode)
+	at jadx.api.JavaClass.getCodeInfo(JavaClass.java:53)
+	at jadx.api.JadxDecompiler.lambda$appendSourcesSave$0(JadxDecompiler.java:201)
+	at jadx.api.JadxDecompiler$$Lambda$74/0x00000008011f0040.run(Unknown Source)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(java.base@12.0.2/ThreadPoolExecutor.java:1128)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(java.base@12.0.2/ThreadPoolExecutor.java:628)
+	at java.lang.Thread.run(java.base@12.0.2/Thread.java:835)
+"pool-1-thread-7":
+	at jadx.core.ProcessClass.process(ProcessClass.java:35)
+	- waiting to lock <0x0000000444a53c20> (a jadx.core.dex.info.ClassInfo)
+	at jadx.core.ProcessClass.process(ProcessClass.java:27)
+	at jadx.core.dex.nodes.ClassNode.loadAndProcess(ClassNode.java:251)
+	at jadx.core.dex.nodes.RootNode.getClassGenerics(RootNode.java:279)
+	at jadx.core.utils.TypeUtils.replaceClassGenerics(TypeUtils.java:35)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate.invokeListener(TypeUpdate.java:296)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate$$Lambda$45/0x00000008011adc40.update(Unknown Source)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate.runListeners(TypeUpdate.java:190)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate.requestUpdate(TypeUpdate.java:171)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate.requestUpdateForSsaVar(TypeUpdate.java:148)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate.updateTypeForSsaVar(TypeUpdate.java:136)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate.updateTypeChecked(TypeUpdate.java:116)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate.moveListener(TypeUpdate.java:324)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate$$Lambda$36/0x00000008011af840.update(Unknown Source)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate.runListeners(TypeUpdate.java:190)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate.requestUpdate(TypeUpdate.java:171)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate.requestUpdateForSsaVar(TypeUpdate.java:148)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate.updateTypeForSsaVar(TypeUpdate.java:136)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate.updateTypeChecked(TypeUpdate.java:116)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate.moveListener(TypeUpdate.java:324)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate$$Lambda$36/0x00000008011af840.update(Unknown Source)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate.runListeners(TypeUpdate.java:190)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate.requestUpdate(TypeUpdate.java:171)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate.requestUpdateForSsaVar(TypeUpdate.java:142)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate.updateTypeForSsaVar(TypeUpdate.java:136)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate.updateTypeChecked(TypeUpdate.java:116)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate.moveListener(TypeUpdate.java:324)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate$$Lambda$36/0x00000008011af840.update(Unknown Source)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate.runListeners(TypeUpdate.java:190)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate.requestUpdate(TypeUpdate.java:171)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate.requestUpdateForSsaVar(TypeUpdate.java:148)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate.updateTypeForSsaVar(TypeUpdate.java:136)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate.updateTypeChecked(TypeUpdate.java:116)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate.apply(TypeUpdate.java:73)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate.apply(TypeUpdate.java:50)
+	at jadx.core.dex.visitors.typeinference.TypeInferenceVisitor.applyImmutableType(TypeInferenceVisitor.java:155)
+	at jadx.core.dex.visitors.typeinference.TypeInferenceVisitor.setImmutableType(TypeInferenceVisitor.java:136)
+	at jadx.core.dex.visitors.typeinference.TypeInferenceVisitor$$Lambda$126/0x000000080126b840.accept(Unknown Source)
+	at java.util.ArrayList.forEach(java.base@12.0.2/ArrayList.java:1540)
+	at jadx.core.dex.visitors.typeinference.TypeInferenceVisitor.runTypePropagation(TypeInferenceVisitor.java:102)
+	at jadx.core.dex.visitors.typeinference.TypeInferenceVisitor.visit(TypeInferenceVisitor.java:71)
+	at jadx.core.dex.visitors.DepthTraversal.visit(DepthTraversal.java:30)
+	at jadx.core.dex.visitors.DepthTraversal.lambda$visit$1(DepthTraversal.java:15)
+	at jadx.core.dex.visitors.DepthTraversal$$Lambda$90/0x0000000801246840.accept(Unknown Source)
+	at java.util.ArrayList.forEach(java.base@12.0.2/ArrayList.java:1540)
+	at jadx.core.dex.visitors.DepthTraversal.visit(DepthTraversal.java:15)
+	at jadx.core.ProcessClass.process(ProcessClass.java:43)
+	- locked <0x0000000444a58f28> (a jadx.core.dex.info.ClassInfo)
+	at jadx.core.ProcessClass.generateCode(ProcessClass.java:60)
+	at jadx.core.dex.nodes.ClassNode.decompile(ClassNode.java:262)
+	- locked <0x00000004423a5b08> (a jadx.core.dex.nodes.ClassNode)
+	at jadx.api.JavaClass.getCodeInfo(JavaClass.java:53)
+	at jadx.api.JadxDecompiler.lambda$appendSourcesSave$0(JadxDecompiler.java:201)
+	at jadx.api.JadxDecompiler$$Lambda$74/0x00000008011f0040.run(Unknown Source)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(java.base@12.0.2/ThreadPoolExecutor.java:1128)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(java.base@12.0.2/ThreadPoolExecutor.java:628)
+	at java.lang.Thread.run(java.base@12.0.2/Thread.java:835)
+"pool-1-thread-3":
+	at jadx.core.ProcessClass.process(ProcessClass.java:35)
+	- waiting to lock <0x0000000444a58f28> (a jadx.core.dex.info.ClassInfo)
+	at jadx.core.dex.nodes.ClassNode.loadAndProcess(ClassNode.java:251)
+	at jadx.core.dex.nodes.RootNode.getClassGenerics(RootNode.java:279)
+	at jadx.core.utils.TypeUtils.replaceClassGenerics(TypeUtils.java:35)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate.invokeListener(TypeUpdate.java:296)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate$$Lambda$45/0x00000008011adc40.update(Unknown Source)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate.runListeners(TypeUpdate.java:190)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate.requestUpdate(TypeUpdate.java:171)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate.requestUpdateForSsaVar(TypeUpdate.java:148)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate.updateTypeForSsaVar(TypeUpdate.java:136)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate.updateTypeChecked(TypeUpdate.java:116)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate.apply(TypeUpdate.java:73)
+	at jadx.core.dex.visitors.typeinference.TypeUpdate.apply(TypeUpdate.java:50)
+	at jadx.core.dex.visitors.typeinference.TypeInferenceVisitor.applyImmutableType(TypeInferenceVisitor.java:155)
+	at jadx.core.dex.visitors.typeinference.TypeInferenceVisitor.setImmutableType(TypeInferenceVisitor.java:136)
+	at jadx.core.dex.visitors.typeinference.TypeInferenceVisitor$$Lambda$126/0x000000080126b840.accept(Unknown Source)
+	at java.util.ArrayList.forEach(java.base@12.0.2/ArrayList.java:1540)
+	at jadx.core.dex.visitors.typeinference.TypeInferenceVisitor.runTypePropagation(TypeInferenceVisitor.java:102)
+	at jadx.core.dex.visitors.typeinference.TypeInferenceVisitor.visit(TypeInferenceVisitor.java:71)
+	at jadx.core.dex.visitors.DepthTraversal.visit(DepthTraversal.java:30)
+	at jadx.core.dex.visitors.DepthTraversal.lambda$visit$1(DepthTraversal.java:15)
+	at jadx.core.dex.visitors.DepthTraversal$$Lambda$90/0x0000000801246840.accept(Unknown Source)
+	at java.util.ArrayList.forEach(java.base@12.0.2/ArrayList.java:1540)
+	at jadx.core.dex.visitors.DepthTraversal.visit(DepthTraversal.java:15)
+	at jadx.core.dex.visitors.DepthTraversal.lambda$visit$0(DepthTraversal.java:14)
+	at jadx.core.dex.visitors.DepthTraversal$$Lambda$89/0x0000000801247440.accept(Unknown Source)
+	at java.util.ArrayList.forEach(java.base@12.0.2/ArrayList.java:1540)
+	at jadx.core.dex.visitors.DepthTraversal.visit(DepthTraversal.java:14)
+	at jadx.core.ProcessClass.process(ProcessClass.java:43)
+	- locked <0x0000000444a53c20> (a jadx.core.dex.info.ClassInfo)
+	at jadx.core.ProcessClass$$Lambda$153/0x000000080127a840.accept(Unknown Source)
+	at java.util.ArrayList.forEach(java.base@12.0.2/ArrayList.java:1540)
+	at jadx.core.ProcessClass.generateCode(ProcessClass.java:61)
+	at jadx.core.dex.nodes.ClassNode.decompile(ClassNode.java:262)
+	- locked <0x00000004422eb2f0> (a jadx.core.dex.nodes.ClassNode)
+	at jadx.api.JavaClass.getCodeInfo(JavaClass.java:53)
+	at jadx.api.JadxDecompiler.lambda$appendSourcesSave$0(JadxDecompiler.java:201)
+	at jadx.api.JadxDecompiler$$Lambda$74/0x00000008011f0040.run(Unknown Source)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(java.base@12.0.2/ThreadPoolExecutor.java:1128)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(java.base@12.0.2/ThreadPoolExecutor.java:628)
+	at java.lang.Thread.run(java.base@12.0.2/Thread.java:835)
+
+Found 1 deadlock.
+```
+
+APK: https://drive.google.com/file/d/18wPwqqSeeppz5LDybFX3CLvAZJ3sB7JJ/view?usp=sharing

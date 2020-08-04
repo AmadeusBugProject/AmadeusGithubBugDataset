@@ -1,0 +1,2 @@
+`javax.websocket.server.ServerContainer` is missing from ServletContext for pure SpringBoot application
+`javax.websocket.server.ServerContainer` from ServletContext is `null` when SpringBoot is used (without Spring WebSocket).  Spring WebSocket shoudn't be required to support it as underlying Tomcat(or Jetty) does exposed it like the Servlet Specification is required. More info [here](https://github.com/Atmosphere/atmosphere/issues/1836), sample [here](https://github.com/henri-tremblay/hipster-atmosphere)

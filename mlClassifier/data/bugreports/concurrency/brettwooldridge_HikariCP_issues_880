@@ -1,0 +1,47 @@
+Unexpected IllegalArgumentException in housekeeping task.
+#### Environment
+```
+HikariCP version: 2.6.1
+JDK version     : 1.8.0_71-b15
+Database        : PostgreSQL 9.6.1 on x86_64-pc-linux-gnu, compiled by gcc, 64-bit
+Driver version  : 9.4-1201-jdbc41
+```
+-----------------------------------------------------------------------------------------
+#### HikariCP Config
+```
+config.setAutoCommit(false);
+config.setMinimumIdle(10);
+config.setMaximumPoolSize(100);
+Other options are default.
+```
+-----------------------------------------------------------------------------------------
+#### Trace
+```
+Unexpected exception in housekeeping task
+java.lang.IllegalArgumentException: Comparison method violates its general contract!
+	at java.util.TimSort.mergeLo(TimSort.java:777) ~[?:1.8.0_71]
+	at java.util.TimSort.mergeAt(TimSort.java:514) ~[?:1.8.0_71]
+	at java.util.TimSort.mergeForceCollapse(TimSort.java:457) ~[?:1.8.0_71]
+	at java.util.TimSort.sort(TimSort.java:254) ~[?:1.8.0_71]
+	at java.util.Arrays.sort(Arrays.java:1512) ~[?:1.8.0_71]
+	at java.util.stream.SortedOps$SizedRefSortingSink.end(SortedOps.java:348) ~[?:1.8.0_71]
+	at java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:482) ~[?:1.8.0_71]
+	at java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:471) ~[?:1.8.0_71]
+	at java.util.stream.ForEachOps$ForEachOp.evaluateSequential(ForEachOps.java:151) ~[?:1.8.0_71]
+	at java.util.stream.ForEachOps$ForEachOp$OfRef.evaluateSequential(ForEachOps.java:174) ~[?:1.8.0_71]
+	at java.util.stream.AbstractPipeline.evaluate(AbstractPipeline.java:234) ~[?:1.8.0_71]
+	at java.util.stream.ReferencePipeline.forEachOrdered(ReferencePipeline.java:423) ~[?:1.8.0_71]
+	at com.zaxxer.hikari.pool.HikariPool$HouseKeeper.run(HikariPool.java:704) [NavServ.jar:?]
+	at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:511) [?:1.8.0_71]
+	at java.util.concurrent.FutureTask.runAndReset(FutureTask.java:308) [?:1.8.0_71]
+	at java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.access$301(ScheduledThreadPoolExecutor.java:180) [?:1.8.0_71]
+	at java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.run(ScheduledThreadPoolExecutor.java:294) [?:1.8.0_71]
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1142) [?:1.8.0_71]
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:617) [?:1.8.0_71]
+	at java.lang.Thread.run(Thread.java:745) [?:1.8.0_71]
+```
+-----------------------------------------------------------------------------------------
+
+I got this exception only 3 times: 2017-04-30 07:26:53.399, 2017-04-30 15:42:25.314, 2017-04-30 15:42:55.675 after about 4 days application non-stop working. 
+
+Really don't know what's wrong, because in the stack trace there is no my code.

@@ -1,0 +1,87 @@
+Nondeterministic behavior with glob
+Please provide the following information. The more we know about your system and use case, the more easily and likely we can help.
+
+### Description of the problem / feature request / question:
+
+_If asking a question or requesting a feature, also tell us about the underlying problem you're trying to solve._
+
+1. Include a nested workspace as a `local_repository`.
+2. `glob` files within the nested workspace.
+3. The glob will sometimes be empty under identical circumstances and sometimes not.
+
+### If possible, provide a minimal example to reproduce the problem:
+```
+$ find
+.
+./WORKSPACE
+./BUILD
+./nested
+./nested/foo.txt
+./nested/WORKSPACE
+./nested/BUILD
+$ cat nested/*
+$ cat WORKSPACE
+local_repository(
+    name = "nested",
+    path = "nested",
+)
+$ cat BUILD
+filegroup(
+    name = "foo",
+    srcs = ["nested/foo.txt"],
+)
+
+filegroup(
+    name = "glob",
+    srcs = glob(["nested/foo.txt"]),
+)
+```
+```
+$ bazel query :all --output=build
+```
+will sometimes produce:
+```
+# /path/to/BUILD:6:1
+filegroup(
+  name = "glob",
+  srcs = [],
+)
+
+# /path/to/BUILD:1:1
+filegroup(
+  name = "foo",
+  srcs = ["//:nested/foo.txt"],
+)
+```
+and sometimes:
+```
+# /path/to/BUILD:6:1
+filegroup(
+  name = "glob",
+  srcs = ["//:nested/foo.txt"],
+)
+
+# /path/to/BUILD:1:1
+filegroup(
+  name = "foo",
+  srcs = ["//:nested/foo.txt"],
+)
+```
+with no discernable difference in environment.
+Though one result will persist for some time.
+
+### Environment info
+* Operating System: Ubuntu 14.04.5 LTS
+
+
+* Bazel version (output of `bazel info release`): release 0.5.3
+
+
+###  Have you found anything relevant by searching the web?
+(e.g. [StackOverflow answers](http://stackoverflow.com/questions/tagged/bazel),
+[GitHub issues](https://github.com/bazelbuild/bazel/issues),
+email threads on the [`bazel-discuss`](https://groups.google.com/forum/#!forum/bazel-discuss) Google group)
+
+
+### Anything else, information or logs or outputs that would be helpful?
+(If they are large, please upload as attachment or provide link).

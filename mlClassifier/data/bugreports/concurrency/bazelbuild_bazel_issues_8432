@@ -1,0 +1,880 @@
+Bazel 0.25.2 hangs after running a few jobs
+> ATTENTION! Please read and follow:
+> - if this is a _question_ about how to build / test / query / deploy using Bazel, ask it on StackOverflow instead: https://stackoverflow.com/questions/tagged/bazel
+> - if this is a _discussion starter_, send it to bazel-discuss@googlegroups.com
+> - if this is a _bug_ or _feature request_, fill the form below as best as you can.
+
+### Description of the problem / feature request:
+
+Observed here: https://buildkite.com/bazel/bazelisk-plus-incompatible-flags/builds/115#c9e1d6df-0d66-40a1-ba84-f829f85f1ed6
+
+Bazel 0.25.2 was hanging after running a few `bazel test` builds with various incompatible flags.
+
+I captured the `ps -axuf` and `jstack` of the container. The suspicious part is this:
+
+```
+	at com.google.common.util.concurrent.Uninterruptibles.joinUninterruptibly(Uninterruptibles.java:132)
+	at com.google.devtools.build.lib.runtime.ExperimentalEventHandler.stopUpdateThread(ExperimentalEventHandler.java:1008)
+	at com.google.devtools.build.lib.runtime.ExperimentalEventHandler.completeBuild(ExperimentalEventHandler.java:679)
+	at com.google.devtools.build.lib.runtime.ExperimentalEventHandler.afterCommand(ExperimentalEventHandler.java:741)
+```
+
+Here's the full log:
+
+```
+root@bk-docker-n5kr:~# docker exec -it sweet_hodgkin bash
+buildkite-agent@bk-docker-n5kr:/workdir$ ps axuf
+USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+buildki+ 28086  1.0  0.0  18204  2620 pts/1    Ss   08:17   0:00 bash
+buildki+ 28093  0.0  0.0  15576  1604 pts/1    R+   08:17   0:00  \_ ps axuf
+buildki+     1  0.0  0.0   1076     8 pts/0    Ss   03:02   0:00 /sbin/docker-init -- /bin/sh -e -c curl -sS https://raw.githubusercontent.com/bazelbuild/continuous-integration/master/buildkite/bazelci.py?1558494111 -o bazelci.py python3.6 bazelci.py runner --task=ubuntu1404 --http_config=https://raw.githubusercontent.com/bazelbuild/rules_go/master/.bazelci
+buildki+     6  0.0  0.0   4456   924 pts/0    S+   03:02   0:00 /bin/sh -e -c curl -sS https://raw.githubusercontent.com/bazelbuild/continuous-integration/master/buildkite/bazelci.py?1558494111 -o bazelci.py python3.6 bazelci.py runner --task=ubuntu1404 --http_config=https://raw.githubusercontent.com/bazelbuild/rules_go/master/.bazelci/presubmit.yml --git_
+buildki+     9  0.0  0.0  88572 17480 pts/0    S+   03:02   0:00  \_ python3.6 bazelci.py runner --task=ubuntu1404 --http_config=https://raw.githubusercontent.com/bazelbuild/rules_go/master/.bazelci/presubmit.yml --git_repository=https://github.com/bazelbuild/rules_go.git --git_commit=e9ba5a46e82a1b5d14c41b3e5f6e2841507b36d9 --incompatible_flag=--incompatib
+buildki+ 16488  0.0  0.0 368060  8336 pts/0    Sl+  03:05   0:00      \_ bazel --migrate test --flaky_test_attempts=3 --build_tests_only --local_test_jobs=12 --show_progress_rate_limit=5 --curses=yes --color=yes --verbose_failures --keep_going --jobs=32 --announce_rc --experimental_multi_threaded_digest --experimental_repository_cache_hardlinks --disk_cache
+buildki+ 27475  0.0  0.0 212060  6608 pts/0    Sl+  03:08   0:02          \_ /var/lib/buildkite-agent/.cache/bazelisk/bin/bazel-0.25.2-linux-x86_64 test --flaky_test_attempts=3 --build_tests_only --local_test_jobs=12 --show_progress_rate_limit=5 --curses=yes --color=yes --verbose_failures --keep_going --jobs=32 --announce_rc --experimental_multi_threaded_di
+buildki+   187  8.8  8.3 51239872 10374388 ?   Ssl  03:02  27:48 bazel(rules_go) -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/var/lib/buildkite-agent/.cache/bazel/_bazel_buildkite-agent/05c08a510716cf145d3810bd22200732 -XX:+UseParallelOldGC --add-opens=java.base/java.nio=ALL-UNNAMED --add-opens=java.base/java.lang=ALL-UNNAMED -Xverify:none -Djava.util.
+
+buildkite-agent@bk-docker-n5kr:/workdir$ jstack 187
+2019-05-22 08:18:04
+Full thread dump OpenJDK 64-Bit Server VM (11.0.2+7-LTS mixed mode):
+
+Threads class SMR info:
+_java_thread_list=0x00007f06d4001c60, length=58, elements={
+0x00007f0748012000, 0x00007f07483f2000, 0x00007f07483f4000, 0x00007f074840f800,
+0x00007f0748411800, 0x00007f0748413800, 0x00007f0748416000, 0x00007f074848c000,
+0x00007f0748492800, 0x00007f0748b84000, 0x00007f0748d1b000, 0x00007f0748d0f800,
+0x00007f063c006800, 0x00007f06b01a9800, 0x00007f06b0265000, 0x00007f06b0267800,
+0x00007f063c008800, 0x00007f063c009800, 0x00007f041c001000, 0x00007f063c00b000,
+0x00007f063c00c800, 0x00007f063c00d800, 0x00007f063c00e000, 0x00007f063c00f800,
+0x00007f063c010800, 0x00007f063c011800, 0x00007f063c012800, 0x00007f063c014000,
+0x00007f063c015000, 0x00007f063c016000, 0x00007f063c017000, 0x00007f063c018800,
+0x00007f063c019800, 0x00007f063c01a800, 0x00007f063c01b800, 0x00007f063c01d000,
+0x00007f063c01e000, 0x00007f063c01f000, 0x00007f063c020800, 0x00007f063c021800,
+0x00007f063c022800, 0x00007f063c023800, 0x00007f063c025000, 0x00007f063c026000,
+0x00007f063c027000, 0x00007f063c028000, 0x00007f063c029800, 0x00007f063c02a800,
+0x00007f063c02b800, 0x00007f063c02c800, 0x00007f063c02e000, 0x00007f063c02f000,
+0x00007f063c030000, 0x00007f063c031000, 0x00007f063c032800, 0x00007f063c033800,
+0x00007f02f4477000, 0x00007f06d4001000
+}
+
+"main" #1 prio=5 os_prio=0 cpu=1034.63ms elapsed=18923.62s tid=0x00007f0748012000 nid=0xbc in Object.wait()  [0x00007f0751c65000]
+   java.lang.Thread.State: WAITING (on object monitor)
+	at java.lang.Object.wait(java.base@11.0.2/Native Method)
+	- waiting on <0x000000009fde0ea0> (a java.lang.Object)
+	at java.lang.Object.wait(java.base@11.0.2/Unknown Source)
+	at io.grpc.internal.ServerImpl.awaitTermination(ServerImpl.java:265)
+	- waiting to re-lock in wait() <0x000000009fde0ea0> (a java.lang.Object)
+	at com.google.devtools.build.lib.server.GrpcServerImpl.serve(GrpcServerImpl.java:620)
+	at com.google.devtools.build.lib.runtime.BlazeRuntime.serverMain(BlazeRuntime.java:1036)
+	at com.google.devtools.build.lib.runtime.BlazeRuntime.main(BlazeRuntime.java:738)
+	at com.google.devtools.build.lib.bazel.Bazel.main(Bazel.java:71)
+
+"Reference Handler" #2 daemon prio=10 os_prio=0 cpu=180.73ms elapsed=18923.60s tid=0x00007f07483f2000 nid=0xbf waiting on condition  [0x00007f072c550000]
+   java.lang.Thread.State: RUNNABLE
+	at java.lang.ref.Reference.waitForReferencePendingList(java.base@11.0.2/Native Method)
+	at java.lang.ref.Reference.processPendingReferences(java.base@11.0.2/Unknown Source)
+	at java.lang.ref.Reference$ReferenceHandler.run(java.base@11.0.2/Unknown Source)
+
+"Finalizer" #3 daemon prio=8 os_prio=0 cpu=80.99ms elapsed=18923.59s tid=0x00007f07483f4000 nid=0xc0 in Object.wait()  [0x00007f072c44f000]
+   java.lang.Thread.State: WAITING (on object monitor)
+	at java.lang.Object.wait(java.base@11.0.2/Native Method)
+	- waiting on <no object reference available>
+	at java.lang.ref.ReferenceQueue.remove(java.base@11.0.2/Unknown Source)
+	- waiting to re-lock in wait() <0x000000009f627800> (a java.lang.ref.ReferenceQueue$Lock)
+	at java.lang.ref.ReferenceQueue.remove(java.base@11.0.2/Unknown Source)
+	at java.lang.ref.Finalizer$FinalizerThread.run(java.base@11.0.2/Unknown Source)
+
+"Signal Dispatcher" #4 daemon prio=9 os_prio=0 cpu=0.95ms elapsed=18923.58s tid=0x00007f074840f800 nid=0xc1 runnable  [0x0000000000000000]
+   java.lang.Thread.State: RUNNABLE
+
+"C2 CompilerThread0" #5 daemon prio=9 os_prio=0 cpu=48852.42ms elapsed=18923.58s tid=0x00007f0748411800 nid=0xc2 waiting on condition  [0x0000000000000000]
+   java.lang.Thread.State: RUNNABLE
+   No compile task
+
+"C1 CompilerThread0" #15 daemon prio=9 os_prio=0 cpu=5645.14ms elapsed=18923.58s tid=0x00007f0748413800 nid=0xc3 waiting on condition  [0x0000000000000000]
+   java.lang.Thread.State: RUNNABLE
+   No compile task
+
+"Sweeper thread" #20 daemon prio=9 os_prio=0 cpu=1573.24ms elapsed=18923.58s tid=0x00007f0748416000 nid=0xc4 runnable  [0x0000000000000000]
+   java.lang.Thread.State: RUNNABLE
+
+"Common-Cleaner" #21 daemon prio=8 os_prio=0 cpu=33.92ms elapsed=18923.55s tid=0x00007f074848c000 nid=0xc7 in Object.wait()  [0x00007f06e91a6000]
+   java.lang.Thread.State: TIMED_WAITING (on object monitor)
+	at java.lang.Object.wait(java.base@11.0.2/Native Method)
+	- waiting on <no object reference available>
+	at java.lang.ref.ReferenceQueue.remove(java.base@11.0.2/Unknown Source)
+	- waiting to re-lock in wait() <0x000000009f6181a8> (a java.lang.ref.ReferenceQueue$Lock)
+	at jdk.internal.ref.CleanerImpl.run(java.base@11.0.2/Unknown Source)
+	at java.lang.Thread.run(java.base@11.0.2/Unknown Source)
+	at jdk.internal.misc.InnocuousThread.run(java.base@11.0.2/Unknown Source)
+
+"Service Thread" #22 daemon prio=9 os_prio=0 cpu=0.21ms elapsed=18923.55s tid=0x00007f0748492800 nid=0xc8 runnable  [0x0000000000000000]
+   java.lang.Thread.State: RUNNABLE
+
+"pid-file-watcher" #25 daemon prio=5 os_prio=0 cpu=1004.97ms elapsed=18922.62s tid=0x00007f0748b84000 nid=0xe4 waiting on condition  [0x00007f06a96c8000]
+   java.lang.Thread.State: TIMED_WAITING (sleeping)
+	at java.lang.Thread.sleep(java.base@11.0.2/Native Method)
+	at java.lang.Thread.sleep(java.base@11.0.2/Unknown Source)
+	at java.util.concurrent.TimeUnit.sleep(java.base@11.0.2/Unknown Source)
+	at com.google.common.util.concurrent.Uninterruptibles.sleepUninterruptibly(Uninterruptibles.java:308)
+	at com.google.devtools.build.lib.server.GrpcServerImpl$PidFileWatcherThread.run(GrpcServerImpl.java:435)
+
+"grpc-default-boss-ELG-1-1" #27 daemon prio=5 os_prio=0 cpu=628.67ms elapsed=18922.48s tid=0x00007f0748d1b000 nid=0xe6 runnable  [0x00007f06a90c6000]
+   java.lang.Thread.State: RUNNABLE
+	at sun.nio.ch.EPoll.wait(java.base@11.0.2/Native Method)
+	at sun.nio.ch.EPollSelectorImpl.doSelect(java.base@11.0.2/Unknown Source)
+	at sun.nio.ch.SelectorImpl.lockAndDoSelect(java.base@11.0.2/Unknown Source)
+	- locked <0x000000009fe69040> (a io.netty.channel.nio.SelectedSelectionKeySet)
+	- locked <0x000000009fe68fe8> (a sun.nio.ch.EPollSelectorImpl)
+	at sun.nio.ch.SelectorImpl.select(java.base@11.0.2/Unknown Source)
+	at io.netty.channel.nio.SelectedSelectionKeySetSelector.select(SelectedSelectionKeySetSelector.java:62)
+	at io.netty.channel.nio.NioEventLoop.select(NioEventLoop.java:753)
+	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:409)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$5.run(SingleThreadEventExecutor.java:858)
+	at io.netty.util.concurrent.DefaultThreadFactory$DefaultRunnableDecorator.run(DefaultThreadFactory.java:138)
+	at java.lang.Thread.run(java.base@11.0.2/Unknown Source)
+
+"grpc-timeout-and-memory" #28 daemon prio=5 os_prio=0 cpu=6.95ms elapsed=18922.48s tid=0x00007f0748d0f800 nid=0xe7 in Object.wait()  [0x00007f06a8fc5000]
+   java.lang.Thread.State: WAITING (on object monitor)
+	at java.lang.Object.wait(java.base@11.0.2/Native Method)
+	- waiting on <no object reference available>
+	at java.lang.Object.wait(java.base@11.0.2/Unknown Source)
+	at com.google.devtools.build.lib.server.CommandManager.waitForChange(CommandManager.java:82)
+	- waiting to re-lock in wait() <0x000000009fe59750> (a java.util.HashMap)
+	at com.google.devtools.build.lib.server.ServerWatcherRunnable.run(ServerWatcherRunnable.java:98)
+	at java.lang.Thread.run(java.base@11.0.2/Unknown Source)
+
+"grpc-default-worker-ELG-3-1" #29 daemon prio=5 os_prio=0 cpu=829.34ms elapsed=18922.41s tid=0x00007f063c006800 nid=0xeb runnable  [0x00007f06e8879000]
+   java.lang.Thread.State: RUNNABLE
+	at sun.nio.ch.EPoll.wait(java.base@11.0.2/Native Method)
+	at sun.nio.ch.EPollSelectorImpl.doSelect(java.base@11.0.2/Unknown Source)
+	at sun.nio.ch.SelectorImpl.lockAndDoSelect(java.base@11.0.2/Unknown Source)
+	- locked <0x000000009fe4df70> (a io.netty.channel.nio.SelectedSelectionKeySet)
+	- locked <0x000000009fe4df18> (a sun.nio.ch.EPollSelectorImpl)
+	at sun.nio.ch.SelectorImpl.select(java.base@11.0.2/Unknown Source)
+	at io.netty.channel.nio.SelectedSelectionKeySetSelector.select(SelectedSelectionKeySetSelector.java:62)
+	at io.netty.channel.nio.NioEventLoop.select(NioEventLoop.java:753)
+	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:409)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$5.run(SingleThreadEventExecutor.java:858)
+	at io.netty.util.concurrent.DefaultThreadFactory$DefaultRunnableDecorator.run(DefaultThreadFactory.java:138)
+	at java.lang.Thread.run(java.base@11.0.2/Unknown Source)
+
+"threadDeathWatcher-4-1" #30 daemon prio=1 os_prio=0 cpu=1610.85ms elapsed=18922.37s tid=0x00007f06b01a9800 nid=0xec waiting on condition  [0x00007f06e897a000]
+   java.lang.Thread.State: TIMED_WAITING (sleeping)
+	at java.lang.Thread.sleep(java.base@11.0.2/Native Method)
+	at io.netty.util.ThreadDeathWatcher$Watcher.run(ThreadDeathWatcher.java:152)
+	at io.netty.util.concurrent.DefaultThreadFactory$DefaultRunnableDecorator.run(DefaultThreadFactory.java:138)
+	at java.lang.Thread.run(java.base@11.0.2/Unknown Source)
+
+"grpc-stream-0" #32 daemon prio=5 os_prio=0 cpu=414.78ms elapsed=18922.31s tid=0x00007f06b0265000 nid=0xef waiting on condition  [0x00007f06a8cc4000]
+   java.lang.Thread.State: WAITING (parking)
+	at jdk.internal.misc.Unsafe.park(java.base@11.0.2/Native Method)
+	- parking to wait for  <0x00000005cf3261b8> (a java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject)
+	at java.util.concurrent.locks.LockSupport.park(java.base@11.0.2/Unknown Source)
+	at java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject.await(java.base@11.0.2/Unknown Source)
+	at java.util.concurrent.LinkedBlockingQueue.take(java.base@11.0.2/Unknown Source)
+	at com.google.common.util.concurrent.Uninterruptibles.takeUninterruptibly(Uninterruptibles.java:258)
+	at com.google.devtools.build.lib.server.GrpcServerImpl$GrpcSink.call(GrpcServerImpl.java:302)
+	at com.google.devtools.build.lib.server.GrpcServerImpl$GrpcSink$$Lambda$224/0x0000000800317040.run(Unknown Source)
+	at java.util.concurrent.Executors$RunnableAdapter.call(java.base@11.0.2/Unknown Source)
+	at java.util.concurrent.FutureTask.run(java.base@11.0.2/Unknown Source)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(java.base@11.0.2/Unknown Source)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(java.base@11.0.2/Unknown Source)
+	at java.lang.Thread.run(java.base@11.0.2/Unknown Source)
+
+"grpc-command-0" #33 daemon prio=5 os_prio=0 cpu=37132.62ms elapsed=18922.31s tid=0x00007f06b0267800 nid=0xf0 in Object.wait()  [0x00007f06a8bc2000]
+   java.lang.Thread.State: WAITING (on object monitor)
+	at java.lang.Object.wait(java.base@11.0.2/Native Method)
+	- waiting on <no object reference available>
+	at java.lang.Thread.join(java.base@11.0.2/Unknown Source)
+	- waiting to re-lock in wait() <0x00000006c81f5d60> (a java.lang.Thread)
+	at java.lang.Thread.join(java.base@11.0.2/Unknown Source)
+	at com.google.common.util.concurrent.Uninterruptibles.joinUninterruptibly(Uninterruptibles.java:132)
+	at com.google.devtools.build.lib.runtime.ExperimentalEventHandler.stopUpdateThread(ExperimentalEventHandler.java:1008)
+	at com.google.devtools.build.lib.runtime.ExperimentalEventHandler.completeBuild(ExperimentalEventHandler.java:679)
+	at com.google.devtools.build.lib.runtime.ExperimentalEventHandler.afterCommand(ExperimentalEventHandler.java:741)
+	at jdk.internal.reflect.GeneratedMethodAccessor513.invoke(Unknown Source)
+	at jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(java.base@11.0.2/Unknown Source)
+	at java.lang.reflect.Method.invoke(java.base@11.0.2/Unknown Source)
+	at com.google.common.eventbus.Subscriber.invokeSubscriberMethod(Subscriber.java:87)
+	at com.google.common.eventbus.Subscriber$SynchronizedSubscriber.invokeSubscriberMethod(Subscriber.java:144)
+	- locked <0x00000005cb9983a8> (a com.google.common.eventbus.Subscriber$SynchronizedSubscriber)
+	at com.google.common.eventbus.Subscriber$1.run(Subscriber.java:72)
+	at com.google.common.util.concurrent.MoreExecutors$DirectExecutor.execute(MoreExecutors.java:398)
+	at com.google.common.eventbus.Subscriber.dispatchEvent(Subscriber.java:67)
+	at com.google.common.eventbus.Dispatcher$PerThreadQueuedDispatcher.dispatch(Dispatcher.java:108)
+	at com.google.common.eventbus.EventBus.post(EventBus.java:212)
+	at com.google.devtools.build.lib.runtime.BlazeRuntime.afterCommand(BlazeRuntime.java:554)
+	at com.google.devtools.build.lib.runtime.BlazeCommandDispatcher.execExclusively(BlazeCommandDispatcher.java:518)
+	at com.google.devtools.build.lib.runtime.BlazeCommandDispatcher.exec(BlazeCommandDispatcher.java:207)
+	at com.google.devtools.build.lib.server.GrpcServerImpl.executeCommand(GrpcServerImpl.java:749)
+	at com.google.devtools.build.lib.server.GrpcServerImpl.access$1600(GrpcServerImpl.java:103)
+	at com.google.devtools.build.lib.server.GrpcServerImpl$2.lambda$run$0(GrpcServerImpl.java:818)
+	at com.google.devtools.build.lib.server.GrpcServerImpl$2$$Lambda$225/0x0000000800316840.run(Unknown Source)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(java.base@11.0.2/Unknown Source)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(java.base@11.0.2/Unknown Source)
+	at java.lang.Thread.run(java.base@11.0.2/Unknown Source)
+
+"grpc-default-worker-ELG-3-2" #35 daemon prio=5 os_prio=0 cpu=656.66ms elapsed=18922.19s tid=0x00007f063c008800 nid=0xfe runnable  [0x00007f06a88c2000]
+   java.lang.Thread.State: RUNNABLE
+	at sun.nio.ch.EPoll.wait(java.base@11.0.2/Native Method)
+	at sun.nio.ch.EPollSelectorImpl.doSelect(java.base@11.0.2/Unknown Source)
+	at sun.nio.ch.SelectorImpl.lockAndDoSelect(java.base@11.0.2/Unknown Source)
+	- locked <0x000000009fe69748> (a io.netty.channel.nio.SelectedSelectionKeySet)
+	- locked <0x000000009fe696f0> (a sun.nio.ch.EPollSelectorImpl)
+	at sun.nio.ch.SelectorImpl.select(java.base@11.0.2/Unknown Source)
+	at io.netty.channel.nio.SelectedSelectionKeySetSelector.select(SelectedSelectionKeySetSelector.java:62)
+	at io.netty.channel.nio.NioEventLoop.select(NioEventLoop.java:753)
+	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:409)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$5.run(SingleThreadEventExecutor.java:858)
+	at io.netty.util.concurrent.DefaultThreadFactory$DefaultRunnableDecorator.run(DefaultThreadFactory.java:138)
+	at java.lang.Thread.run(java.base@11.0.2/Unknown Source)
+
+"grpc-default-worker-ELG-3-3" #300 daemon prio=5 os_prio=0 cpu=865.10ms elapsed=18917.79s tid=0x00007f063c009800 nid=0x265 runnable  [0x00007f06e8a7b000]
+   java.lang.Thread.State: RUNNABLE
+	at sun.nio.ch.EPoll.wait(java.base@11.0.2/Native Method)
+	at sun.nio.ch.EPollSelectorImpl.doSelect(java.base@11.0.2/Unknown Source)
+	at sun.nio.ch.SelectorImpl.lockAndDoSelect(java.base@11.0.2/Unknown Source)
+	- locked <0x00000000a0151d10> (a io.netty.channel.nio.SelectedSelectionKeySet)
+	- locked <0x00000000a0152d38> (a sun.nio.ch.EPollSelectorImpl)
+	at sun.nio.ch.SelectorImpl.select(java.base@11.0.2/Unknown Source)
+	at io.netty.channel.nio.SelectedSelectionKeySetSelector.select(SelectedSelectionKeySetSelector.java:62)
+	at io.netty.channel.nio.NioEventLoop.select(NioEventLoop.java:753)
+	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:409)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$5.run(SingleThreadEventExecutor.java:858)
+	at io.netty.util.concurrent.DefaultThreadFactory$DefaultRunnableDecorator.run(DefaultThreadFactory.java:138)
+	at java.lang.Thread.run(java.base@11.0.2/Unknown Source)
+
+"globbing pool-52" #645 daemon prio=5 os_prio=0 cpu=77.73ms elapsed=18892.77s tid=0x00007f041c001000 nid=0x1745 waiting on condition  [0x00007f051a4e3000]
+   java.lang.Thread.State: WAITING (parking)
+	at jdk.internal.misc.Unsafe.park(java.base@11.0.2/Native Method)
+	- parking to wait for  <0x000000009facd500> (a com.google.devtools.build.lib.concurrent.NamedForkJoinPool)
+	at java.util.concurrent.locks.LockSupport.park(java.base@11.0.2/Unknown Source)
+	at java.util.concurrent.ForkJoinPool.runWorker(java.base@11.0.2/Unknown Source)
+	at java.util.concurrent.ForkJoinWorkerThread.run(java.base@11.0.2/Unknown Source)
+
+"grpc-default-worker-ELG-3-4" #761 daemon prio=5 os_prio=0 cpu=618.08ms elapsed=18877.76s tid=0x00007f063c00b000 nid=0x1850 runnable  [0x00007f06e93a8000]
+   java.lang.Thread.State: RUNNABLE
+	at sun.nio.ch.EPoll.wait(java.base@11.0.2/Native Method)
+	at sun.nio.ch.EPollSelectorImpl.doSelect(java.base@11.0.2/Unknown Source)
+	at sun.nio.ch.SelectorImpl.lockAndDoSelect(java.base@11.0.2/Unknown Source)
+	- locked <0x00000000a014e4f8> (a io.netty.channel.nio.SelectedSelectionKeySet)
+	- locked <0x00000000a014f520> (a sun.nio.ch.EPollSelectorImpl)
+	at sun.nio.ch.SelectorImpl.select(java.base@11.0.2/Unknown Source)
+	at io.netty.channel.nio.SelectedSelectionKeySetSelector.select(SelectedSelectionKeySetSelector.java:62)
+	at io.netty.channel.nio.NioEventLoop.select(NioEventLoop.java:753)
+	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:409)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$5.run(SingleThreadEventExecutor.java:858)
+	at io.netty.util.concurrent.DefaultThreadFactory$DefaultRunnableDecorator.run(DefaultThreadFactory.java:138)
+	at java.lang.Thread.run(java.base@11.0.2/Unknown Source)
+
+"grpc-default-worker-ELG-3-5" #1200 daemon prio=5 os_prio=0 cpu=660.05ms elapsed=18851.36s tid=0x00007f063c00c800 nid=0x1c00 runnable  [0x00007f051a5e4000]
+   java.lang.Thread.State: RUNNABLE
+	at sun.nio.ch.EPoll.wait(java.base@11.0.2/Native Method)
+	at sun.nio.ch.EPollSelectorImpl.doSelect(java.base@11.0.2/Unknown Source)
+	at sun.nio.ch.SelectorImpl.lockAndDoSelect(java.base@11.0.2/Unknown Source)
+	- locked <0x00000000a013ae88> (a io.netty.channel.nio.SelectedSelectionKeySet)
+	- locked <0x00000000a013beb0> (a sun.nio.ch.EPollSelectorImpl)
+	at sun.nio.ch.SelectorImpl.select(java.base@11.0.2/Unknown Source)
+	at io.netty.channel.nio.SelectedSelectionKeySetSelector.select(SelectedSelectionKeySetSelector.java:62)
+	at io.netty.channel.nio.NioEventLoop.select(NioEventLoop.java:753)
+	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:409)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$5.run(SingleThreadEventExecutor.java:858)
+	at io.netty.util.concurrent.DefaultThreadFactory$DefaultRunnableDecorator.run(DefaultThreadFactory.java:138)
+	at java.lang.Thread.run(java.base@11.0.2/Unknown Source)
+
+"grpc-default-worker-ELG-3-6" #1701 daemon prio=5 os_prio=0 cpu=644.47ms elapsed=18847.30s tid=0x00007f063c00d800 nid=0x1e05 runnable  [0x00007f02d66b4000]
+   java.lang.Thread.State: RUNNABLE
+	at sun.nio.ch.EPoll.wait(java.base@11.0.2/Native Method)
+	at sun.nio.ch.EPollSelectorImpl.doSelect(java.base@11.0.2/Unknown Source)
+	at sun.nio.ch.SelectorImpl.lockAndDoSelect(java.base@11.0.2/Unknown Source)
+	- locked <0x00000000a0137670> (a io.netty.channel.nio.SelectedSelectionKeySet)
+	- locked <0x00000000a0138698> (a sun.nio.ch.EPollSelectorImpl)
+	at sun.nio.ch.SelectorImpl.select(java.base@11.0.2/Unknown Source)
+	at io.netty.channel.nio.SelectedSelectionKeySetSelector.select(SelectedSelectionKeySetSelector.java:62)
+	at io.netty.channel.nio.NioEventLoop.select(NioEventLoop.java:753)
+	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:409)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$5.run(SingleThreadEventExecutor.java:858)
+	at io.netty.util.concurrent.DefaultThreadFactory$DefaultRunnableDecorator.run(DefaultThreadFactory.java:138)
+	at java.lang.Thread.run(java.base@11.0.2/Unknown Source)
+
+"grpc-default-worker-ELG-3-7" #2201 daemon prio=5 os_prio=0 cpu=737.08ms elapsed=18842.82s tid=0x00007f063c00e000 nid=0x200f runnable  [0x00007f02d58a6000]
+   java.lang.Thread.State: RUNNABLE
+	at sun.nio.ch.EPoll.wait(java.base@11.0.2/Native Method)
+	at sun.nio.ch.EPollSelectorImpl.doSelect(java.base@11.0.2/Unknown Source)
+	at sun.nio.ch.SelectorImpl.lockAndDoSelect(java.base@11.0.2/Unknown Source)
+	- locked <0x00000000a010fd60> (a io.netty.channel.nio.SelectedSelectionKeySet)
+	- locked <0x00000000a0110d88> (a sun.nio.ch.EPollSelectorImpl)
+	at sun.nio.ch.SelectorImpl.select(java.base@11.0.2/Unknown Source)
+	at io.netty.channel.nio.SelectedSelectionKeySetSelector.select(SelectedSelectionKeySetSelector.java:62)
+	at io.netty.channel.nio.NioEventLoop.select(NioEventLoop.java:753)
+	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:409)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$5.run(SingleThreadEventExecutor.java:858)
+	at io.netty.util.concurrent.DefaultThreadFactory$DefaultRunnableDecorator.run(DefaultThreadFactory.java:138)
+	at java.lang.Thread.run(java.base@11.0.2/Unknown Source)
+
+"grpc-default-worker-ELG-3-8" #2701 daemon prio=5 os_prio=0 cpu=724.57ms elapsed=18838.97s tid=0x00007f063c00f800 nid=0x2216 runnable  [0x00007f031b4f5000]
+   java.lang.Thread.State: RUNNABLE
+	at sun.nio.ch.EPoll.wait(java.base@11.0.2/Native Method)
+	at sun.nio.ch.EPollSelectorImpl.doSelect(java.base@11.0.2/Unknown Source)
+	at sun.nio.ch.SelectorImpl.lockAndDoSelect(java.base@11.0.2/Unknown Source)
+	- locked <0x00000000a010c548> (a io.netty.channel.nio.SelectedSelectionKeySet)
+	- locked <0x00000000a010d570> (a sun.nio.ch.EPollSelectorImpl)
+	at sun.nio.ch.SelectorImpl.select(java.base@11.0.2/Unknown Source)
+	at io.netty.channel.nio.SelectedSelectionKeySetSelector.select(SelectedSelectionKeySetSelector.java:62)
+	at io.netty.channel.nio.NioEventLoop.select(NioEventLoop.java:753)
+	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:409)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$5.run(SingleThreadEventExecutor.java:858)
+	at io.netty.util.concurrent.DefaultThreadFactory$DefaultRunnableDecorator.run(DefaultThreadFactory.java:138)
+	at java.lang.Thread.run(java.base@11.0.2/Unknown Source)
+
+"grpc-default-worker-ELG-3-9" #3103 daemon prio=5 os_prio=0 cpu=616.44ms elapsed=18834.28s tid=0x00007f063c010800 nid=0x23b4 runnable  [0x00007f02d519f000]
+   java.lang.Thread.State: RUNNABLE
+	at sun.nio.ch.EPoll.wait(java.base@11.0.2/Native Method)
+	at sun.nio.ch.EPollSelectorImpl.doSelect(java.base@11.0.2/Unknown Source)
+	at sun.nio.ch.SelectorImpl.lockAndDoSelect(java.base@11.0.2/Unknown Source)
+	- locked <0x00000000a00f1028> (a io.netty.channel.nio.SelectedSelectionKeySet)
+	- locked <0x00000000a00f2050> (a sun.nio.ch.EPollSelectorImpl)
+	at sun.nio.ch.SelectorImpl.select(java.base@11.0.2/Unknown Source)
+	at io.netty.channel.nio.SelectedSelectionKeySetSelector.select(SelectedSelectionKeySetSelector.java:62)
+	at io.netty.channel.nio.NioEventLoop.select(NioEventLoop.java:753)
+	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:409)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$5.run(SingleThreadEventExecutor.java:858)
+	at io.netty.util.concurrent.DefaultThreadFactory$DefaultRunnableDecorator.run(DefaultThreadFactory.java:138)
+	at java.lang.Thread.run(java.base@11.0.2/Unknown Source)
+
+"grpc-default-worker-ELG-3-10" #3505 daemon prio=5 os_prio=0 cpu=723.83ms elapsed=18830.07s tid=0x00007f063c011800 nid=0x2559 runnable  [0x00007f02d0c5a000]
+   java.lang.Thread.State: RUNNABLE
+	at sun.nio.ch.EPoll.wait(java.base@11.0.2/Native Method)
+	at sun.nio.ch.EPollSelectorImpl.doSelect(java.base@11.0.2/Unknown Source)
+	at sun.nio.ch.SelectorImpl.lockAndDoSelect(java.base@11.0.2/Unknown Source)
+	- locked <0x00000000a00ed810> (a io.netty.channel.nio.SelectedSelectionKeySet)
+	- locked <0x00000000a00ee838> (a sun.nio.ch.EPollSelectorImpl)
+	at sun.nio.ch.SelectorImpl.select(java.base@11.0.2/Unknown Source)
+	at io.netty.channel.nio.SelectedSelectionKeySetSelector.select(SelectedSelectionKeySetSelector.java:62)
+	at io.netty.channel.nio.NioEventLoop.select(NioEventLoop.java:753)
+	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:409)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$5.run(SingleThreadEventExecutor.java:858)
+	at io.netty.util.concurrent.DefaultThreadFactory$DefaultRunnableDecorator.run(DefaultThreadFactory.java:138)
+	at java.lang.Thread.run(java.base@11.0.2/Unknown Source)
+
+"grpc-default-worker-ELG-3-11" #3907 daemon prio=5 os_prio=0 cpu=630.36ms elapsed=18825.37s tid=0x00007f063c012800 nid=0x26fe runnable  [0x00007f02d77d4000]
+   java.lang.Thread.State: RUNNABLE
+	at sun.nio.ch.EPoll.wait(java.base@11.0.2/Native Method)
+	at sun.nio.ch.EPollSelectorImpl.doSelect(java.base@11.0.2/Unknown Source)
+	at sun.nio.ch.SelectorImpl.lockAndDoSelect(java.base@11.0.2/Unknown Source)
+	- locked <0x00000000a00e9ff8> (a io.netty.channel.nio.SelectedSelectionKeySet)
+	- locked <0x00000000a00eb020> (a sun.nio.ch.EPollSelectorImpl)
+	at sun.nio.ch.SelectorImpl.select(java.base@11.0.2/Unknown Source)
+	at io.netty.channel.nio.SelectedSelectionKeySetSelector.select(SelectedSelectionKeySetSelector.java:62)
+	at io.netty.channel.nio.NioEventLoop.select(NioEventLoop.java:753)
+	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:409)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$5.run(SingleThreadEventExecutor.java:858)
+	at io.netty.util.concurrent.DefaultThreadFactory$DefaultRunnableDecorator.run(DefaultThreadFactory.java:138)
+	at java.lang.Thread.run(java.base@11.0.2/Unknown Source)
+
+"grpc-default-worker-ELG-3-12" #4309 daemon prio=5 os_prio=0 cpu=760.55ms elapsed=18821.11s tid=0x00007f063c014000 nid=0x28a0 runnable  [0x00007f02d7dda000]
+   java.lang.Thread.State: RUNNABLE
+	at sun.nio.ch.EPoll.wait(java.base@11.0.2/Native Method)
+	at sun.nio.ch.EPollSelectorImpl.doSelect(java.base@11.0.2/Unknown Source)
+	at sun.nio.ch.SelectorImpl.lockAndDoSelect(java.base@11.0.2/Unknown Source)
+	- locked <0x00000000a00e67e0> (a io.netty.channel.nio.SelectedSelectionKeySet)
+	- locked <0x00000000a00e7808> (a sun.nio.ch.EPollSelectorImpl)
+	at sun.nio.ch.SelectorImpl.select(java.base@11.0.2/Unknown Source)
+	at io.netty.channel.nio.SelectedSelectionKeySetSelector.select(SelectedSelectionKeySetSelector.java:62)
+	at io.netty.channel.nio.NioEventLoop.select(NioEventLoop.java:753)
+	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:409)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$5.run(SingleThreadEventExecutor.java:858)
+	at io.netty.util.concurrent.DefaultThreadFactory$DefaultRunnableDecorator.run(DefaultThreadFactory.java:138)
+	at java.lang.Thread.run(java.base@11.0.2/Unknown Source)
+
+"grpc-default-worker-ELG-3-13" #4809 daemon prio=5 os_prio=0 cpu=645.87ms elapsed=18817.21s tid=0x00007f063c015000 nid=0x2aa5 runnable  [0x00007f051b6f5000]
+   java.lang.Thread.State: RUNNABLE
+	at sun.nio.ch.EPoll.wait(java.base@11.0.2/Native Method)
+	at sun.nio.ch.EPollSelectorImpl.doSelect(java.base@11.0.2/Unknown Source)
+	at sun.nio.ch.SelectorImpl.lockAndDoSelect(java.base@11.0.2/Unknown Source)
+	- locked <0x00000000a00cb148> (a io.netty.channel.nio.SelectedSelectionKeySet)
+	- locked <0x00000000a00cc170> (a sun.nio.ch.EPollSelectorImpl)
+	at sun.nio.ch.SelectorImpl.select(java.base@11.0.2/Unknown Source)
+	at io.netty.channel.nio.SelectedSelectionKeySetSelector.select(SelectedSelectionKeySetSelector.java:62)
+	at io.netty.channel.nio.NioEventLoop.select(NioEventLoop.java:753)
+	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:409)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$5.run(SingleThreadEventExecutor.java:858)
+	at io.netty.util.concurrent.DefaultThreadFactory$DefaultRunnableDecorator.run(DefaultThreadFactory.java:138)
+	at java.lang.Thread.run(java.base@11.0.2/Unknown Source)
+
+"grpc-default-worker-ELG-3-14" #5309 daemon prio=5 os_prio=0 cpu=606.09ms elapsed=18812.56s tid=0x00007f063c016000 nid=0x2ca7 runnable  [0x00007f02d5fad000]
+   java.lang.Thread.State: RUNNABLE
+	at sun.nio.ch.EPoll.wait(java.base@11.0.2/Native Method)
+	at sun.nio.ch.EPollSelectorImpl.doSelect(java.base@11.0.2/Unknown Source)
+	at sun.nio.ch.SelectorImpl.lockAndDoSelect(java.base@11.0.2/Unknown Source)
+	- locked <0x00000000a00c7930> (a io.netty.channel.nio.SelectedSelectionKeySet)
+	- locked <0x00000000a00c8958> (a sun.nio.ch.EPollSelectorImpl)
+	at sun.nio.ch.SelectorImpl.select(java.base@11.0.2/Unknown Source)
+	at io.netty.channel.nio.SelectedSelectionKeySetSelector.select(SelectedSelectionKeySetSelector.java:62)
+	at io.netty.channel.nio.NioEventLoop.select(NioEventLoop.java:753)
+	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:409)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$5.run(SingleThreadEventExecutor.java:858)
+	at io.netty.util.concurrent.DefaultThreadFactory$DefaultRunnableDecorator.run(DefaultThreadFactory.java:138)
+	at java.lang.Thread.run(java.base@11.0.2/Unknown Source)
+
+"grpc-default-worker-ELG-3-15" #5712 daemon prio=5 os_prio=0 cpu=625.09ms elapsed=18807.76s tid=0x00007f063c017000 nid=0x2e45 runnable  [0x00007f0629090000]
+   java.lang.Thread.State: RUNNABLE
+	at sun.nio.ch.EPoll.wait(java.base@11.0.2/Native Method)
+	at sun.nio.ch.EPollSelectorImpl.doSelect(java.base@11.0.2/Unknown Source)
+	at sun.nio.ch.SelectorImpl.lockAndDoSelect(java.base@11.0.2/Unknown Source)
+	- locked <0x00000000a00ba358> (a io.netty.channel.nio.SelectedSelectionKeySet)
+	- locked <0x00000000a00bb380> (a sun.nio.ch.EPollSelectorImpl)
+	at sun.nio.ch.SelectorImpl.select(java.base@11.0.2/Unknown Source)
+	at io.netty.channel.nio.SelectedSelectionKeySetSelector.select(SelectedSelectionKeySetSelector.java:62)
+	at io.netty.channel.nio.NioEventLoop.select(NioEventLoop.java:753)
+	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:409)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$5.run(SingleThreadEventExecutor.java:858)
+	at io.netty.util.concurrent.DefaultThreadFactory$DefaultRunnableDecorator.run(DefaultThreadFactory.java:138)
+	at java.lang.Thread.run(java.base@11.0.2/Unknown Source)
+
+"grpc-default-worker-ELG-3-16" #6063 daemon prio=5 os_prio=0 cpu=840.21ms elapsed=18804.06s tid=0x00007f063c018800 nid=0x2fac runnable  [0x00007f02d509e000]
+   java.lang.Thread.State: RUNNABLE
+	at sun.nio.ch.EPoll.wait(java.base@11.0.2/Native Method)
+	at sun.nio.ch.EPollSelectorImpl.doSelect(java.base@11.0.2/Unknown Source)
+	at sun.nio.ch.SelectorImpl.lockAndDoSelect(java.base@11.0.2/Unknown Source)
+	- locked <0x00000000a00b6b40> (a io.netty.channel.nio.SelectedSelectionKeySet)
+	- locked <0x00000000a00b7b68> (a sun.nio.ch.EPollSelectorImpl)
+	at sun.nio.ch.SelectorImpl.select(java.base@11.0.2/Unknown Source)
+	at io.netty.channel.nio.SelectedSelectionKeySetSelector.select(SelectedSelectionKeySetSelector.java:62)
+	at io.netty.channel.nio.NioEventLoop.select(NioEventLoop.java:753)
+	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:409)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$5.run(SingleThreadEventExecutor.java:858)
+	at io.netty.util.concurrent.DefaultThreadFactory$DefaultRunnableDecorator.run(DefaultThreadFactory.java:138)
+	at java.lang.Thread.run(java.base@11.0.2/Unknown Source)
+
+"grpc-default-worker-ELG-3-17" #6465 daemon prio=5 os_prio=0 cpu=746.83ms elapsed=18799.95s tid=0x00007f063c019800 nid=0x314a runnable  [0x00007f062a8f6000]
+   java.lang.Thread.State: RUNNABLE
+	at sun.nio.ch.EPoll.wait(java.base@11.0.2/Native Method)
+	at sun.nio.ch.EPollSelectorImpl.doSelect(java.base@11.0.2/Unknown Source)
+	at sun.nio.ch.SelectorImpl.lockAndDoSelect(java.base@11.0.2/Unknown Source)
+	- locked <0x00000000a009f4a0> (a io.netty.channel.nio.SelectedSelectionKeySet)
+	- locked <0x00000000a00a04c8> (a sun.nio.ch.EPollSelectorImpl)
+	at sun.nio.ch.SelectorImpl.select(java.base@11.0.2/Unknown Source)
+	at io.netty.channel.nio.SelectedSelectionKeySetSelector.select(SelectedSelectionKeySetSelector.java:62)
+	at io.netty.channel.nio.NioEventLoop.select(NioEventLoop.java:753)
+	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:409)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$5.run(SingleThreadEventExecutor.java:858)
+	at io.netty.util.concurrent.DefaultThreadFactory$DefaultRunnableDecorator.run(DefaultThreadFactory.java:138)
+	at java.lang.Thread.run(java.base@11.0.2/Unknown Source)
+
+"grpc-default-worker-ELG-3-18" #6965 daemon prio=5 os_prio=0 cpu=685.15ms elapsed=18795.83s tid=0x00007f063c01a800 nid=0x334d runnable  [0x00007f05187c6000]
+   java.lang.Thread.State: RUNNABLE
+	at sun.nio.ch.EPoll.wait(java.base@11.0.2/Native Method)
+	at sun.nio.ch.EPollSelectorImpl.doSelect(java.base@11.0.2/Unknown Source)
+	at sun.nio.ch.SelectorImpl.lockAndDoSelect(java.base@11.0.2/Unknown Source)
+	- locked <0x00000000a009bc88> (a io.netty.channel.nio.SelectedSelectionKeySet)
+	- locked <0x00000000a009ccb0> (a sun.nio.ch.EPollSelectorImpl)
+	at sun.nio.ch.SelectorImpl.select(java.base@11.0.2/Unknown Source)
+	at io.netty.channel.nio.SelectedSelectionKeySetSelector.select(SelectedSelectionKeySetSelector.java:62)
+	at io.netty.channel.nio.NioEventLoop.select(NioEventLoop.java:753)
+	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:409)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$5.run(SingleThreadEventExecutor.java:858)
+	at io.netty.util.concurrent.DefaultThreadFactory$DefaultRunnableDecorator.run(DefaultThreadFactory.java:138)
+	at java.lang.Thread.run(java.base@11.0.2/Unknown Source)
+
+"grpc-default-worker-ELG-3-19" #7465 daemon prio=5 os_prio=0 cpu=715.48ms elapsed=18792.10s tid=0x00007f063c01b800 nid=0x3549 runnable  [0x00007f02da8f6000]
+   java.lang.Thread.State: RUNNABLE
+	at sun.nio.ch.EPoll.wait(java.base@11.0.2/Native Method)
+	at sun.nio.ch.EPollSelectorImpl.doSelect(java.base@11.0.2/Unknown Source)
+	at sun.nio.ch.SelectorImpl.lockAndDoSelect(java.base@11.0.2/Unknown Source)
+	- locked <0x00000000a00931c8> (a io.netty.channel.nio.SelectedSelectionKeySet)
+	- locked <0x00000000a00941f0> (a sun.nio.ch.EPollSelectorImpl)
+	at sun.nio.ch.SelectorImpl.select(java.base@11.0.2/Unknown Source)
+	at io.netty.channel.nio.SelectedSelectionKeySetSelector.select(SelectedSelectionKeySetSelector.java:62)
+	at io.netty.channel.nio.NioEventLoop.select(NioEventLoop.java:753)
+	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:409)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$5.run(SingleThreadEventExecutor.java:858)
+	at io.netty.util.concurrent.DefaultThreadFactory$DefaultRunnableDecorator.run(DefaultThreadFactory.java:138)
+	at java.lang.Thread.run(java.base@11.0.2/Unknown Source)
+
+"grpc-default-worker-ELG-3-20" #7964 daemon prio=5 os_prio=0 cpu=723.81ms elapsed=18790.32s tid=0x00007f063c01d000 nid=0x3748 runnable  [0x00007f02d75d2000]
+   java.lang.Thread.State: RUNNABLE
+	at sun.nio.ch.EPoll.wait(java.base@11.0.2/Native Method)
+	at sun.nio.ch.EPollSelectorImpl.doSelect(java.base@11.0.2/Unknown Source)
+	at sun.nio.ch.SelectorImpl.lockAndDoSelect(java.base@11.0.2/Unknown Source)
+	- locked <0x00000000a008f9b0> (a io.netty.channel.nio.SelectedSelectionKeySet)
+	- locked <0x00000000a00909d8> (a sun.nio.ch.EPollSelectorImpl)
+	at sun.nio.ch.SelectorImpl.select(java.base@11.0.2/Unknown Source)
+	at io.netty.channel.nio.SelectedSelectionKeySetSelector.select(SelectedSelectionKeySetSelector.java:62)
+	at io.netty.channel.nio.NioEventLoop.select(NioEventLoop.java:753)
+	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:409)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$5.run(SingleThreadEventExecutor.java:858)
+	at io.netty.util.concurrent.DefaultThreadFactory$DefaultRunnableDecorator.run(DefaultThreadFactory.java:138)
+	at java.lang.Thread.run(java.base@11.0.2/Unknown Source)
+
+"grpc-default-worker-ELG-3-21" #8399 daemon prio=5 os_prio=0 cpu=706.33ms elapsed=18786.03s tid=0x00007f063c01e000 nid=0x3902 runnable  [0x00007f02d6cc9000]
+   java.lang.Thread.State: RUNNABLE
+	at sun.nio.ch.EPoll.wait(java.base@11.0.2/Native Method)
+	at sun.nio.ch.EPollSelectorImpl.doSelect(java.base@11.0.2/Unknown Source)
+	at sun.nio.ch.SelectorImpl.lockAndDoSelect(java.base@11.0.2/Unknown Source)
+	- locked <0x00000000a00812c8> (a io.netty.channel.nio.SelectedSelectionKeySet)
+	- locked <0x00000000a00822f0> (a sun.nio.ch.EPollSelectorImpl)
+	at sun.nio.ch.SelectorImpl.select(java.base@11.0.2/Unknown Source)
+	at io.netty.channel.nio.SelectedSelectionKeySetSelector.select(SelectedSelectionKeySetSelector.java:62)
+	at io.netty.channel.nio.NioEventLoop.select(NioEventLoop.java:753)
+	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:409)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$5.run(SingleThreadEventExecutor.java:858)
+	at io.netty.util.concurrent.DefaultThreadFactory$DefaultRunnableDecorator.run(DefaultThreadFactory.java:138)
+	at java.lang.Thread.run(java.base@11.0.2/Unknown Source)
+
+"grpc-default-worker-ELG-3-22" #8749 daemon prio=5 os_prio=0 cpu=642.83ms elapsed=18782.44s tid=0x00007f063c01f000 nid=0x3a67 runnable  [0x00007f02d4694000]
+   java.lang.Thread.State: RUNNABLE
+	at sun.nio.ch.EPoll.wait(java.base@11.0.2/Native Method)
+	at sun.nio.ch.EPollSelectorImpl.doSelect(java.base@11.0.2/Unknown Source)
+	at sun.nio.ch.SelectorImpl.lockAndDoSelect(java.base@11.0.2/Unknown Source)
+	- locked <0x00000000a007dab0> (a io.netty.channel.nio.SelectedSelectionKeySet)
+	- locked <0x00000000a007ead8> (a sun.nio.ch.EPollSelectorImpl)
+	at sun.nio.ch.SelectorImpl.select(java.base@11.0.2/Unknown Source)
+	at io.netty.channel.nio.SelectedSelectionKeySetSelector.select(SelectedSelectionKeySetSelector.java:62)
+	at io.netty.channel.nio.NioEventLoop.select(NioEventLoop.java:753)
+	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:409)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$5.run(SingleThreadEventExecutor.java:858)
+	at io.netty.util.concurrent.DefaultThreadFactory$DefaultRunnableDecorator.run(DefaultThreadFactory.java:138)
+	at java.lang.Thread.run(java.base@11.0.2/Unknown Source)
+
+"grpc-default-worker-ELG-3-23" #9100 daemon prio=5 os_prio=0 cpu=617.44ms elapsed=18779.07s tid=0x00007f063c020800 nid=0x3bce runnable  [0x00007f02d69c6000]
+   java.lang.Thread.State: RUNNABLE
+	at sun.nio.ch.EPoll.wait(java.base@11.0.2/Native Method)
+	at sun.nio.ch.EPollSelectorImpl.doSelect(java.base@11.0.2/Unknown Source)
+	at sun.nio.ch.SelectorImpl.lockAndDoSelect(java.base@11.0.2/Unknown Source)
+	- locked <0x00000000a006ae10> (a io.netty.channel.nio.SelectedSelectionKeySet)
+	- locked <0x00000000a006be38> (a sun.nio.ch.EPollSelectorImpl)
+	at sun.nio.ch.SelectorImpl.select(java.base@11.0.2/Unknown Source)
+	at io.netty.channel.nio.SelectedSelectionKeySetSelector.select(SelectedSelectionKeySetSelector.java:62)
+	at io.netty.channel.nio.NioEventLoop.select(NioEventLoop.java:753)
+	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:409)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$5.run(SingleThreadEventExecutor.java:858)
+	at io.netty.util.concurrent.DefaultThreadFactory$DefaultRunnableDecorator.run(DefaultThreadFactory.java:138)
+	at java.lang.Thread.run(java.base@11.0.2/Unknown Source)
+
+"grpc-default-worker-ELG-3-24" #9502 daemon prio=5 os_prio=0 cpu=605.38ms elapsed=18774.86s tid=0x00007f063c021800 nid=0x3d67 runnable  [0x00007f02d0553000]
+   java.lang.Thread.State: RUNNABLE
+	at sun.nio.ch.EPoll.wait(java.base@11.0.2/Native Method)
+	at sun.nio.ch.EPollSelectorImpl.doSelect(java.base@11.0.2/Unknown Source)
+	at sun.nio.ch.SelectorImpl.lockAndDoSelect(java.base@11.0.2/Unknown Source)
+	- locked <0x00000000a00675f8> (a io.netty.channel.nio.SelectedSelectionKeySet)
+	- locked <0x00000000a0068620> (a sun.nio.ch.EPollSelectorImpl)
+	at sun.nio.ch.SelectorImpl.select(java.base@11.0.2/Unknown Source)
+	at io.netty.channel.nio.SelectedSelectionKeySetSelector.select(SelectedSelectionKeySetSelector.java:62)
+	at io.netty.channel.nio.NioEventLoop.select(NioEventLoop.java:753)
+	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:409)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$5.run(SingleThreadEventExecutor.java:858)
+	at io.netty.util.concurrent.DefaultThreadFactory$DefaultRunnableDecorator.run(DefaultThreadFactory.java:138)
+	at java.lang.Thread.run(java.base@11.0.2/Unknown Source)
+
+"grpc-default-worker-ELG-3-25" #9905 daemon prio=5 os_prio=0 cpu=707.91ms elapsed=18770.40s tid=0x00007f063c022800 nid=0x3f02 runnable  [0x00007f02d0856000]
+   java.lang.Thread.State: RUNNABLE
+	at sun.nio.ch.EPoll.wait(java.base@11.0.2/Native Method)
+	at sun.nio.ch.EPollSelectorImpl.doSelect(java.base@11.0.2/Unknown Source)
+	at sun.nio.ch.SelectorImpl.lockAndDoSelect(java.base@11.0.2/Unknown Source)
+	- locked <0x00000000a0053e20> (a io.netty.channel.nio.SelectedSelectionKeySet)
+	- locked <0x00000000a0054e48> (a sun.nio.ch.EPollSelectorImpl)
+	at sun.nio.ch.SelectorImpl.select(java.base@11.0.2/Unknown Source)
+	at io.netty.channel.nio.SelectedSelectionKeySetSelector.select(SelectedSelectionKeySetSelector.java:62)
+	at io.netty.channel.nio.NioEventLoop.select(NioEventLoop.java:753)
+	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:409)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$5.run(SingleThreadEventExecutor.java:858)
+	at io.netty.util.concurrent.DefaultThreadFactory$DefaultRunnableDecorator.run(DefaultThreadFactory.java:138)
+	at java.lang.Thread.run(java.base@11.0.2/Unknown Source)
+
+"grpc-default-worker-ELG-3-26" #10258 daemon prio=5 os_prio=0 cpu=635.00ms elapsed=18766.89s tid=0x00007f063c023800 nid=0x4074 runnable  [0x00007f04184c5000]
+   java.lang.Thread.State: RUNNABLE
+	at sun.nio.ch.EPoll.wait(java.base@11.0.2/Native Method)
+	at sun.nio.ch.EPollSelectorImpl.doSelect(java.base@11.0.2/Unknown Source)
+	at sun.nio.ch.SelectorImpl.lockAndDoSelect(java.base@11.0.2/Unknown Source)
+	- locked <0x00000000a0050608> (a io.netty.channel.nio.SelectedSelectionKeySet)
+	- locked <0x00000000a0051630> (a sun.nio.ch.EPollSelectorImpl)
+	at sun.nio.ch.SelectorImpl.select(java.base@11.0.2/Unknown Source)
+	at io.netty.channel.nio.SelectedSelectionKeySetSelector.select(SelectedSelectionKeySetSelector.java:62)
+	at io.netty.channel.nio.NioEventLoop.select(NioEventLoop.java:753)
+	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:409)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$5.run(SingleThreadEventExecutor.java:858)
+	at io.netty.util.concurrent.DefaultThreadFactory$DefaultRunnableDecorator.run(DefaultThreadFactory.java:138)
+	at java.lang.Thread.run(java.base@11.0.2/Unknown Source)
+
+"grpc-default-worker-ELG-3-27" #10661 daemon prio=5 os_prio=0 cpu=605.94ms elapsed=18764.84s tid=0x00007f063c025000 nid=0x4211 runnable  [0x00007f0629b9f000]
+   java.lang.Thread.State: RUNNABLE
+	at sun.nio.ch.EPoll.wait(java.base@11.0.2/Native Method)
+	at sun.nio.ch.EPollSelectorImpl.doSelect(java.base@11.0.2/Unknown Source)
+	at sun.nio.ch.SelectorImpl.lockAndDoSelect(java.base@11.0.2/Unknown Source)
+	- locked <0x00000000a003e658> (a io.netty.channel.nio.SelectedSelectionKeySet)
+	- locked <0x00000000a003f680> (a sun.nio.ch.EPollSelectorImpl)
+	at sun.nio.ch.SelectorImpl.select(java.base@11.0.2/Unknown Source)
+	at io.netty.channel.nio.SelectedSelectionKeySetSelector.select(SelectedSelectionKeySetSelector.java:62)
+	at io.netty.channel.nio.NioEventLoop.select(NioEventLoop.java:753)
+	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:409)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$5.run(SingleThreadEventExecutor.java:858)
+	at io.netty.util.concurrent.DefaultThreadFactory$DefaultRunnableDecorator.run(DefaultThreadFactory.java:138)
+	at java.lang.Thread.run(java.base@11.0.2/Unknown Source)
+
+"grpc-default-worker-ELG-3-28" #11124 daemon prio=5 os_prio=0 cpu=624.28ms elapsed=18641.60s tid=0x00007f063c026000 nid=0x52af runnable  [0x00007f02d86e3000]
+   java.lang.Thread.State: RUNNABLE
+	at sun.nio.ch.EPoll.wait(java.base@11.0.2/Native Method)
+	at sun.nio.ch.EPollSelectorImpl.doSelect(java.base@11.0.2/Unknown Source)
+	at sun.nio.ch.SelectorImpl.lockAndDoSelect(java.base@11.0.2/Unknown Source)
+	- locked <0x00000000a003ae40> (a io.netty.channel.nio.SelectedSelectionKeySet)
+	- locked <0x00000000a003be68> (a sun.nio.ch.EPollSelectorImpl)
+	at sun.nio.ch.SelectorImpl.select(java.base@11.0.2/Unknown Source)
+	at io.netty.channel.nio.SelectedSelectionKeySetSelector.select(SelectedSelectionKeySetSelector.java:62)
+	at io.netty.channel.nio.NioEventLoop.select(NioEventLoop.java:753)
+	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:409)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$5.run(SingleThreadEventExecutor.java:858)
+	at io.netty.util.concurrent.DefaultThreadFactory$DefaultRunnableDecorator.run(DefaultThreadFactory.java:138)
+	at java.lang.Thread.run(java.base@11.0.2/Unknown Source)
+
+"grpc-default-worker-ELG-3-29" #11724 daemon prio=5 os_prio=0 cpu=606.70ms elapsed=18637.84s tid=0x00007f063c027000 nid=0x5512 runnable  [0x00007f02b54bf000]
+   java.lang.Thread.State: RUNNABLE
+	at sun.nio.ch.EPoll.wait(java.base@11.0.2/Native Method)
+	at sun.nio.ch.EPollSelectorImpl.doSelect(java.base@11.0.2/Unknown Source)
+	at sun.nio.ch.SelectorImpl.lockAndDoSelect(java.base@11.0.2/Unknown Source)
+	- locked <0x00000000a002baa0> (a io.netty.channel.nio.SelectedSelectionKeySet)
+	- locked <0x00000000a002cac8> (a sun.nio.ch.EPollSelectorImpl)
+	at sun.nio.ch.SelectorImpl.select(java.base@11.0.2/Unknown Source)
+	at io.netty.channel.nio.SelectedSelectionKeySetSelector.select(SelectedSelectionKeySetSelector.java:62)
+	at io.netty.channel.nio.NioEventLoop.select(NioEventLoop.java:753)
+	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:409)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$5.run(SingleThreadEventExecutor.java:858)
+	at io.netty.util.concurrent.DefaultThreadFactory$DefaultRunnableDecorator.run(DefaultThreadFactory.java:138)
+	at java.lang.Thread.run(java.base@11.0.2/Unknown Source)
+
+"grpc-default-worker-ELG-3-30" #12321 daemon prio=5 os_prio=0 cpu=725.15ms elapsed=18633.64s tid=0x00007f063c028000 nid=0x5771 runnable  [0x00007f02d68c5000]
+   java.lang.Thread.State: RUNNABLE
+	at sun.nio.ch.EPoll.wait(java.base@11.0.2/Native Method)
+	at sun.nio.ch.EPollSelectorImpl.doSelect(java.base@11.0.2/Unknown Source)
+	at sun.nio.ch.SelectorImpl.lockAndDoSelect(java.base@11.0.2/Unknown Source)
+	- locked <0x00000000a0028288> (a io.netty.channel.nio.SelectedSelectionKeySet)
+	- locked <0x00000000a00292b0> (a sun.nio.ch.EPollSelectorImpl)
+	at sun.nio.ch.SelectorImpl.select(java.base@11.0.2/Unknown Source)
+	at io.netty.channel.nio.SelectedSelectionKeySetSelector.select(SelectedSelectionKeySetSelector.java:62)
+	at io.netty.channel.nio.NioEventLoop.select(NioEventLoop.java:753)
+	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:409)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$5.run(SingleThreadEventExecutor.java:858)
+	at io.netty.util.concurrent.DefaultThreadFactory$DefaultRunnableDecorator.run(DefaultThreadFactory.java:138)
+	at java.lang.Thread.run(java.base@11.0.2/Unknown Source)
+
+"grpc-default-worker-ELG-3-31" #12918 daemon prio=5 os_prio=0 cpu=586.69ms elapsed=18629.74s tid=0x00007f063c029800 nid=0x59d4 runnable  [0x00007f02d5eac000]
+   java.lang.Thread.State: RUNNABLE
+	at sun.nio.ch.EPoll.wait(java.base@11.0.2/Native Method)
+	at sun.nio.ch.EPollSelectorImpl.doSelect(java.base@11.0.2/Unknown Source)
+	at sun.nio.ch.SelectorImpl.lockAndDoSelect(java.base@11.0.2/Unknown Source)
+	- locked <0x00000000a001cbf0> (a io.netty.channel.nio.SelectedSelectionKeySet)
+	- locked <0x00000000a001dc18> (a sun.nio.ch.EPollSelectorImpl)
+	at sun.nio.ch.SelectorImpl.select(java.base@11.0.2/Unknown Source)
+	at io.netty.channel.nio.SelectedSelectionKeySetSelector.select(SelectedSelectionKeySetSelector.java:62)
+	at io.netty.channel.nio.NioEventLoop.select(NioEventLoop.java:753)
+	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:409)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$5.run(SingleThreadEventExecutor.java:858)
+	at io.netty.util.concurrent.DefaultThreadFactory$DefaultRunnableDecorator.run(DefaultThreadFactory.java:138)
+	at java.lang.Thread.run(java.base@11.0.2/Unknown Source)
+
+"grpc-default-worker-ELG-3-32" #13379 daemon prio=5 os_prio=0 cpu=600.98ms elapsed=18625.23s tid=0x00007f063c02a800 nid=0x5baf runnable  [0x00007f02d6ecb000]
+   java.lang.Thread.State: RUNNABLE
+	at sun.nio.ch.EPoll.wait(java.base@11.0.2/Native Method)
+	at sun.nio.ch.EPollSelectorImpl.doSelect(java.base@11.0.2/Unknown Source)
+	at sun.nio.ch.SelectorImpl.lockAndDoSelect(java.base@11.0.2/Unknown Source)
+	- locked <0x00000000a00193d8> (a io.netty.channel.nio.SelectedSelectionKeySet)
+	- locked <0x00000000a001a400> (a sun.nio.ch.EPollSelectorImpl)
+	at sun.nio.ch.SelectorImpl.select(java.base@11.0.2/Unknown Source)
+	at io.netty.channel.nio.SelectedSelectionKeySetSelector.select(SelectedSelectionKeySetSelector.java:62)
+	at io.netty.channel.nio.NioEventLoop.select(NioEventLoop.java:753)
+	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:409)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$5.run(SingleThreadEventExecutor.java:858)
+	at io.netty.util.concurrent.DefaultThreadFactory$DefaultRunnableDecorator.run(DefaultThreadFactory.java:138)
+	at java.lang.Thread.run(java.base@11.0.2/Unknown Source)
+
+"grpc-default-worker-ELG-3-33" #13840 daemon prio=5 os_prio=0 cpu=620.04ms elapsed=18621.28s tid=0x00007f063c02b800 nid=0x5d89 runnable  [0x00007f02d9cea000]
+   java.lang.Thread.State: RUNNABLE
+	at sun.nio.ch.EPoll.wait(java.base@11.0.2/Native Method)
+	at sun.nio.ch.EPollSelectorImpl.doSelect(java.base@11.0.2/Unknown Source)
+	at sun.nio.ch.SelectorImpl.lockAndDoSelect(java.base@11.0.2/Unknown Source)
+	- locked <0x00000000a00071d8> (a io.netty.channel.nio.SelectedSelectionKeySet)
+	- locked <0x00000000a0008200> (a sun.nio.ch.EPollSelectorImpl)
+	at sun.nio.ch.SelectorImpl.select(java.base@11.0.2/Unknown Source)
+	at io.netty.channel.nio.SelectedSelectionKeySetSelector.select(SelectedSelectionKeySetSelector.java:62)
+	at io.netty.channel.nio.NioEventLoop.select(NioEventLoop.java:753)
+	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:409)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$5.run(SingleThreadEventExecutor.java:858)
+	at io.netty.util.concurrent.DefaultThreadFactory$DefaultRunnableDecorator.run(DefaultThreadFactory.java:138)
+	at java.lang.Thread.run(java.base@11.0.2/Unknown Source)
+
+"grpc-default-worker-ELG-3-34" #14301 daemon prio=5 os_prio=0 cpu=633.10ms elapsed=18617.19s tid=0x00007f063c02c800 nid=0x5f64 runnable  [0x00007f02d4e9c000]
+   java.lang.Thread.State: RUNNABLE
+	at sun.nio.ch.EPoll.wait(java.base@11.0.2/Native Method)
+	at sun.nio.ch.EPollSelectorImpl.doSelect(java.base@11.0.2/Unknown Source)
+	at sun.nio.ch.SelectorImpl.lockAndDoSelect(java.base@11.0.2/Unknown Source)
+	- locked <0x00000000a00039c0> (a io.netty.channel.nio.SelectedSelectionKeySet)
+	- locked <0x00000000a00049e8> (a sun.nio.ch.EPollSelectorImpl)
+	at sun.nio.ch.SelectorImpl.select(java.base@11.0.2/Unknown Source)
+	at io.netty.channel.nio.SelectedSelectionKeySetSelector.select(SelectedSelectionKeySetSelector.java:62)
+	at io.netty.channel.nio.NioEventLoop.select(NioEventLoop.java:753)
+	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:409)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$5.run(SingleThreadEventExecutor.java:858)
+	at io.netty.util.concurrent.DefaultThreadFactory$DefaultRunnableDecorator.run(DefaultThreadFactory.java:138)
+	at java.lang.Thread.run(java.base@11.0.2/Unknown Source)
+
+"grpc-default-worker-ELG-3-35" #14762 daemon prio=5 os_prio=0 cpu=757.24ms elapsed=18613.15s tid=0x00007f063c02e000 nid=0x6139 runnable  [0x00007f0418acd000]
+   java.lang.Thread.State: RUNNABLE
+	at sun.nio.ch.EPoll.wait(java.base@11.0.2/Native Method)
+	at sun.nio.ch.EPollSelectorImpl.doSelect(java.base@11.0.2/Unknown Source)
+	at sun.nio.ch.SelectorImpl.lockAndDoSelect(java.base@11.0.2/Unknown Source)
+	- locked <0x000000009ffef760> (a io.netty.channel.nio.SelectedSelectionKeySet)
+	- locked <0x000000009fff0788> (a sun.nio.ch.EPollSelectorImpl)
+	at sun.nio.ch.SelectorImpl.select(java.base@11.0.2/Unknown Source)
+	at io.netty.channel.nio.SelectedSelectionKeySetSelector.select(SelectedSelectionKeySetSelector.java:62)
+	at io.netty.channel.nio.NioEventLoop.select(NioEventLoop.java:753)
+	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:409)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$5.run(SingleThreadEventExecutor.java:858)
+	at io.netty.util.concurrent.DefaultThreadFactory$DefaultRunnableDecorator.run(DefaultThreadFactory.java:138)
+	at java.lang.Thread.run(java.base@11.0.2/Unknown Source)
+
+"grpc-default-worker-ELG-3-36" #15360 daemon prio=5 os_prio=0 cpu=699.40ms elapsed=18609.36s tid=0x00007f063c02f000 nid=0x6398 runnable  [0x00007f02c05da000]
+   java.lang.Thread.State: RUNNABLE
+	at sun.nio.ch.EPoll.wait(java.base@11.0.2/Native Method)
+	at sun.nio.ch.EPollSelectorImpl.doSelect(java.base@11.0.2/Unknown Source)
+	at sun.nio.ch.SelectorImpl.lockAndDoSelect(java.base@11.0.2/Unknown Source)
+	- locked <0x000000009ffebf48> (a io.netty.channel.nio.SelectedSelectionKeySet)
+	- locked <0x000000009ffecf70> (a sun.nio.ch.EPollSelectorImpl)
+	at sun.nio.ch.SelectorImpl.select(java.base@11.0.2/Unknown Source)
+	at io.netty.channel.nio.SelectedSelectionKeySetSelector.select(SelectedSelectionKeySetSelector.java:62)
+	at io.netty.channel.nio.NioEventLoop.select(NioEventLoop.java:753)
+	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:409)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$5.run(SingleThreadEventExecutor.java:858)
+	at io.netty.util.concurrent.DefaultThreadFactory$DefaultRunnableDecorator.run(DefaultThreadFactory.java:138)
+	at java.lang.Thread.run(java.base@11.0.2/Unknown Source)
+
+"grpc-default-worker-ELG-3-37" #15957 daemon prio=5 os_prio=0 cpu=651.12ms elapsed=18605.68s tid=0x00007f063c030000 nid=0x65f5 runnable  [0x00007f02da9f7000]
+   java.lang.Thread.State: RUNNABLE
+	at sun.nio.ch.EPoll.wait(java.base@11.0.2/Native Method)
+	at sun.nio.ch.EPollSelectorImpl.doSelect(java.base@11.0.2/Unknown Source)
+	at sun.nio.ch.SelectorImpl.lockAndDoSelect(java.base@11.0.2/Unknown Source)
+	- locked <0x000000009ffe07a0> (a io.netty.channel.nio.SelectedSelectionKeySet)
+	- locked <0x000000009ffe17c8> (a sun.nio.ch.EPollSelectorImpl)
+	at sun.nio.ch.SelectorImpl.select(java.base@11.0.2/Unknown Source)
+	at io.netty.channel.nio.SelectedSelectionKeySetSelector.select(SelectedSelectionKeySetSelector.java:62)
+	at io.netty.channel.nio.NioEventLoop.select(NioEventLoop.java:753)
+	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:409)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$5.run(SingleThreadEventExecutor.java:858)
+	at io.netty.util.concurrent.DefaultThreadFactory$DefaultRunnableDecorator.run(DefaultThreadFactory.java:138)
+	at java.lang.Thread.run(java.base@11.0.2/Unknown Source)
+
+"grpc-default-worker-ELG-3-38" #16419 daemon prio=5 os_prio=0 cpu=687.41ms elapsed=18601.58s tid=0x00007f063c031000 nid=0x67ce runnable  [0x00007f02d4795000]
+   java.lang.Thread.State: RUNNABLE
+	at sun.nio.ch.EPoll.wait(java.base@11.0.2/Native Method)
+	at sun.nio.ch.EPollSelectorImpl.doSelect(java.base@11.0.2/Unknown Source)
+	at sun.nio.ch.SelectorImpl.lockAndDoSelect(java.base@11.0.2/Unknown Source)
+	- locked <0x000000009ffdcf88> (a io.netty.channel.nio.SelectedSelectionKeySet)
+	- locked <0x000000009ffddfb0> (a sun.nio.ch.EPollSelectorImpl)
+	at sun.nio.ch.SelectorImpl.select(java.base@11.0.2/Unknown Source)
+	at io.netty.channel.nio.SelectedSelectionKeySetSelector.select(SelectedSelectionKeySetSelector.java:62)
+	at io.netty.channel.nio.NioEventLoop.select(NioEventLoop.java:753)
+	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:409)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$5.run(SingleThreadEventExecutor.java:858)
+	at io.netty.util.concurrent.DefaultThreadFactory$DefaultRunnableDecorator.run(DefaultThreadFactory.java:138)
+	at java.lang.Thread.run(java.base@11.0.2/Unknown Source)
+
+"grpc-default-worker-ELG-3-39" #16849 daemon prio=5 os_prio=0 cpu=625.21ms elapsed=18598.31s tid=0x00007f063c032800 nid=0x6982 runnable  [0x00007f02d0250000]
+   java.lang.Thread.State: RUNNABLE
+	at sun.nio.ch.EPoll.wait(java.base@11.0.2/Native Method)
+	at sun.nio.ch.EPollSelectorImpl.doSelect(java.base@11.0.2/Unknown Source)
+	at sun.nio.ch.SelectorImpl.lockAndDoSelect(java.base@11.0.2/Unknown Source)
+	- locked <0x000000009ffc9950> (a io.netty.channel.nio.SelectedSelectionKeySet)
+	- locked <0x000000009ffca978> (a sun.nio.ch.EPollSelectorImpl)
+	at sun.nio.ch.SelectorImpl.select(java.base@11.0.2/Unknown Source)
+	at io.netty.channel.nio.SelectedSelectionKeySetSelector.select(SelectedSelectionKeySetSelector.java:62)
+	at io.netty.channel.nio.NioEventLoop.select(NioEventLoop.java:753)
+	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:409)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$5.run(SingleThreadEventExecutor.java:858)
+	at io.netty.util.concurrent.DefaultThreadFactory$DefaultRunnableDecorator.run(DefaultThreadFactory.java:138)
+	at java.lang.Thread.run(java.base@11.0.2/Unknown Source)
+
+"grpc-default-worker-ELG-3-40" #17310 daemon prio=5 os_prio=0 cpu=34.73ms elapsed=18594.28s tid=0x00007f063c033800 nid=0x6b57 runnable  [0x00007f02d9fed000]
+   java.lang.Thread.State: RUNNABLE
+	at sun.nio.ch.EPoll.wait(java.base@11.0.2/Native Method)
+	at sun.nio.ch.EPollSelectorImpl.doSelect(java.base@11.0.2/Unknown Source)
+	at sun.nio.ch.SelectorImpl.lockAndDoSelect(java.base@11.0.2/Unknown Source)
+	- locked <0x000000009ffc6138> (a io.netty.channel.nio.SelectedSelectionKeySet)
+	- locked <0x000000009ffc7160> (a sun.nio.ch.EPollSelectorImpl)
+	at sun.nio.ch.SelectorImpl.select(java.base@11.0.2/Unknown Source)
+	at io.netty.channel.nio.SelectedSelectionKeySetSelector.select(SelectedSelectionKeySetSelector.java:62)
+	at io.netty.channel.nio.NioEventLoop.select(NioEventLoop.java:753)
+	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:409)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$5.run(SingleThreadEventExecutor.java:858)
+	at io.netty.util.concurrent.DefaultThreadFactory$DefaultRunnableDecorator.run(DefaultThreadFactory.java:138)
+	at java.lang.Thread.run(java.base@11.0.2/Unknown Source)
+
+"cli-update-thread" #17906 prio=5 os_prio=0 cpu=214.82ms elapsed=18590.71s tid=0x00007f02f4477000 nid=0x6dae waiting on condition  [0x00007f02c02d7000]
+   java.lang.Thread.State: TIMED_WAITING (sleeping)
+	at java.lang.Thread.sleep(java.base@11.0.2/Native Method)
+	at com.google.devtools.build.lib.runtime.ExperimentalEventHandler.lambda$startUpdateThread$0(ExperimentalEventHandler.java:981)
+	at com.google.devtools.build.lib.runtime.ExperimentalEventHandler$$Lambda$374/0x0000000800527840.run(Unknown Source)
+	at java.lang.Thread.run(java.base@11.0.2/Unknown Source)
+
+"Attach Listener" #17908 daemon prio=9 os_prio=0 cpu=0.49ms elapsed=0.20s tid=0x00007f06d4001000 nid=0x6e1a waiting on condition  [0x0000000000000000]
+   java.lang.Thread.State: RUNNABLE
+
+"VM Thread" os_prio=0 cpu=2334.50ms elapsed=18923.60s tid=0x00007f07483ea000 nid=0xbe runnable  
+
+"ParGC Thread#0" os_prio=0 cpu=1532.06ms elapsed=18923.61s tid=0x00007f0748028000 nid=0xbd runnable  
+
+"ParGC Thread#1" os_prio=0 cpu=1534.93ms elapsed=18922.75s tid=0x00007f06e4001000 nid=0xce runnable  
+
+"ParGC Thread#2" os_prio=0 cpu=1534.09ms elapsed=18922.75s tid=0x00007f06e4002800 nid=0xcf runnable  
+
+"ParGC Thread#3" os_prio=0 cpu=1532.89ms elapsed=18922.75s tid=0x00007f06e4004000 nid=0xd0 runnable  
+
+"ParGC Thread#4" os_prio=0 cpu=1530.62ms elapsed=18922.75s tid=0x00007f06e4005800 nid=0xd1 runnable  
+
+"ParGC Thread#5" os_prio=0 cpu=1534.20ms elapsed=18922.74s tid=0x00007f06e4007000 nid=0xd2 runnable  
+
+"ParGC Thread#6" os_prio=0 cpu=1534.00ms elapsed=18922.74s tid=0x00007f06e4008800 nid=0xd3 runnable  
+
+"ParGC Thread#7" os_prio=0 cpu=1534.79ms elapsed=18922.74s tid=0x00007f06e400a000 nid=0xd4 runnable  
+
+"ParGC Thread#8" os_prio=0 cpu=1536.33ms elapsed=18922.74s tid=0x00007f06e400b800 nid=0xd5 runnable  
+
+"ParGC Thread#9" os_prio=0 cpu=1532.57ms elapsed=18922.74s tid=0x00007f06e400d800 nid=0xd6 runnable  
+
+"ParGC Thread#10" os_prio=0 cpu=1529.70ms elapsed=18922.74s tid=0x00007f06e400f000 nid=0xd7 runnable  
+
+"ParGC Thread#11" os_prio=0 cpu=1533.68ms elapsed=18922.74s tid=0x00007f06e4010800 nid=0xd8 runnable  
+
+"ParGC Thread#12" os_prio=0 cpu=1534.26ms elapsed=18922.74s tid=0x00007f06e4012000 nid=0xd9 runnable  
+
+"ParGC Thread#13" os_prio=0 cpu=1532.17ms elapsed=18922.74s tid=0x00007f06e4013800 nid=0xda runnable  
+
+"ParGC Thread#14" os_prio=0 cpu=1532.45ms elapsed=18922.74s tid=0x00007f06e4015000 nid=0xdb runnable  
+
+"ParGC Thread#15" os_prio=0 cpu=1532.01ms elapsed=18922.74s tid=0x00007f06e4016800 nid=0xdc runnable  
+
+"ParGC Thread#16" os_prio=0 cpu=1528.83ms elapsed=18922.74s tid=0x00007f06e4018000 nid=0xdd runnable  
+
+"ParGC Thread#17" os_prio=0 cpu=1533.78ms elapsed=18922.74s tid=0x00007f06e4019800 nid=0xde runnable  
+
+"ParGC Thread#18" os_prio=0 cpu=1532.22ms elapsed=18922.74s tid=0x00007f06e401b000 nid=0xdf runnable  
+
+"ParGC Thread#19" os_prio=0 cpu=1530.22ms elapsed=18922.74s tid=0x00007f06e401c800 nid=0xe0 runnable  
+
+"ParGC Thread#20" os_prio=0 cpu=1526.86ms elapsed=18922.74s tid=0x00007f06e401e000 nid=0xe1 runnable  
+
+"ParGC Thread#21" os_prio=0 cpu=1533.70ms elapsed=18922.74s tid=0x00007f06e4020000 nid=0xe2 runnable  
+
+"ParGC Thread#22" os_prio=0 cpu=1526.75ms elapsed=18922.74s tid=0x00007f06e4022000 nid=0xe3 runnable  
+
+"VM Periodic Task Thread" os_prio=0 cpu=13872.91ms elapsed=18923.55s tid=0x00007f0748495000 nid=0xc9 waiting on condition  
+
+JNI global refs: 42, weak refs: 0
+```
+
+### What operating system are you running Bazel on?
+
+Ubuntu 19.04 host VM, Ubuntu 14.04 Docker container
+
+### What's the output of `bazel info release`?
+
+Bazel 0.25.2

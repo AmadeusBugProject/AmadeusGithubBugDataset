@@ -1,0 +1,23 @@
+ignore_missing removed from _aliases
+Continuing discussion from:
+https://github.com/elasticsearch/elasticsearch/pull/7234#issuecomment-55948380
+
+It appears that the recent Get Indices API removes ignore_missing:
+
+Elasticsearch 1.3.2
+
+```
+curl -XGET  http://localhost:9200/logstash-2014.09.16,logstash-2014.09.17/_aliases?ignore_missing=true;echo
+{"logstash-2014.09.16":{"aliases":{}}}
+```
+
+Elasticsearch 1.4 branch
+
+```
+$ curl -XGET  http://localhost:9200/logstash-2014.09.16,logstash-2014.09.17/_aliases?ignore_missing=true;echo
+{"error":"IndexMissingException[[logstash-2014.09.17] missing]","status":404}
+```
+
+Technically ignore_missing was slated for removal in Elasticsearch 1.0 (http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/_parameters.html#_parameters), however it was not removed from this API, meaning this this will introduce a breaking change for 1.4. 
+
+It might be better to deprecate ignore_missing and remove it in Elasticsearch 2.0.

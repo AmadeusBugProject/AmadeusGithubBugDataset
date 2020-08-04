@@ -1,0 +1,8 @@
+ByteBuf leak in NioDatagramChannel when IOException occure
+Using Netty 4.0.21.Final.
+
+While debuging my code in paranoid mode, a temporary problem on my DNS leads to IOException. Then the leak detector triggers that the ByteBuf allocated in io.netty.channel.socket.nio.NioDatagramChannel.doWriteMessage(NioDatagramChannel.java:298) was not released before being GC.
+
+While looking at the code, it seems obvious than if an exception is triggered during the call of DatagramChannel.send() or write(), the ByteBuf allocated when needsCopy var is true will be lost.
+
+This problem was resolved in 4.1 branch while solving issue #2239.

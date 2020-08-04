@@ -1,0 +1,109 @@
+Protocol Adapters can reach state where re-creation of message sender fails
+In our Hono setup we have reached a state where the Protocol Adapters can't re-create a message sender.
+
+REST Adapter log excerpt:
+```
+05:03:24.641 [vert.x-eventloop-thread-0] DEBUG o.e.hono.client.impl.AbstractSender - sender [telemetry/DEFAULT_TENANT] closed: Error{condition=hono:no-downstream-consumer, description='no downstream consumer available for data', info=null}
+05:03:27.319 [vert.x-eventloop-thread-0] DEBUG o.e.hono.client.impl.HonoClientImpl - creating new message sender for telemetry/DEFAULT_TENANT
+05:03:27.319 [vert.x-eventloop-thread-0] DEBUG o.e.hono.client.impl.HonoClientImpl - reusing existing registration client for [DEFAULT_TENANT]
+05:03:27.347 [vert.x-eventloop-thread-0] DEBUG o.e.h.c.i.AbstractRequestResponseClient - received response [correlation ID: reg-client-23, status: 200]
+05:03:27.841 [vert.x-eventloop-thread-0] DEBUG o.e.hono.client.impl.HonoClientImpl - already trying to create a message sender for telemetry/DEFAULT_TENANT
+05:03:27.841 [vert.x-eventloop-thread-0] DEBUG o.e.hono.client.impl.HonoClientImpl - reusing existing registration client for [DEFAULT_TENANT]
+05:03:27.841 [vert.x-eventloop-thread-0] DEBUG o.e.h.a.h.AbstractVertxBasedHttpProtocolAdapter - Service unavailable: null
+05:03:27.869 [vert.x-eventloop-thread-0] DEBUG o.e.h.c.i.AbstractRequestResponseClient - received response [correlation ID: reg-client-24, status: 200]
+05:03:37.118 [vert.x-eventloop-thread-0] DEBUG o.e.hono.client.impl.HonoClientImpl - already trying to create a message sender for telemetry/DEFAULT_TENANT
+05:03:37.118 [vert.x-eventloop-thread-0] DEBUG o.e.hono.client.impl.HonoClientImpl - reusing existing registration client for [DEFAULT_TENANT]
+05:03:37.118 [vert.x-eventloop-thread-0] DEBUG o.e.h.a.h.AbstractVertxBasedHttpProtocolAdapter - Service unavailable: null
+05:03:37.147 [vert.x-eventloop-thread-0] DEBUG o.e.h.c.i.AbstractRequestResponseClient - received response [correlation ID: reg-client-25, status: 200]
+05:03:47.206 [vert.x-eventloop-thread-0] DEBUG o.e.hono.client.impl.HonoClientImpl - already trying to create a message sender for telemetry/DEFAULT_TENANT
+05:03:47.206 [vert.x-eventloop-thread-0] DEBUG o.e.hono.client.impl.HonoClientImpl - reusing existing registration client for [DEFAULT_TENANT]
+05:03:47.206 [vert.x-eventloop-thread-0] DEBUG o.e.h.a.h.AbstractVertxBasedHttpProtocolAdapter - Service unavailable: null
+05:03:47.235 [vert.x-eventloop-thread-0] DEBUG o.e.h.c.i.AbstractRequestResponseClient - received response [correlation ID: reg-client-26, status: 200]
+05:03:51.731 [vert.x-eventloop-thread-0] DEBUG o.e.hono.client.impl.HonoClientImpl - already trying to create a message sender for telemetry/DEFAULT_TENANT
+05:03:51.731 [vert.x-eventloop-thread-0] DEBUG o.e.hono.client.impl.HonoClientImpl - reusing existing registration client for [DEFAULT_TENANT]
+05:03:51.731 [vert.x-eventloop-thread-0] DEBUG o.e.h.a.h.AbstractVertxBasedHttpProtocolAdapter - Service unavailable: null
+05:03:51.759 [vert.x-eventloop-thread-0] DEBUG o.e.h.c.i.AbstractRequestResponseClient - received response [correlation ID: reg-client-27, status: 200]
+05:03:56.738 [vert.x-eventloop-thread-0] DEBUG o.e.hono.client.impl.HonoClientImpl - already trying to create a message sender for telemetry/DEFAULT_TENANT
+05:03:56.738 [vert.x-eventloop-thread-0] DEBUG o.e.hono.client.impl.HonoClientImpl - reusing existing registration client for [DEFAULT_TENANT]
+05:03:56.738 [vert.x-eventloop-thread-0] DEBUG o.e.h.a.h.AbstractVertxBasedHttpProtocolAdapter - Service unavailable: null
+05:03:56.766 [vert.x-eventloop-thread-0] DEBUG o.e.h.c.i.AbstractRequestResponseClient - received response [correlation ID: reg-client-28, status: 200]
+05:03:57.297 [vert.x-eventloop-thread-0] DEBUG o.e.hono.client.impl.HonoClientImpl - already trying to create a message sender for telemetry/DEFAULT_TENANT
+05:03:57.297 [vert.x-eventloop-thread-0] DEBUG o.e.hono.client.impl.HonoClientImpl - reusing existing registration client for [DEFAULT_TENANT]
+05:03:57.297 [vert.x-eventloop-thread-0] DEBUG o.e.h.a.h.AbstractVertxBasedHttpProtocolAdapter - Service unavailable: null
+05:03:57.325 [vert.x-eventloop-thread-0] DEBUG o.e.h.c.i.AbstractRequestResponseClient - received response [correlation ID: reg-client-29, status: 200]
+05:04:07.401 [vert.x-eventloop-thread-0] DEBUG o.e.hono.client.impl.HonoClientImpl - already trying to create a message sender for telemetry/DEFAULT_TENANT
+05:04:07.401 [vert.x-eventloop-thread-0] DEBUG o.e.hono.client.impl.HonoClientImpl - reusing existing registration client for [DEFAULT_TENANT]
+05:04:07.401 [vert.x-eventloop-thread-0] DEBUG o.e.h.a.h.AbstractVertxBasedHttpProtocolAdapter - Service unavailable: null
+05:04:07.429 [vert.x-eventloop-thread-0] DEBUG o.e.h.c.i.AbstractRequestResponseClient - received response [correlation ID: reg-client-30, status: 200]
+05:04:07.673 [vert.x-eventloop-thread-0] INFO o.e.hono.client.impl.HonoClientImpl - Hono server [hono.hono:5671] closed connection with error condition: Error{condition=amqp:resource-limit-exceeded, description='local-idle-timeout expired', info=null}
+05:04:07.673 [vert.x-eventloop-thread-0] INFO o.e.hono.client.impl.HonoClientImpl - lost connection to Hono server [hono.hono:5671]
+05:04:07.674 [vert.x-eventloop-thread-0] DEBUG o.e.h.a.h.AbstractVertxBasedHttpProtocolAdapter - Service unavailable: null
+05:04:07.674 [vert.x-eventloop-thread-0] DEBUG o.e.hono.client.impl.HonoClientImpl - scheduling re-connect attempt ...
+05:04:07.674 [vert.x-eventloop-thread-0] WARN o.e.hono.client.impl.HonoClientImpl - cannot handle failure of unknown connection
+05:04:08.175 [vert.x-eventloop-thread-0] INFO o.e.hono.client.impl.HonoClientImpl - attempting to re-connect to Hono server [hono.hono:5671]
+05:04:08.175 [vert.x-eventloop-thread-0] INFO o.e.h.c.ConnectionFactoryImpl - connecting to AMQP 1.0 container [amqps://hono.hono:5671]
+05:04:08.301 [vert.x-eventloop-thread-0] DEBUG o.e.hono.client.impl.HonoClientImpl - already trying to create a message sender for telemetry/DEFAULT_TENANT
+05:04:08.301 [vert.x-eventloop-thread-0] DEBUG o.e.hono.client.impl.HonoClientImpl - reusing existing registration client for [DEFAULT_TENANT]
+05:04:08.301 [vert.x-eventloop-thread-0] DEBUG o.e.h.a.h.AbstractVertxBasedHttpProtocolAdapter - Service unavailable: null
+05:04:08.329 [vert.x-eventloop-thread-0] DEBUG o.e.h.c.i.AbstractRequestResponseClient - received response [correlation ID: reg-client-31, status: 200]
+05:04:08.345 [vert.x-eventloop-thread-0] INFO o.e.h.c.ConnectionFactoryImpl - connected to AMQP 1.0 container [amqps://hono.hono:5671], opening connection ...
+05:04:08.346 [vert.x-eventloop-thread-0] INFO o.e.h.c.ConnectionFactoryImpl - connection to container [Hono-0.0.0.0:5671] at [amqps://hono.hono:5671] open
+05:04:09.072 [vert.x-eventloop-thread-0] DEBUG o.e.hono.client.impl.HonoClientImpl - already trying to create a message sender for telemetry/DEFAULT_TENANT
+05:04:09.072 [vert.x-eventloop-thread-0] DEBUG o.e.hono.client.impl.HonoClientImpl - reusing existing registration client for [DEFAULT_TENANT]
+05:04:09.072 [vert.x-eventloop-thread-0] DEBUG o.e.h.a.h.AbstractVertxBasedHttpProtocolAdapter - Service unavailable: null
+```
+
+MQTT Adapter log:
+```
+05:03:24.642 [vert.x-eventloop-thread-0] DEBUG o.e.hono.client.impl.AbstractSender - sender [telemetry/DEFAULT_TENANT] closed: Error{condition=hono:no-downstream-consumer, description='no downstream consumer available for data', info=null}
+05:03:26.402 [vert.x-eventloop-thread-0] INFO o.e.h.a.m.VertxBasedMqttProtocolAdapter - Connection request from client esp8266.600194195a1b
+05:03:26.445 [vert.x-eventloop-thread-0] DEBUG o.e.hono.client.impl.HonoClientImpl - reusing existing registration client for [DEFAULT_TENANT]
+05:03:26.445 [vert.x-eventloop-thread-0] DEBUG o.e.hono.client.impl.HonoClientImpl - creating new message sender for telemetry/DEFAULT_TENANT
+05:03:26.474 [vert.x-eventloop-thread-0] DEBUG o.e.h.c.i.AbstractRequestResponseClient - received response [correlation ID: reg-client-23, status: 200]
+05:03:26.846 [vert.x-eventloop-thread-0] INFO o.e.h.a.m.VertxBasedMqttProtocolAdapter - Connection request from client esp8266.5ccf7f9509f1
+05:03:26.897 [vert.x-eventloop-thread-0] DEBUG o.e.hono.client.impl.HonoClientImpl - reusing existing registration client for [DEFAULT_TENANT]
+05:03:26.897 [vert.x-eventloop-thread-0] DEBUG o.e.hono.client.impl.HonoClientImpl - already trying to create a message sender for telemetry/DEFAULT_TENANT
+05:03:26.897 [vert.x-eventloop-thread-0] DEBUG o.e.h.a.m.VertxBasedMqttProtocolAdapter - cannot process message [client ID: esp8266.5ccf7f9509f1, topic: telemetry/DEFAULT_TENANT/esp8266.5ccf7f9509f1, QoS: AT_MOST_ONCE]: sender link not established yet
+05:03:26.897 [vert.x-eventloop-thread-0] DEBUG o.e.h.a.m.VertxBasedMqttProtocolAdapter - closing connection with client [client ID: esp8266.5ccf7f9509f1]
+05:03:26.926 [vert.x-eventloop-thread-0] DEBUG o.e.h.c.i.AbstractRequestResponseClient - received response [correlation ID: reg-client-24, status: 200]
+05:03:36.408 [vert.x-eventloop-thread-0] INFO o.e.h.a.m.VertxBasedMqttProtocolAdapter - Connection request from client esp8266.600194195a1b
+05:03:36.452 [vert.x-eventloop-thread-0] DEBUG o.e.hono.client.impl.HonoClientImpl - reusing existing registration client for [DEFAULT_TENANT]
+05:03:36.452 [vert.x-eventloop-thread-0] DEBUG o.e.hono.client.impl.HonoClientImpl - already trying to create a message sender for telemetry/DEFAULT_TENANT
+05:03:36.452 [vert.x-eventloop-thread-0] DEBUG o.e.h.a.m.VertxBasedMqttProtocolAdapter - cannot process message [client ID: esp8266.600194195a1b, topic: telemetry/DEFAULT_TENANT/esp8266.600194195a1b, QoS: AT_MOST_ONCE]: sender link not established yet
+05:03:36.452 [vert.x-eventloop-thread-0] DEBUG o.e.h.a.m.VertxBasedMqttProtocolAdapter - closing connection with client [client ID: esp8266.600194195a1b]
+05:03:36.481 [vert.x-eventloop-thread-0] DEBUG o.e.h.c.i.AbstractRequestResponseClient - received response [correlation ID: reg-client-25, status: 200]
+05:03:46.500 [vert.x-eventloop-thread-0] INFO o.e.h.a.m.VertxBasedMqttProtocolAdapter - Connection request from client esp8266.600194195a1b
+05:03:46.543 [vert.x-eventloop-thread-0] DEBUG o.e.hono.client.impl.HonoClientImpl - reusing existing registration client for [DEFAULT_TENANT]
+05:03:46.543 [vert.x-eventloop-thread-0] DEBUG o.e.hono.client.impl.HonoClientImpl - already trying to create a message sender for telemetry/DEFAULT_TENANT
+05:03:46.543 [vert.x-eventloop-thread-0] DEBUG o.e.h.a.m.VertxBasedMqttProtocolAdapter - cannot process message [client ID: esp8266.600194195a1b, topic: telemetry/DEFAULT_TENANT/esp8266.600194195a1b, QoS: AT_MOST_ONCE]: sender link not established yet
+05:03:46.543 [vert.x-eventloop-thread-0] DEBUG o.e.h.a.m.VertxBasedMqttProtocolAdapter - closing connection with client [client ID: esp8266.600194195a1b]
+05:03:46.572 [vert.x-eventloop-thread-0] DEBUG o.e.h.c.i.AbstractRequestResponseClient - received response [correlation ID: reg-client-26, status: 200]
+05:03:51.736 [vert.x-eventloop-thread-0] INFO o.e.h.a.m.VertxBasedMqttProtocolAdapter - Connection request from client HealthCheck_c8ca8231-a348-4d58-b135-1c24883611d8_mqtt
+05:03:51.739 [vert.x-eventloop-thread-0] DEBUG o.e.hono.client.impl.HonoClientImpl - reusing existing registration client for [DEFAULT_TENANT]
+05:03:51.739 [vert.x-eventloop-thread-0] DEBUG o.e.hono.client.impl.HonoClientImpl - already trying to create a message sender for telemetry/DEFAULT_TENANT
+05:03:51.739 [vert.x-eventloop-thread-0] DEBUG o.e.h.a.m.VertxBasedMqttProtocolAdapter - cannot process message [client ID: HealthCheck_c8ca8231-a348-4d58-b135-1c24883611d8_mqtt, topic: telemetry/DEFAULT_TENANT/HealthCheck_c8ca8231-a348-4d58-b135-1c24883611d8_mqtt, QoS: AT_MOST_ONCE]: sender link not established yet
+05:03:51.739 [vert.x-eventloop-thread-0] DEBUG o.e.h.a.m.VertxBasedMqttProtocolAdapter - closing connection with client [client ID: HealthCheck_c8ca8231-a348-4d58-b135-1c24883611d8_mqtt]
+05:03:51.767 [vert.x-eventloop-thread-0] DEBUG o.e.h.c.i.AbstractRequestResponseClient - received response [correlation ID: reg-client-27, status: 200]
+05:03:56.585 [vert.x-eventloop-thread-0] INFO o.e.h.a.m.VertxBasedMqttProtocolAdapter - Connection request from client esp8266.600194195a1b
+05:03:56.629 [vert.x-eventloop-thread-0] DEBUG o.e.hono.client.impl.HonoClientImpl - reusing existing registration client for [DEFAULT_TENANT]
+05:03:56.629 [vert.x-eventloop-thread-0] DEBUG o.e.hono.client.impl.HonoClientImpl - already trying to create a message sender for telemetry/DEFAULT_TENANT
+05:03:56.629 [vert.x-eventloop-thread-0] DEBUG o.e.h.a.m.VertxBasedMqttProtocolAdapter - cannot process message [client ID: esp8266.600194195a1b, topic: telemetry/DEFAULT_TENANT/esp8266.600194195a1b, QoS: AT_MOST_ONCE]: sender link not established yet
+05:03:56.629 [vert.x-eventloop-thread-0] DEBUG o.e.h.a.m.VertxBasedMqttProtocolAdapter - closing connection with client [client ID: esp8266.600194195a1b]
+05:03:56.661 [vert.x-eventloop-thread-0] DEBUG o.e.h.c.i.AbstractRequestResponseClient - received response [correlation ID: reg-client-28, status: 200]
+05:04:06.689 [vert.x-eventloop-thread-0] INFO o.e.h.a.m.VertxBasedMqttProtocolAdapter - Connection request from client esp8266.600194195a1b
+05:04:06.732 [vert.x-eventloop-thread-0] DEBUG o.e.hono.client.impl.HonoClientImpl - reusing existing registration client for [DEFAULT_TENANT]
+05:04:06.733 [vert.x-eventloop-thread-0] DEBUG o.e.hono.client.impl.HonoClientImpl - already trying to create a message sender for telemetry/DEFAULT_TENANT
+05:04:06.733 [vert.x-eventloop-thread-0] DEBUG o.e.h.a.m.VertxBasedMqttProtocolAdapter - cannot process message [client ID: esp8266.600194195a1b, topic: telemetry/DEFAULT_TENANT/esp8266.600194195a1b, QoS: AT_MOST_ONCE]: sender link not established yet
+05:04:06.733 [vert.x-eventloop-thread-0] DEBUG o.e.h.a.m.VertxBasedMqttProtocolAdapter - closing connection with client [client ID: esp8266.600194195a1b]
+05:04:06.762 [vert.x-eventloop-thread-0] DEBUG o.e.h.c.i.AbstractRequestResponseClient - received response [correlation ID: reg-client-29, status: 200]
+05:04:08.305 [vert.x-eventloop-thread-0] INFO o.e.h.a.m.VertxBasedMqttProtocolAdapter - Connection request from client HealthCheck_1467bc4a-e738-45ab-9390-cd590e9532bc_mqtt
+05:04:08.308 [vert.x-eventloop-thread-0] DEBUG o.e.hono.client.impl.HonoClientImpl - reusing existing registration client for [DEFAULT_TENANT]
+05:04:08.308 [vert.x-eventloop-thread-0] DEBUG o.e.hono.client.impl.HonoClientImpl - already trying to create a message sender for telemetry/DEFAULT_TENANT
+05:04:08.308 [vert.x-eventloop-thread-0] DEBUG o.e.h.a.m.VertxBasedMqttProtocolAdapter - cannot process message [client ID: HealthCheck_1467bc4a-e738-45ab-9390-cd590e9532bc_mqtt, topic: telemetry/DEFAULT_TENANT/HealthCheck_1467bc4a-e738-45ab-9390-cd590e9532bc_mqtt, QoS: AT_MOST_ONCE]: sender link not established yet
+05:04:08.308 [vert.x-eventloop-thread-0] DEBUG o.e.h.a.m.VertxBasedMqttProtocolAdapter - closing connection with client [client ID: HealthCheck_1467bc4a-e738-45ab-9390-cd590e9532bc_mqtt]
+05:04:08.337 [vert.x-eventloop-thread-0] DEBUG o.e.h.c.i.AbstractRequestResponseClient - received response [correlation ID: reg-client-30, status: 200]
+```
+
+Notice the recurring output of
+
+> already trying to create a message sender for telemetry/DEFAULT_TENANT

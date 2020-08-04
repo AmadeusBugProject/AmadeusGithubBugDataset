@@ -1,0 +1,6 @@
+StringDecoder buffer leak related to maxInMemorySize limit
+This was discovered while working on implementing the same type of limit for `ServerSentEventsMessageReader` which depends on `StringDecoder` to split the stream into lines (see #24312). 
+
+When a single input buffer contains multiple lines in which case slices for each line are retained, and if one of the earlier lines exceeds the limit, then subsequent lines are not released. This is due to a suspected issue with  `concatMapIterable` not respecting `doOnDiscard`. I've added a https://github.com/reactor/reactor-core/issues/1925#issuecomment-573630082 related to that. 
+
+The goal for this issue is to add a workaround.

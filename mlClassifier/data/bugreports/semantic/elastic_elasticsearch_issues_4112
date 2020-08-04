@@ -1,0 +1,85 @@
+Unable to create a nested filtered alias on a dataless master
+We set-up a two node cluster the first node is a master and contains no data.  The second node has data but is not master eligible.  Both a running 0.90.0. Also, retested on 0.90.6.
+
+First I create an index with an nested document:
+
+curl -X POST http://masternode:9200/index_a -d '{
+    "mappings" : {
+       "type_a" : {
+          "properties" : {
+            "table_a" : { "type" : "nested", "properties" : {
+              "field_a" : { "type" : "string" },"field_b" : { "type" : "string" }
+            }}
+          }
+       }
+    }
+}
+'
+
+Returns: {"ok":true,"acknowledged":true}
+
+Then I try to create the filter alias:
+
+curl -X POST http://datanode:9200/_aliases -d '
+{
+    "actions" : [
+        { "add" : { "index" : "index_a", "alias" : "alias_a" , "filter": {
+        "bool": {
+          "must": [
+            {
+              "nested": {
+                "path": "table_a",
+                "query": {
+                  "bool": {
+                    "must": [
+                      {
+                        "term": {
+                          "table_a.field_a": "y"
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }} }
+    ]
+}'
+
+Returns: {"error":"RemoteTransportException[[dlesmaster01][inet[/10.13.10.38:9300]][indices/aliases]]; nested: ElasticSearchIllegalArgumentException[failed to parse filter for [alias_a]]; nested: QueryParsingException[[index_a] [nested] failed to find nested object under path [table_a]]; ","status":400}
+
+If I submit it to the master node like this:
+
+curl -X POST http://masternode:9200/_aliases -d '
+{
+    "actions" : [
+        { "add" : { "index" : "index_a", "alias" : "alias_a" , "filter": {
+        "bool": {
+          "must": [
+            {
+              "nested": {
+                "path": "table_a",
+                "query": {
+                  "bool": {
+                    "must": [
+                      {
+                        "term": {
+                          "table_a.field_a": "y"
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }} }
+    ]
+}'
+
+Returns: {"error":"ElasticSearchIllegalArgumentException[failed to parse filter for [alias_a]]; nested: QueryParsingException[[index_a] [nested] failed to find nested object under path [table_a]]; ","status":400}
+
+These all work when the elected master also contains the data.  

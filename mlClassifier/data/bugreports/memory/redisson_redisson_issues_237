@@ -1,0 +1,14 @@
+Subscription connection leak in PubSubConnectionEntry::removeListener
+We have a production system using Redisson to handle notification. However, recently we constantly run into subscription connection exhausted issue. After investigation, I found Redisson doesn't release the subscription connection after the last listener is removed. 
+
+Eventually, this issue is caused by the following line. It seems ConcurrentLinedQueue doesn't fully implement equals method to compare 2 linked list. Therefore, an empty linked list will never equals to another empty linked list, which eventually leaks all subscription connections.
+
+```
+public void removeListener(String channelName, RedisPubSubListener listener) {
+
+  channelListeners.remove(channelName, new ConcurrentLinkedQueue<RedisPubSubListener>());
+
+}
+```
+
+This is a very urgent issue to us. Any help or workaround will be greatly appreciated.

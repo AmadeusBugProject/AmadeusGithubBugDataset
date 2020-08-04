@@ -1,0 +1,15 @@
+ExoPlayer throws load error while playing SmoothStreaming LIVE contents
+Description:
+
+ExoPlayer keeps throwing "Load Error" while playing smooth streaming live contents.
+
+Player Version : 1.5.12
+URL used : http://telecolor.econcept.it/live/primarete.isml/manifest
+Android OS : Android 5.1.1
+Device : Samsung note 3
+
+Steps to Reproduce:
+
+1. Play any smooth streaming live URL
+2. Validate the logs of onLoadError() method.
+3. Player keeps throwing LoadError multiple times

@@ -1,0 +1,6 @@
+ExpandCollapseSearchResponseListener potentially executes blocking calls on a network thread
+We use ExpandCollapseSearchResponseListener for field collapsing but this listener executes heavy operations in a blocking fashion. This could happen on a transport thread. We should do this in an async way.
+
+I just spoke with @jimczi how to fix it and he is taking it over. For now I will put a fix into 5.x and master since this triggers quite often due to a recent change.
+
+Note: this code is unreleased

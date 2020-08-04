@@ -1,0 +1,1 @@
+{"defect_key_words": ["bug", "defect", "breaking", "regression"], "local_git_repo": "repos/caja", "github_api_key": "", "github_user": "google", "ignore_file_paths": ["CHANGES", "release-notes", "Test", "RELEASENOTES.md", "README.md", "testutil", "src/test", "Test.java", "/res/", ".png", ".xml", ".mk", ".md", ".txt", "/assets/"], "github_repo_name": "caja", "package_depth": 10}

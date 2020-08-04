@@ -1,0 +1,4 @@
+WebSocketRegistryListener leaks if no SessionDestroyedEvent fired
+If no SessionDestroyedEvent is fired, then WebSocketRegistryListener will have a memory leak. This would happen if Redis is not configured to send events.
+
+We should be proactive in ensuring that Redis is configured for send session expiration events (which then get translated to SessionDestroyedEvent). We should also ensure empty session to WebSocket connections are removed.

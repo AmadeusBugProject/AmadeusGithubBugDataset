@@ -1,0 +1,56 @@
+"ParserException: searched too many bytes" with specific MP3 files
+### Issue description
+When playing MP3 files located on the device's storage with `SimpleExoPlayer`, some will trigger a source error when played to completion:
+```
+2018-10-14 11:52:06.440 E/ExoPlayerImplInternal: Source error.
+    com.google.android.exoplayer2.ParserException: Searched too many bytes.
+        at com.google.android.exoplayer2.extractor.mp3.Mp3Extractor.synchronize(Mp3Extractor.java:282)
+        at com.google.android.exoplayer2.extractor.mp3.Mp3Extractor.read(Mp3Extractor.java:169)
+        at com.google.android.exoplayer2.source.ExtractorMediaPeriod$ExtractingLoadable.load(ExtractorMediaPeriod.java:898)
+        at com.google.android.exoplayer2.upstream.Loader$LoadTask.run(Loader.java:379)
+        at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1162)
+        at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:636)
+        at java.lang.Thread.run(Thread.java:764)
+```
+
+At the time of writing, I reproduced the bug only with specific files (all tracks from the same album).
+Are my files corrupted, or is this a real ExoPlayer issue ? It doesn't happen with ExoPlayer 2.8.4.
+
+### Reproduction steps
+1. Create an instance of `SimpleExoPlayer` with the following code
+```java
+SimpleExoPlayer exoPlayer = ExoPlayerFactory.newSimpleInstance(context, new DefaultRenderersFactory(context), new DefaultTrackSelector());
+AudioAttributes musicAttributes = new AudioAttributes.Builder()
+            .setContentType(C.CONTENT_TYPE_MUSIC)
+            .setUsage(C.USAGE_MEDIA)
+            .build();
+exoPlayer.setAudioAttributes(musicAttributes, true);
+```
+
+2. Prepare the player with the media to play in a ConcatenatingMediaSource
+```java
+ExtractorMediaSource uriSource = ExtractorMediaSource.Factory(new DefaultDataSourceFactory(...))
+                    .setExtractorsFactory(new DefaultExtractorsFactory())
+                    .setTag(mediaDescriptionCompat)
+                    .createMediaSource(theMp3FileUri);
+ConcatenatingMediaSource concatSource = new ConcatenatingMediaSource(new MediaSource[] { uriSource });
+exoPlayer.prepare(concatSource);
+exoPlayer.setPlayWhenReady(true);
+```
+3. Wait until the song is played to completion. You can also seek near the end of the song and wait for it to complete.
+
+4. The player moves to the `ERROR` state and a "source error" is printed to the logcat.
+
+### Link to test content
+This happens for every track from the album "Breakin' Outta Hell" of Airbourne, but might happen with other media.
+Since this media is protected by law I can't share it here, but maybe I could share only the few last seconds of the song in order to reproduce the bug. Tell me if you need it.
+
+### Version of ExoPlayer being used
+2.9.0 (doesn't happen with 2.8.4)
+
+### Device(s) and version(s) of Android being used
+Google Nexus 5X - Android API 27
+The issue happens every time with the specified files.
+
+### A full bug report captured from the device
+Tell me if that's needed.

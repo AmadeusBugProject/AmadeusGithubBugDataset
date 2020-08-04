@@ -1,0 +1,40 @@
+FilePart file not properly closed on UnknownHostException
+Running Java command line application on machine with the following specs:
+
+Windows 7 Professional - 64 bit
+Service Pack 1
+32 GB RAM
+Java Version 1.8.0_91
+Java SE Runtime Environment (build 1.8.0_91-b15)
+Java HotSpot 64-bit Server VM (build 25.91-b15, mixed mode)
+
+If synchronous execute() method called and UnknownHostException thrown, FilePart file is not closed and a subsequent ATOMIC_MOVE call fails with error: 'The process cannot access the file because it is being used by another process.'
+
+```
+    // code snippet with sensitive portions removed
+    void transmit(final File file) {
+        try {
+            String authorization = "";
+
+           ** stuff here to get authorization code
+
+            BoundRequestBuilder request = client.preparePost(String.format("%s/api/files/save", url))
+                    .addHeader("Authorization", authorization)
+                    .addHeader("Content-Type", "multipart/form-data")
+                    .addBodyPart(new StringPart("transferId", UUID.randomUUID().toString()))
+                    .addBodyPart(new StringPart("timestamp", Timestamp.from(Instant.now()).toString()))
+                    .addBodyPart(new FilePart("file", file, "text/plain"));
+
+            Response response = request.execute().get();
+            if ( response != null ) {
+                 // do stuff with response here
+            }
+        } catch ( Exception ex ) {
+           // code to copy file to a different folder fails here
+           // Reason: The process cannot access the file because it is being used by another process.
+           // using the following code to move the file
+           Files.move(<source path>, <dest path>, ATOMIC_MOVE);
+        }
+    }
+
+```

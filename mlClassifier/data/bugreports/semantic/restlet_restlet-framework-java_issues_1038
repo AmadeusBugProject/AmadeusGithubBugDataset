@@ -1,0 +1,21 @@
+Restlet JAX-RS encoding problem - CRITICAL.
+Guys Im testing migration from jersey and have tested few frameworks with angle of smooth workflow.
+
+Restlet is a winner - most flexible, doesn't do any oddity with memory and server shuts down nicely.
+
+However, embarasingly, its has seriosuly annoying bug:
+
+```
+java.lang.IllegalArgumentException: URLDecoder: Illegal hex characters in escape (%) pattern [...]
+
+```
+
+It tries to double encode request parameters (I think its form parameters case or query) when used with standard jax-rs services.
+
+None of other libraries has this problem. 
+
+Is there a way it can be fixed any time soon? It is something it's been reported at 2.09 version... very annoying. 
+
+I wish I can use Restlet but this bug is a deal breaker.
+
+I know @Encode will stop decoding the parameter, but I need to decode it from url encoding...

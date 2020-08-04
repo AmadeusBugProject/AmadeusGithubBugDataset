@@ -1,0 +1,4 @@
+Update AbstractChecks to log DetailAST - OverloadMethodsDeclarationOrder
+Child of https://github.com/checkstyle/checkstyle/issues/5777
+
+This issue specifically focuses on OverloadMethodsDeclarationOrder.

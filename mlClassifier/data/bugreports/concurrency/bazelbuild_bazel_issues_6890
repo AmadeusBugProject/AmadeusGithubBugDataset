@@ -1,0 +1,29 @@
+Windows, CI: getting "Failed to delete output files after incomplete download"
+### Description of the problem / feature request:
+
+On Bazel CI, I'm repeatedly getting the following error:
+```
+ERROR: D:/b/bk-worker-windows-java8-w528/bazel/google-bazel-presubmit/third_party/protobuf/3.6.1/BUILD:123:1: Couldn't build file third_party/protobuf/3.6.1/_objs/protobuf_lite/stringpiece.obj: C++ compilation of rule '//third_party/protobuf/3.6.1:protobuf_lite' failed: Failed to delete output files after incomplete download. Cannot continue with local execution.: D:/b/f622aej4/execroot/io_bazel/bazel-out/host/bin/third_party/protobuf/3.6.1/_objs/protobuf_lite/stringpiece.obj (Permission denied)
+--
+  | Target //src:bazel failed to build
+```
+
+(https://buildkite.com/bazel/google-bazel-presubmit/builds/12883#61fdc327-7d64-4979-a3b4-9d35f2c729a2)
+
+### Bugs: what's the simplest, easiest way to reproduce this bug? Please provide a minimal example if possible.
+
+I don't know. I saw the error on CI for my change https://bazel-review.googlesource.com/c/bazel/+/84151.
+
+Retrying the job doesn't seem to help.
+
+Looks like this is where the error comes from: https://github.com/bazelbuild/bazel/blob/b3f28d3da12ea2d97d838f66765bf21d5dee2f7f/src/main/java/com/google/devtools/build/lib/remote/AbstractRemoteActionCache.java#L280-L284
+
+And I suppose the reason is that `outErr` has open streams for stdout and stderr, and those streams should be closed before attempting to delete the files here: https://github.com/bazelbuild/bazel/blob/b3f28d3da12ea2d97d838f66765bf21d5dee2f7f/src/main/java/com/google/devtools/build/lib/remote/AbstractRemoteActionCache.java#L273-L274
+
+### What operating system are you running Bazel on?
+
+> Replace this line with your answer.
+
+### What's the output of `bazel info release`?
+
+`0.20.0`

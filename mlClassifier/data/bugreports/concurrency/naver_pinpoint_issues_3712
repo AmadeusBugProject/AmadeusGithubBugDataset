@@ -1,0 +1,20 @@
+Fix concurrency issue in DeadlockThreadRegistry
+#### Description
+
+If addDeadlockedThread and getDeadlockedThreadIdSet operation performed concurrently on deadlockedThreadIdSet in DeadlockThreadRegistry class.
+
+Concurrency issue will occur.
+```java
+public class DeadlockThreadRegistry implements DeadlockThreadLocator {
+
+    private final Set<Long> deadlockedThreadIdSet = new HashSet<Long>();
+
+    boolean addDeadlockedThread(long threadId);
+
+    public Set<Long> getDeadlockedThreadIdSet();
+}
+```
+
+
+related issue #2941 
+

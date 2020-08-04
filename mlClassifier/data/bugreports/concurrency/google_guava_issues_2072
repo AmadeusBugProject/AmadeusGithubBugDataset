@@ -1,0 +1,115 @@
+Deadlock when stopping an AbstractScheduledService and Exception thrown from CustomScheduler.getNextSchedule()
+(Source attached below which demonstrates the issue).
+I have an implementation of an AbstractScheduledService which overrides the scheduler() method and creates and returns a CustomScheduler.  This CustomScheduler's getNextSchedule() method sleeps for a period of time (which makes the deadlock more predicable) and then either returns a Schedule, or if the Service’s state is STOPPING it throws an exception.  
+The problem arises when it throws an exception.  After throwing the exception the service never actually terminates, and the shutDown() method is never called.  After a brief investigation, it looks as though there is a deadlock between notifyFailed() and stopAsync() in AbstractService class.  notifyFailed() (called from the catch block of reschedule() method in one of AbstractScheduledService inner classes) tries to enter the monitor field but is blocked as the monitor is currently held by stopAsync(), and stopAsync() hasn’t released the monitor yet as it is blocked when calling this.doStop() (in case 3 of switch stmt).  The doStop() called is the impl in AbstractScheduledService, and this gets blocked on the first line waiting for this.runningTask.cancel(false) to return.
+
+I haven’t had time to download the source code and build things myself to investigate it further, but hopefully there is enough here to go on.  Below is some source code which demonstrates the problem, and the log output showing that the service’s shutDown() method is not called and the service and JVM hasn’t terminated yet.
+
+``` java
+public class Main {
+    public static void main(String[] args) throws Exception {
+        Service service = new ScheduledServiceWithCustomBlockingScheduler(5000);
+        new ServiceStateMonitor().monitorServiceStateWithServiceListener(service);
+        System.out.println("starting service");
+        service.startAsync();
+        Thread.sleep(6000); // wait just enough time for 2nd call of getNextSchedule() to start
+        System.out.println("Stopping service");
+        service.stopAsync();
+        System.out.println("Bye");
+      }
+}
+```
+
+``` java
+public class ScheduledServiceWithCustomBlockingScheduler extends AbstractScheduledService {
+    private long blockTime;
+
+    public ScheduledServiceWithCustomBlockingScheduler(final long blockTime) {
+        this.blockTime = blockTime;
+    }
+
+    @Override
+    protected void runOneIteration() throws Exception {
+        System.out.println("runOneIteration()");
+    }
+
+    @Override
+    protected Scheduler scheduler() {
+        return new CustomScheduler() {
+            @Override
+            protected Schedule getNextSchedule() throws Exception {
+                System.out.println("getNextSchedule()...");
+                Thread.sleep(blockTime);
+                if (state() == State.STOPPING) {
+                    System.out.println("getNextSchedule() - not running anymore so don't return scheduler");
+                    throw new Exception("not running anymore so don't return scheduler");
+                }
+                System.out.println("...getNextSchedule()");
+                return new Schedule(0, TimeUnit.NANOSECONDS);
+            }
+        };
+    }
+
+    @Override
+    protected void startUp() throws Exception {
+        System.out.println("startUp()");
+    }
+
+    @Override
+    protected void shutDown() throws Exception {
+        System.out.println("shutDown()");
+    }
+}
+```
+
+``` java
+public class ServiceStateMonitor {
+    public void monitorServiceStateWithServiceListener(final Service serviceToMonitor) {
+        serviceToMonitor.addListener(new PrintOutNewStateServiceListener(), MoreExecutors.directExecutor());
+    }
+
+    private class PrintOutNewStateServiceListener extends Service.Listener {
+        @Override
+        public void starting() {
+            System.out.println("SERVICE LISTENER : Starting");
+        }
+
+        @Override
+        public void running() {
+            System.out.println("SERVICE LISTENER : Running");
+        }
+
+        @Override
+        public void stopping(final Service.State from) {
+            System.out.println("SERVICE LISTENER : Stopping");
+        }
+
+        @Override
+        public void terminated(final Service.State from) {
+            System.out.println("SERVICE LISTENER : Terminated");
+        }
+
+        @Override
+        public void failed(final Service.State from, final Throwable failure) {
+            System.out.println("SERVICE LISTENER : Failed");
+        }
+    }
+}
+```
+
+The Standard Ouput from running the main()
+
+```
+starting service
+SERVICE LISTENER : Starting
+startUp()
+getNextSchedule()...
+...getNextSchedule()
+SERVICE LISTENER : Running
+runOneIteration()
+getNextSchedule()...
+Stopping service
+getNextSchedule() - not running anymore so don't return scheduler
+```
+
+notice that there is no "shutDown()" or "Bye" output line.

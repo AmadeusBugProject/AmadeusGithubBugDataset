@@ -1,0 +1,61 @@
+SAdd in RedisAsyncConnection uses wrong AddValues 
+line 629 uses addMapValues for sadd rather than addValues
+
+This causes JsonJacksonCodec to fail on Longs stored with the mapObjectMapper to fail to be deparsed by objectMapper; 
+
+Change line 629
+-         CommandArgs<K, V> args = new CommandArgs<K, V>(codec).addKey(key).addMapValues(members);
+-        CommandArgs<K, V> args = new CommandArgs<K, V>(codec).addKey(key).addValues(members);
+
+---
+
+Test code follows : 
+
+import org.junit.Ignore;
+
+@Ignore
+public class SimpleBean {
+    private Long lng;
+
+```
+public Long getLng() {
+    return lng;
+}
+```
+
+}
+
+---
+
+@Test
+    public void saveLong() {
+        SimpleBean cdb = new SimpleBean();
+        cdb.setLng(5l);
+
+```
+    String name = "IS_DEBUG_SET";
+
+    {
+        Redisson redis = RedissonUtil.getRedissonClient();
+        RSet<Object> set = redis.getSet(name);
+
+        set.clear();
+    }
+    {
+        Redisson redis = RedissonUtil.getRedissonClient();
+        RSet<SimpleBean> set = redis.getSet(name);
+        set.add(cdb);
+    }
+    {
+        Redisson redis = RedissonUtil.getRedissonClient();
+        RSet<SimpleBean> set = redis.getSet(name);
+
+        assertFalse("set may not be empty", set.isEmpty());
+        for (SimpleBean e : set) {
+            assertEquals("key must be a long", (Long.class), e.getLng());
+            assertEquals("keys must be identical by value", cdb.getLng(), e.getLng());
+        }
+    }
+
+}
+```

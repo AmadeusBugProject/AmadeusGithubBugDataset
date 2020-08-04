@@ -1,0 +1,2 @@
+//src/test/shell/integration:experimental_ui_test is timeout flaky
+http://ci.bazel.io/job/bazel-tests/BAZEL_VERSION=latest,PLATFORM_NAME=darwin-x86_64/139/console

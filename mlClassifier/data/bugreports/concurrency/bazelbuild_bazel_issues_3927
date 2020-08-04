@@ -1,0 +1,18 @@
+Windows: `failed to create output directory` error
+I sometimes get a `failed to create output directory` error when building bazel with head bazel.
+```
+pcloudy@pcloudy0-w MSYS ~/workspace/my_tests/bazel
+$ bazel clean && bazel build src:bazel
+Extracting Bazel installation...
+...........
+INFO: Starting clean (this may take a while). Consider using --async if the clean takes more than several minutes.
+WARNING: C:/tools/msys64/home/pcloudy/workspace/my_tests/bazel/src/main/cpp/BUILD:79:12: in srcs attribute of cc_binary rule //src/main/cpp:client: please do not import '//src/main/native/windows:resources.o' directly. You should either move the file to this package or depend on an appropriate rule there
+INFO: Analysed target //src:bazel (164 packages loaded).
+INFO: Found 1 target...
+ERROR: C:/tools/msys64/home/pcloudy/workspace/my_tests/bazel/third_party/grpc/BUILD:77:1: failed to create output directory 'C:/tmp/_bazel_pcloudy/2a_d8ear/execroot/io_bazel/bazel-out/x64_windows-fastbuild/bin/third_party/grpc/_objs/grpc_unsecure/third_party/grpc/src/core/profiling': C:/tmp/_bazel_pcloudy/2a_d8ear/execroot/io_bazel/bazel-out/x64_windows-fastbuild/bin/third_party/grpc/_objs/grpc_unsecure/third_party/grpc/src (Not a directory)
+Target //src:bazel failed to build
+INFO: Elapsed time: 113.590s, Critical Path: 9.66s
+FAILED: Build did NOT complete successfully
+```
+
+Suspect culprit: 3ce58ce65663b89a1209d9d9767752a11445edfe, I'll try to confirm it.

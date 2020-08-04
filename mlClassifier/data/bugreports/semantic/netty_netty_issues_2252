@@ -1,0 +1,8 @@
+AppendableCharSequence private constructor does not set correct position
+private constructor
+
+private AppendableCharSequence(char[] chars) {
+        this.chars = chars;
+}
+
+does not update position as a result of which subsequence method gives unusable AppendableCharSequence.

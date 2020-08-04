@@ -1,0 +1,11 @@
+Path Details produces ArrayIndexOutOfBoundsException
+There is a minor problem when reducing the size and if size is 0
+
+```
+ /route
+java.lang.ArrayIndexOutOfBoundsException: -1
+        at com.graphhopper.util.PointList.add(PointList.java:260)
+        at com.graphhopper.util.PathMerger.doWork(PathMerger.java:119)
+        at com.graphhopper.routing.template.ViaRoutingTemplate.isReady(ViaRoutingTemplate.java:155)
+        at com.graphhopper.GraphHopper.calcPaths(GraphHopper.java:1072)
+```

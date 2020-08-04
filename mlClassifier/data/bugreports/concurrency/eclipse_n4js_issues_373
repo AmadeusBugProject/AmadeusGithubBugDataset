@@ -1,0 +1,4 @@
+Fix random Concurrent Modification exception
+At enfore we have additional, non-public tests using non-public test projects building external libraries. These tests are failing at the moment. These failing tests indicate general problems in N4JS and need to be fixed. If possible, internal tests are to be made public and title of this bug may be adjusted accordingly.
+
+The internal details are described in internal project task IDE-2911.

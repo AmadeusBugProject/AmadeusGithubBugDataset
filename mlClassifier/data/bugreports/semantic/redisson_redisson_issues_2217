@@ -1,0 +1,31 @@
+return null when not used in pipeline / transaction
+class：org.redisson.spring.data.connection.RedissonConnection.java 
+code line：882 
+code segment：
+<T> T write(byte[] key, Codec codec, RedisCommand<?> command, Object... params) {
+	RFuture<T> f = executorService.writeAsync(key, codec, command, params);
+	indexCommand(command);
+	return sync(f);
+}
+
+bug：return null when not used in pipeline / transaction.
+
+### Expected behavior
+not return null when not used in pipeline / transaction.
+### Actual behavior
+return null when not used in pipeline / transaction.
+### Steps to reproduce or test case
+public Boolean setNx(String key, String value, long expireMillis) {
+	return stringRedisTemplate.execute(new RedisCallback<Boolean>() {
+		@Override
+		public Boolean doInRedis(RedisConnection connection) throws DataAccessException {
+			return connection.set(key.getBytes(), value.getBytes(), Expiration.milliseconds(expireMillis),
+					SetOption.SET_IF_ABSENT);
+		}
+	}, true);
+}
+### Redis version
+Redis-x64-3.0.500
+### Redisson version
+3.11.1
+### Redisson configuration

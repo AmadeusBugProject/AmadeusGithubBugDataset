@@ -1,0 +1,22 @@
+NPE in AbstractNioUnsafe.finishConnect
+In rare circumstances I'm getting following exception:
+
+```
+WARN io.netty.channel.nio.NioEventLoop Unexpected exception in the selector loop.
+java.lang.NullPointerException: null 
+    at io.netty.channel.nio.AbstractNioChannel$AbstractNioUnsafe.finishConnect(AbstractNioChannel.java:251) 
+    at io.netty.channel.nio.NioEventLoop.processSelectedKey(NioEventLoop.java:502) 
+    at io.netty.channel.nio.NioEventLoop.processSelectedKeysOptimized(NioEventLoop.java:452) 
+    at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:346) 
+    at io.netty.util.concurrent.SingleThreadEventExecutor$2.run(SingleThreadEventExecutor.java:101) 
+    at java.lang.Thread.run(Thread.java:744)
+```
+
+It's rare and happens a few times a week on production servers and I don't know simple way to reproduce it. 
+
+```
+java version "1.7.0_45"
+Java(TM) SE Runtime Environment (build 1.7.0_45-b18)
+Java HotSpot(TM) 64-Bit Server VM (build 24.45-b08, mixed mode)
+netty 4.0.14.Final, nio, client mode    
+```

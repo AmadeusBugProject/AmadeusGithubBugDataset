@@ -1,0 +1,6 @@
+Unable to deploy JPA application to WAS 8 due to Hibernate 4.2
+Raised in Gitter:
+
+> Think I figured out the issue with WAS and the datasource. I get an exception:
+> NoClassDefFoundError: org.hibernate.engine.transaction.jta.platform.internal.AbstractJtaPlatform
+> This is because I am using Hibernate 4.2 and the packages for AbstractJtaPlatform changed between 4.2 & 4.3. Should be org.hibernate.service.jta.platform.internal.AbstractJtaPlatform. So potential bug in configureJtaPlatform() in HibernateJpaAutoConfiguration class?

@@ -1,0 +1,20 @@
+getProducts never returns when no internet connection
+Original [issue 1409](https://code.google.com/p/codenameone/issues/detail?id=1409) created by codenameone on 2015-03-23T18:05:45.000Z:
+
+I encountered the problem that getProducts never returns when there is no internet connection
+
+<b>What steps will reproduce the problem?</b>
+1. set device info flight mode
+2. start app and call getProducts to get product infos like localized description and price
+3. wait for the response of getProducts
+
+<b>What is the expected output? What do you see instead?</b>
+I would expect to get a null or empty response or some exception.
+But none of these happen. The method never returns anything.
+
+<b>What version of the product are you using? On what operating system?</b>
+libVersion=84
+iOS 8.1.3 on iPhone 5
+
+<b>Please provide any additional information below.</b>
+When there _is_ an internet connection, getProducts works fine.

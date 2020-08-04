@@ -1,0 +1,54 @@
+As a user I need informative error message for instanceof operator with use-site structural type
+```javascript
+class A {
+    public a: number;
+
+    public f(): void {}
+}
+
+var a: ~A = { a: 2, f: function () {} };
+let x = 5;
+
+// XPECT FIXME errors --> "instanceof cannot be used with use site structural typing." at "~A"
+// Getting: constructor{A} is not a subtype of number.
+//          number is not a subtype of union{Function,type{Object},type{N4Enum}}.
+a instanceof ~A;
+
+// XPECT FIXME errors  --> "instanceof cannot be used with use site structural typing." at "~~A"
+// Getting: number is not a subtype of union{Function,type{Object},type{N4Enum}}.
+a instanceof ~~A;
+
+// The following tests are only to ensure that existing correct functionality is maintained:
+
+// XPECT errors --> "number is not a subtype of union{Function,type{Object},type{N4Enum}}." at "--x"
+a instanceof --x;
+
+
+// This needs to work! XPECT noerrors --> 
+a instanceof A;
+
+// XPECT errors --> "instanceof cannot be used with primitive types." at "number" 
+a instanceof number; 
+```
+This is due to ~ being parsed as the INV (inverse, i.e. XOR) operator.
+
+We need to do the following things:
+
+Adjust the ExpectedTypeJudgment to get rid of wrong errors:
+1. turn off expected type error for RelationalExpression, if operator is INSTANCEOF and right hand side is an UnaryExpression. We can do this by simply expecting anytype
+2. turn off expected type error for UnaryExpression if parent is RelationalExpression and operator is INSTANCEOF. Same trick as in 1.
+
+Add a new validation (in N4JSExpressionValidator) for exactly this case, extending the current INSTANCEOF validation. We need a new error message "'instanceof' cannot be used with use site structural typing.", since the error now stems from use site structural typeing (and not definition site, note that the typing strategy is not correctly parsed anyway.)
+
+## Acceptance Criteria
+
+The tests above must work.
+
+## Hints
+- the message is defined in message.properties, file IssuesCodes.xtend (in same package) must be touched to be recompiled
+- in order to debug, run N4JS in debug mode. Unfortunately changing xtend code requires a restart. Do not simply "terminate" the runtime instance, but instead disable breakpoints and correctly quit the application
+
+
+
+
+(moved from internal bug tracker, IDEBUG-163 and NumberFour/n4js#9; original reporter: @alisa-lisovskaya)

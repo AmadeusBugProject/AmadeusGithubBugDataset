@@ -1,0 +1,4 @@
+Invoke HttpSessionStrategy.onNewSession if session id changed
+If the session id changes, the session id needs to be sent back to the client.
+
+Originally reported on #136 but only want part of the suggestions in the PR (i.e. do not want commit for flag to always send the cookie).

@@ -1,0 +1,2 @@
+Nested: queries/filters/aggregations expect FixedBitSets, yet it isn't the case with NoneFilterCache
+The nested queries, filters and aggregations expect that filters produce `FixedBitSet` instances. However, if the filter cache is disabled, you might get an index-based `DocsEnum` directly, so the set of documents needs to be loaded into a `FixedBitSet` before running the query.

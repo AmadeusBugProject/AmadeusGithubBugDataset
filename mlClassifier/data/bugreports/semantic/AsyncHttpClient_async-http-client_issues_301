@@ -1,0 +1,5 @@
+WebSocketByteListener invokes both onMessage() and onFragment()
+(1) When the message is not fragmented, onFragment should not be invoked.
+(2) And when a message is fragmented, onMessage() shouldn't be called.
+
+observed in ning 1.7.15

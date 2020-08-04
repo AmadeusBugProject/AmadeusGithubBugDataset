@@ -1,0 +1,12 @@
+Iterables.toArray broken in case of concurrent modifications
+_[Original issue](https://code.google.com/p/guava-libraries/issues/detail?id=1558) created by **Maaartinus** on 2013-10-19 at 04:37 PM_
+
+---
+
+In case the iterable shrinks in the meantime, the result of the class-accepting version of `Iterables.toArray`&nbsp;may contain nulls at its end.
+
+The documentation says "return a newly-allocated array into which all the elements of the iterable have been copied", which actually doesn't prevent this. However, nobody expects `Iterables.toArray(a_not_null_allowing_set, some_class)`&nbsp;to contain several nulls.
+
+In case you don't want to fix it, the documentation should state this very explicitly. Note that the other overload works fine.
+
+The fix is trivial, just pass an empty array in place of the presized one. The only cost is the allocation of the empty array. A test is attached.

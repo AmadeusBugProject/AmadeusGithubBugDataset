@@ -1,0 +1,170 @@
+ODB server doesn't totally respect the "storage.diskCache.pageSize" directive
+according to the default value of the "storage.diskCache.pageSize" directive (64k), during an "import database" test I observed these write bytes size distribution:
+
+```
+     value  ------------- Distribution ------------- count
+           0 |                                         0
+           1 |@@@@@@@@@@@@@@@@@@@@@@@@@                8811
+           2 |                                         0
+           4 |                                         0
+           8 |@                                        407
+          16 |                                         77
+          32 |@                                        182
+          64 |                                         6
+         128 |                                         0
+         256 |                                         13
+         512 |                                         12
+        1024 |                                         26
+        2048 |                                         47
+        4096 |                                         35
+        8192 |                                         0
+       16384 |                                         0
+       32768 |                                         0
+       65536 |@@@@@@@@@@@@                             4363
+      131072 |                                         0
+```
+
+It means that there were 8811 writes of 1 byte and 4363 writes of 65536 bytes (as expected), and so on.
+
+After setting the "storage.diskCache.pageSize" value to "32", I observed these details  for the same process:
+
+ zfs pwrite /zones/orientdbZone/root/opt/orientdb-community-1.6.4/databases
+
+```
+       value  ------------- Distribution ------------- count
+           0 |                                         0
+           1 |@@@@@                                    275
+           2 |                                         0
+           4 |                                         0
+           8 |@@@@@@@                                  399
+          16 |                                         0
+          32 |                                         0
+          64 |                                         0
+         128 |                                         0
+         256 |                                         13
+         512 |                                         12
+        1024 |                                         26
+        2048 |@                                        47
+        4096 |@                                        35
+        8192 |                                         0
+       16384 |                                         0
+       32768 |@@@@@@@@@@@@@@@@@@@@@@@@@@@              1604
+       65536 |                                         0
+```
+
+ zfs write /zones/orientdbZone/root/opt/orientdb-community-1.6.4/databases
+
+```
+       value  ------------- Distribution ------------- count
+           0 |                                         0
+           1 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@        8536
+           2 |                                         0
+           4 |                                         0
+           8 |                                         8
+          16 |                                         77
+          32 |@                                        182
+          64 |                                         6
+         128 |                                         0
+         256 |                                         0
+         512 |                                         0
+        1024 |                                         0
+        2048 |                                         0
+        4096 |                                         0
+        8192 |                                         0
+       16384 |                                         0
+       32768 |                                         0
+       65536 |@@@@@@                                   1526
+      131072 |                                         0
+```
+
+It seems that the pwrite() function respects the new page size setup, but the write() function doesn't.
+
+I traced the syscalls during a simple "create database", trying to investigate the JVM at the same time:
+
+zfs pwrite /zones/orientdbZone/root/opt/orientdb-community-1.6.4/databases
+
+```
+       value  ------------- Distribution ------------- count
+           0 |                                         0
+           1 |@@@@                                     26
+           2 |                                         0
+           4 |                                         0
+           8 |@@@@@@@                                  39
+          16 |                                         0
+          32 |                                         0
+          64 |                                         0
+         128 |                                         0
+         256 |@@                                       13
+         512 |                                         0
+        1024 |                                         0
+        2048 |                                         0
+        4096 |                                         0
+        8192 |                                         0
+       16384 |                                         0
+       32768 |@@@@@@@@@@@@@@@@@@@@@@@@@@@              160
+       65536 |                                         0
+```
+
+ zfs write /zones/orientdbZone/root/opt/orientdb-community-1.6.4/databases
+
+```
+       value  ------------- Distribution ------------- count
+           0 |                                         0
+           1 |@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@         460
+           2 |                                         0
+           4 |                                         0
+           8 |                                         4
+          16 |@                                        18
+          32 |                                         3
+          64 |                                         0
+         128 |                                         0
+         256 |                                         0
+         512 |                                         0
+        1024 |                                         0
+        2048 |                                         0
+        4096 |                                         0
+        8192 |                                         0
+       16384 |                                         0
+       32768 |                                         0
+       65536 |@@@@@@                                   92
+      131072 |                                         0
+```
+
+Here the JVM methods executed a suspicious number of times, during the "create database" process:
+
+METHODS EXECUTED 460 TIMES (1 B)
+
+java/io/RandomAccessFile.write0
+
+METHODS EXECUTED 92 TIMES (64K)
+
+com/orientechnologies/orient/core/db/ODatabaseWrapperAbstract.getName
+com/orientechnologies/orient/core/storage/impl/local/paginated/wal/OWALPage.getFilledUpTo
+ com/orientechnologies/orient/core/storage/impl/local/paginated/wal/OWriteAheadLog$LogSegment$FlushTask.flushPage
+java/lang/StringBuffer.append
+java/util/concurrent/ConcurrentLinkedQueue$Itr.next
+
+METHODS EXECUTED 26 TIMES (1B)
+
+com/orientechnologies/orient/core/storage/fs/OAbstractFile.<init>
+com/orientechnologies/orient/core/storage/fs/OAbstractFile.create
+com/orientechnologies/orient/core/storage/fs/OAbstractFile.lock
+com/orientechnologies/orient/core/storage/fs/OAbstractFile.openChannel
+com/orientechnologies/orient/core/storage/fs/OAbstractFile.setHeaderDirty
+com/orientechnologies/orient/core/storage/fs/OFileClassic.<init>
+com/orientechnologies/orient/core/storage/fs/OFileClassic.create
+com/orientechnologies/orient/core/storage/fs/OFileClassic.getBuffer
+com/orientechnologies/orient/core/storage/fs/OFileClassic.setFilledUpTo
+com/orientechnologies/orient/core/storage/fs/OFileClassic.setSize
+com/orientechnologies/orient/core/storage/fs/OFileClassic.setSoftlyClosed
+com/orientechnologies/orient/core/storage/fs/OFileClassic.setVersion
+com/orientechnologies/orient/core/storage/impl/local/paginated/OLocalPaginatedStorage.getMode
+
+METHODS EXECUTED 39 TIMES (8B)
+
+com/orientechnologies/orient/core/storage/fs/OFileClassic.getWriteBuffer
+
+METHODS EXECUTED 13 TIMES (256B)
+
+com/orientechnologies/orient/core/storage/fs/OFileClassic.writeInt
+java/io/OutputStream.<init>

@@ -1,0 +1,23 @@
+NPE in DelayedClientTransport
+Please answer these questions before submitting your issue.
+
+### What version of gRPC are you using?
+1.16.1 (but also appears to be present in master)
+
+
+### What did you expect to see?
+No NullPointerException in DelayedClientTransport.java
+
+### Description
+We (Firestore) have had a few reports of a NPE within DelayedClientTransport.java. (https://github.com/firebase/firebase-android-sdk/issues/428).
+
+Looking at the stacktrace, it seems as though `picker` is null here: https://github.com/grpc/grpc-java/blob/57043233bf5aecce92f0c6629b6ac46d9393ce8c/core/src/main/java/io/grpc/internal/DelayedClientTransport.java#L149
+
+Examining that function further, it seems as though picker is set here and here:
+https://github.com/grpc/grpc-java/blob/57043233bf5aecce92f0c6629b6ac46d9393ce8c/core/src/main/java/io/grpc/internal/DelayedClientTransport.java#L139-L142
+https://github.com/grpc/grpc-java/blob/57043233bf5aecce92f0c6629b6ac46d9393ce8c/core/src/main/java/io/grpc/internal/DelayedClientTransport.java#L165
+
+In the first case, there's a null check that protects it, but there isn't in the second case. Should there be?
+
+(All links to the 1.16.1 tag, but the code looks effectively the same in master wrt this issue.)
+

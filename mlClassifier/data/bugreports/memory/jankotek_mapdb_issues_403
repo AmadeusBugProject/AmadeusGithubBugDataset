@@ -1,0 +1,36 @@
+Extremely fast database growth when using BTreeMapMaker.valuesOutsideNodesEnable()
+I have a simple prototype application BTreeMap based application which
+includes a b-tree called "id2entry" mapping longs to byte arrays:
+
+```
+db = DBMaker.newFileDB(DB_FILE)
+    .mmapFileEnableIfSupported()
+    .closeOnJvmShutdown()
+    .commitFileSyncDisable()
+    .make();
+
+id2entry = db.createTreeMap("id2entry")
+    .valueSerializer(Serializer.BYTE_ARRAY)
+    .valuesOutsideNodesEnable()
+    .makeLongMap();
+
+```
+
+If I perform repeated updates to id2entry, where a random key is selected
+and its value replaced, i.e. no new keys are added and none are deleted, I
+notice that the DB size grows rapidly on disk at a rate proportional to the
+amount of data being replaced. In other words, if I replace 10MB of values
+the DB grows by 10MB.
+
+I have chosen to use the option valuesOutsideNodesEnable() because the
+values are of variable length ranging from 0.5KB to several MBs (in my
+testing I'm only using 512B values). If I remove the option I notice that
+the DB size remains quite stable.
+
+Note that I am using the latest MapDB 2.0 snapshot, although I have seen
+similar behavior with 1.0.x. Is this behavior expected? I assume it is an
+extreme manifestation of https://github.com/jankotek/MapDB/issues/97. What
+do you think? It pretty much renders the valuesOutsideNodesEnable() option
+unusable for normal use (I don't want to have to stop the application to
+perform a compaction every few minutes). However, the side effect is that I
+may not be able to efficiently store large values.

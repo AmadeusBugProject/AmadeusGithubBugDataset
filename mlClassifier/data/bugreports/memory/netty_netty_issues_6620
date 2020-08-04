@@ -1,0 +1,10 @@
+Base64 decoder can handle buffers larger or equal to 715827883 bytes
+for byte buffers larger than 715827882 bytes this code 
+ByteBuf bb = Unpooled.buffer(size);
+Base64.decode(bb, 0, size);
+throws exception
+Exception in thread "main" java.lang.IllegalArgumentException: initialCapacity: -536870911 (expectd: 0+)
+ 
+It is happening  because line 120 in  io.netty.handler.codec.base64.Base64 class, `int len43 = len * 4 / 3;` can cause integer overflow for values larger than Integer.MAX_VALUE/3.
+changing order of operations to be division followed by multiplication should solve this issue.
+Problem was spotted in version 4.1.8.Final.

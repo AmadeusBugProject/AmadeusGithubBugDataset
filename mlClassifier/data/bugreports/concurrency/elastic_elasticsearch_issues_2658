@@ -1,0 +1,2 @@
+Master node operations might be executed twice
+If a master node operation, such as create index, is executed on a cluster with a global master block, it might be executed twice once block is removed.

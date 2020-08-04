@@ -1,0 +1,36 @@
+Wrong directory structure after NPM package adaptation
+Some NPMs have a directory structure such as
+
+```
+/package.json
+/dist/this.js
+/dist/that.js
+...
+```
+
+Note that the .js files are inside a directory called `dist` here. During the adaptation process, the N4JSD files should be put alongside the .js files into the dist directory, which is currently accomplished correctly if the following two conditions are met:
+
+- The main module is set in the NPM package.json (see `NpmPackageToProjectAdapter#computeMainModule).
+- The directory structure of the N4JSD project is
+
+```
+/<version>/.project
+/<version>/manifest.n4mf
+/<version>/manifest.fragment
+/src/this.n4jsd
+/src/that.n4jsd
+```
+
+Note that the `src` folder does not reflect the structure of the NPM package, that is, there is no `dist` folder inside it. But to facilitate the shadowing necessary to edit the N4JSD project inside the workspace, and for reasons of coherence, the directory structure inside the `src` folder should reflect the directory structure inside the NPM package, i.e., it should be
+
+```
+/<version>/.project
+/<version>/manifest.n4mf
+/<version>/manifest.fragment
+/src/dist/this.n4jsd
+/src/dist/that.n4jsd
+```
+
+But in that case, the n4jsd files are put into the wrong place after adaptation has taken place. This is because the adaptation process takes the main module directive into account when computing the target path for the n4jsd files.
+
+To allow the correct directory structure in the N4JSD project, the adaptation process should not evaluate the main module directive and just merge the contents of the `src` folder into the NPM package.

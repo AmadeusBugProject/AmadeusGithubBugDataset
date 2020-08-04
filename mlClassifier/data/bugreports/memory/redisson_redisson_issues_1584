@@ -1,0 +1,63 @@
+Memory Leak when I try to create client
+<!--
+Please consider to take commercial 24x7 support included in PRO version https://redisson.pro
+-->
+
+### Expected behavior
+It should't have memory leak.
+### Actual behavior
+```
+[main] ERROR io.netty.util.ResourceLeakDetector  - LEAK: HashedWheelTimer.release() was not called before it's garbage-collected. See http://netty.io/wiki/reference-counted-objects.html for more information.
+Recent access records: 
+Created at:
+	io.netty.util.HashedWheelTimer.<init>(HashedWheelTimer.java:272)
+	io.netty.util.HashedWheelTimer.<init>(HashedWheelTimer.java:216)
+	io.netty.util.HashedWheelTimer.<init>(HashedWheelTimer.java:195)
+	org.redisson.connection.MasterSlaveConnectionManager.initTimer(MasterSlaveConnectionManager.java:318)
+	org.redisson.connection.MasterSlaveConnectionManager.<init>(MasterSlaveConnectionManager.java:161)
+	org.redisson.connection.SingleConnectionManager.<init>(SingleConnectionManager.java:34)
+	org.redisson.config.ConfigSupport.createConnectionManager(ConfigSupport.java:192)
+	org.redisson.Redisson.<init>(Redisson.java:122)
+	org.redisson.Redisson.create(Redisson.java:159)
+	test.main(test.java:32)
+```
+
+### Steps to reproduce or test case
+```java=
+        Codec stringCodec = new StringCodec();
+
+        for (int i = 0; i < 10; i++) {
+            RedissonClient client;
+            Config config = new Config();
+            config.useSingleServer().setAddress(RedisConfig.Address);
+            config.useSingleServer().setPassword(RedisConfig.Password);
+            config.setCodec(stringCodec);
+            client = Redisson.create(config);
+
+            BatchOptions options = BatchOptions.defaults();
+            RBatch pipe = client.createBatch(options);
+
+            pipe.getBucket("test", stringCodec).getAsync();
+            BatchResult res = pipe.execute();
+
+            System.out.println(res.getResponses().get(0));
+
+            client.shutdown();
+
+            System.gc();
+        }
+
+```
+
+### Redis version
+4.0.10
+### Redisson version
+3.7.5
+### Redisson configuration
+```
+Config config = new Config();
+config.useSingleServer().setAddress(RedisConfig.Address);
+config.useSingleServer().setPassword(RedisConfig.Password);
+config.setCodec(stringCodec);
+client = Redisson.create(config);
+```

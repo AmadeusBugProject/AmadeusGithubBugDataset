@@ -1,0 +1,49 @@
+Subtle buffer leak
+I'm running into a subtle problem, where buffer leaks are logged, but very rarely, and it appears to be entirely code within the HTTP codec, and identical requests will sometimes produce the problem and sometimes not.
+
+[Here is a simple fileserver maven project](http://timboudreau.com/files/simple-fileserver.tar.bz2) which demonstrates it.  Try the following:
+- Run it. The index page loads 10 symlinked copies of the CSS file to generate 11 requests per load.
+- Load [localhost:8732/index.html](http://localhost:8732/index.html) - I used Chrome
+- Click refresh in your browser many, many times, occasionally shift-reloading to get a full reload
+  - The first item in each line of logging is the request number - get it up to around 1000
+- Switch away from the browser and do something else for a few minutes
+- Come back and refresh again.   The following is logged:
+  
+  ```
+  1003    0.002   /0:0:0:0:0:0:0:1:41829  304 Not Modified    /default-8.css  http://localhost:8732/index.html
+  Nov 08, 2013 6:17:31 PM io.netty.util.ResourceLeakDetector reportLeak
+  WARNING: LEAK: ByteBuf was GC'd before being released correctly.  The following stack trace shows where the leaked object was created, rather than where you failed to release it.
+  io.netty.util.ResourceLeakException: io.netty.buffer.CompositeByteBuf@2c84c504
+      at io.netty.util.ResourceLeakDetector$DefaultResourceLeak.<init>(ResourceLeakDetector.java:175)
+      at io.netty.util.ResourceLeakDetector.open(ResourceLeakDetector.java:117)
+      at io.netty.buffer.CompositeByteBuf.<init>(CompositeByteBuf.java:59)
+      at io.netty.buffer.Unpooled.compositeBuffer(Unpooled.java:353)
+      at io.netty.handler.codec.http.HttpObjectAggregator.decode(HttpObjectAggregator.java:138)
+      at io.netty.handler.codec.http.HttpObjectAggregator.decode(HttpObjectAggregator.java:50)
+      at io.netty.handler.codec.MessageToMessageDecoder.channelRead(MessageToMessageDecoder.java:89)
+      at io.netty.channel.DefaultChannelHandlerContext.invokeChannelRead(DefaultChannelHandlerContext.java:307)
+      at io.netty.channel.DefaultChannelHandlerContext.fireChannelRead(DefaultChannelHandlerContext.java:293)
+      at io.netty.handler.codec.ByteToMessageDecoder.channelRead(ByteToMessageDecoder.java:153)
+      at io.netty.channel.DefaultChannelHandlerContext.invokeChannelRead(DefaultChannelHandlerContext.java:307)
+      at io.netty.channel.DefaultChannelHandlerContext.fireChannelRead(DefaultChannelHandlerContext.java:293)
+      at io.netty.channel.DefaultChannelPipeline.fireChannelRead(DefaultChannelPipeline.java:775)
+      at io.netty.channel.nio.AbstractNioByteChannel$NioByteUnsafe.read(AbstractNioByteChannel.java:123)
+      at io.netty.channel.nio.NioEventLoop.processSelectedKey(NioEventLoop.java:485)
+      at io.netty.channel.nio.NioEventLoop.processSelectedKeysOptimized(NioEventLoop.java:452)
+      at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:346)
+      at io.netty.util.concurrent.SingleThreadEventExecutor$5.run(SingleThreadEventExecutor.java:801)
+      at java.lang.Thread.run(Thread.java:744)
+  
+  1004    0.002   /0:0:0:0:0:0:0:1:41830  304 Not Modified    /default-9.css  http://localhost:8732/index.html
+  ```
+
+This seems like some kind of interplay between whatever the default garbage collector is doing when the application is completely idle, and reference counting on buffers - but there is no information in the stack trace to diagnose what.  Any ideas?
+### System info
+
+``````
+    Gentoo Linux kernel 3.10.17, i7 4-core, 8Gb RAM
+
+```java version "1.7.0_45"
+Java(TM) SE Runtime Environment (build 1.7.0_45-b18)
+Java HotSpot(TM) 64-Bit Server VM (build 24.45-b08, mixed mode)```
+``````

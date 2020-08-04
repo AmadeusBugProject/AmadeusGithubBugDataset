@@ -1,0 +1,67 @@
+ConcurrentModificationException in v1.0
+Upgraded from v0.9 to 1.0 a few moments ago.
+After restarting (and every subsequent restart) Webstorm (v9.0.3), I receive a "ConcurrentModificationException: null" in the Event Log.
+
+Error details:
+
+```
+Exception in plugin .ignore
+
+null
+java.util.ConcurrentModificationException
+    at java.util.HashMap$HashIterator.nextEntry(HashMap.java:793)
+    at java.util.HashMap$KeyIterator.next(HashMap.java:828)
+    at mobi.hsz.idea.gitignore.IgnoreManager$IgnoreCacheMap.isFileIgnored(IgnoreManager.java:345)
+    at mobi.hsz.idea.gitignore.IgnoreManager.isFileIgnored(IgnoreManager.java:213)
+    at mobi.hsz.idea.gitignore.vcs.IgnoreFileStatusProvider.getFileStatus(IgnoreFileStatusProvider.java:68)
+    at com.intellij.openapi.vcs.impl.FileStatusManagerImpl.calcStatus(FileStatusManagerImpl.java:133)
+    at com.intellij.openapi.vcs.impl.FileStatusManagerImpl.getStatus(FileStatusManagerImpl.java:268)
+    at com.intellij.ide.projectView.impl.nodes.AbstractPsiBasedNode.getFileStatus(AbstractPsiBasedNode.java:115)
+    at com.intellij.ide.util.treeView.AbstractTreeNode.setForcedForeground(AbstractTreeNode.java:85)
+    at com.intellij.ide.util.treeView.AbstractTreeNode.postprocess(AbstractTreeNode.java:77)
+    at com.intellij.ide.util.treeView.PresentableNodeDescriptor.getUpdatedPresentation(PresentableNodeDescriptor.java:91)
+    at com.intellij.ide.util.treeView.PresentableNodeDescriptor.update(PresentableNodeDescriptor.java:41)
+    at com.intellij.ide.util.treeView.AbstractTreeBuilder.updateNodeDescriptor(AbstractTreeBuilder.java:594)
+    at com.intellij.ide.util.treeView.AbstractTreeUi$22.run(AbstractTreeUi.java:944)
+    at com.intellij.ide.util.treeView.AbstractTreeUi.execute(AbstractTreeUi.java:1830)
+    at com.intellij.ide.util.treeView.AbstractTreeUi.update(AbstractTreeUi.java:940)
+    at com.intellij.ide.util.treeView.AbstractTreeUi.update(AbstractTreeUi.java:892)
+    at com.intellij.ide.util.treeView.AbstractTreeUi.collectNodesToInsert(AbstractTreeUi.java:2256)
+    at com.intellij.ide.util.treeView.AbstractTreeUi.access$4500(AbstractTreeUi.java:62)
+    at com.intellij.ide.util.treeView.AbstractTreeUi$30.run(AbstractTreeUi.java:1399)
+    at com.intellij.openapi.util.ExecutionCallback.setExecuted(ExecutionCallback.java:59)
+    at com.intellij.openapi.util.ActionCallback.setDone(ActionCallback.java:69)
+    at com.intellij.openapi.util.ActionCallback$3.run(ActionCallback.java:233)
+    at com.intellij.openapi.util.ExecutionCallback.doWhenExecuted(ExecutionCallback.java:101)
+    at com.intellij.openapi.util.ActionCallback.doWhenDone(ActionCallback.java:108)
+    at com.intellij.openapi.util.ActionCallback.notify(ActionCallback.java:153)
+    at com.intellij.ide.util.treeView.AbstractTreeUi$34.run(AbstractTreeUi.java:1783)
+    at com.intellij.ide.util.treeView.AbstractTreeUi.executeYieldingRequest(AbstractTreeUi.java:2091)
+    at com.intellij.ide.util.treeView.AbstractTreeUi.access$5900(AbstractTreeUi.java:62)
+    at com.intellij.ide.util.treeView.AbstractTreeUi$38$1.run(AbstractTreeUi.java:1983)
+    at com.intellij.ide.util.treeView.AbstractTreeBuilder.runOnYeildingDone(AbstractTreeBuilder.java:439)
+    at com.intellij.ide.util.treeView.AbstractTreeUi.runOnYieldingDone(AbstractTreeUi.java:2186)
+    at com.intellij.ide.util.treeView.AbstractTreeUi$38.run(AbstractTreeUi.java:1978)
+    at com.intellij.ide.util.treeView.AbstractTreeBuilder$1.process(AbstractTreeBuilder.java:53)
+    at com.intellij.ide.util.treeView.AbstractTreeBuilder$1.process(AbstractTreeBuilder.java:50)
+    at com.intellij.util.containers.TransferToEDTQueue.processNext(TransferToEDTQueue.java:97)
+    at com.intellij.util.containers.TransferToEDTQueue.access$300(TransferToEDTQueue.java:35)
+    at com.intellij.util.containers.TransferToEDTQueue$1.run(TransferToEDTQueue.java:56)
+    at java.awt.event.InvocationEvent.dispatch(InvocationEvent.java:209)
+    at java.awt.EventQueue.dispatchEventImpl(EventQueue.java:715)
+    at java.awt.EventQueue.access$400(EventQueue.java:82)
+    at java.awt.EventQueue$2.run(EventQueue.java:676)
+    at java.awt.EventQueue$2.run(EventQueue.java:674)
+    at java.security.AccessController.doPrivileged(Native Method)
+    at java.security.AccessControlContext$1.doIntersectionPrivilege(AccessControlContext.java:86)
+    at java.awt.EventQueue.dispatchEvent(EventQueue.java:685)
+    at com.intellij.ide.IdeEventQueue.e(IdeEventQueue.java:748)
+    at com.intellij.ide.IdeEventQueue._dispatchEvent(IdeEventQueue.java:577)
+    at com.intellij.ide.IdeEventQueue.dispatchEvent(IdeEventQueue.java:384)
+    at java.awt.EventDispatchThread.pumpOneEventForFilters(EventDispatchThread.java:296)
+    at java.awt.EventDispatchThread.pumpEventsForFilter(EventDispatchThread.java:211)
+    at java.awt.EventDispatchThread.pumpEventsForHierarchy(EventDispatchThread.java:201)
+    at java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:196)
+    at java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:188)
+    at java.awt.EventDispatchThread.run(EventDispatchThread.java:122)
+```

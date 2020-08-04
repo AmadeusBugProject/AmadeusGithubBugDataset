@@ -1,0 +1,47 @@
+Error when using multiple SimpleExoPlayer instances share the same Cache instances (SimpleCache)
+### Issue description
+The following Exception is thrown with I tried to use SimpleCache with multiple SimpleExoPlayer:
+
+```
+6439-6696/packagename E/LoadTask: Unexpected exception loading stream
+                                          java.lang.IllegalStateException: Top bit not zero: -2021886842
+                                              at com.google.android.exoplayer2.util.ParsableByteArray.readUnsignedIntToInt(ParsableByteArray.java:388)
+                                              at com.google.android.exoplayer2.extractor.mp4.Mp4Extractor.readSample(Mp4Extractor.java:474)
+                                              at com.google.android.exoplayer2.extractor.mp4.Mp4Extractor.read(Mp4Extractor.java:179)
+                                              at com.google.android.exoplayer2.source.ExtractorMediaPeriod$ExtractingLoadable.load(ExtractorMediaPeriod.java:749)
+                                              at com.google.android.exoplayer2.upstream.Loader$LoadTask.run(Loader.java:315)
+                                              at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1162)
+                                              at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:636)
+                                              at java.lang.Thread.run(Thread.java:764)
+6439-6538/packagename E/ExoPlayerImplInternal: Source error.
+                                                       com.google.android.exoplayer2.upstream.Loader$UnexpectedLoaderException: Unexpected IllegalStateException: Top bit not zero: -2021886842
+                                                           at com.google.android.exoplayer2.upstream.Loader$LoadTask.run(Loader.java:337)
+                                                           at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1162)
+                                                           at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:636)
+                                                           at java.lang.Thread.run(Thread.java:764)
+                                                        Caused by: java.lang.IllegalStateException: Top bit not zero: -2021886842
+                                                           at com.google.android.exoplayer2.util.ParsableByteArray.readUnsignedIntToInt(ParsableByteArray.java:388)
+                                                           at com.google.android.exoplayer2.extractor.mp4.Mp4Extractor.readSample(Mp4Extractor.java:474)
+                                                           at com.google.android.exoplayer2.extractor.mp4.Mp4Extractor.read(Mp4Extractor.java:179)
+                                                           at com.google.android.exoplayer2.source.ExtractorMediaPeriod$ExtractingLoadable.load(ExtractorMediaPeriod.java:749)
+                                                           at com.google.android.exoplayer2.upstream.Loader$LoadTask.run(Loader.java:315)
+                                                           at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1162) 
+                                                           at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:636) 
+                                                           at java.lang.Thread.run(Thread.java:764) 
+6439-6703/packagename D/SurfaceUtils: disconnecting from surface 0x79fc077010, reason disconnectFromSurface
+```
+
+The term "multiple" is my assumption, as in this demo, I used a pool with a factory method that uses a fixed Cache (as factory option) to create SimpleExoPlayer instances on demand and cache for reuse. This is not always reproducible but the rate of failure is high.
+
+When the Cache is set to null I get no error.
+
+### Link to test content
+All videos are get from this link (the video/mp4 variants, not webm)
+
+https://material.io/guidelines/motion/material-motion.html
+
+### Version of ExoPlayer being used: 2.6.1
+
+### Device(s) and version(s) of Android being used: Nexus 5X, Android 27 (8.1).
+
+I can provide the code for various part if need. But hope the log above says something.

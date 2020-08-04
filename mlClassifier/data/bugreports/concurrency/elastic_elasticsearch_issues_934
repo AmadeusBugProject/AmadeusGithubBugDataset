@@ -1,0 +1,68 @@
+auto_expand_replicas: [0-all] can cause data loss when nodes are removed
+Hiya - there is a bug with `auto_expand_replicas: [0-all]` in v 0.16.1 which causes loss of all data in that index.
+
+To replicate:
+- start two nodes
+- run the script below
+- count for index `bar` : 3
+- kill the node that holds the primary shard for index `bar`
+- count for index `bar`: 0
+
+If you change auto expand to `[1-all]` then data is not lost.
+
+```
+curl -XDELETE 'http://127.0.0.1:9200/bar,foo/?pretty=1'
+
+curl -XPUT 'http://127.0.0.1:9200/foo/?pretty=1'  -d '
+{
+   "settings" : {
+      "number_of_replicas" : 0,
+      "number_of_shards" : 1
+   }
+}
+'
+
+curl -XPUT 'http://127.0.0.1:9200/bar/?pretty=1'  -d '
+{
+   "settings" : {
+      "index" : {
+         "number_of_replicas" : 0,
+         "number_of_shards" : 1
+      }
+   }
+}
+'
+
+
+curl -XGET 'http://127.0.0.1:9200/_cluster/health/bar?pretty=1&wait_for_status=green' 
+
+
+curl -XPOST 'http://127.0.0.1:9200/_bulk?pretty=1'  -d '
+{"index" : {"_index" : "bar", "_type" : "name"}}
+{"tokens" : ["stuart", "watt"], "context" : "/2850246/all", "rank" : 1}
+{"index" : {"_index" : "bar", "_type" : "name"}}
+{"tokens" : ["stuart", "watt"], "context" : "/2850246/jpnw/all", "rank" : 1}
+{"index" : {"_index" : "bar", "_type" : "name"}}
+{"tokens" : ["stuart", "watt"], "context" : "/2850246/jpnw_pres/all", "rank" : 1}
+{"index" : {"_index" : "bar", "_type" : "name"}}
+'
+
+curl -XPOST 'http://127.0.0.1:9200/bar/_refresh?pretty=1' 
+
+curl -XPUT 'http://127.0.0.1:9200/bar/_settings?pretty=1'  -d '
+{
+   "index" : {
+      "auto_expand_replicas" : "0-all"
+   }
+}
+'
+
+curl -XGET 'http://127.0.0.1:9200/_cluster/health/bar?pretty=1&wait_for_status=green' 
+
+
+curl -XGET 'http://127.0.0.1:9200/bar/_count?pretty=1'  -d '
+{
+   "match_all" : {}
+}
+'
+```

@@ -1,0 +1,9 @@
+ElasticScheduler retains references to evicted executors
+### Expected behavior
+The internal `all` queue should be impacted by TTL eviction.
+
+### Actual behavior
+The `all` queue retains references to every single `ExecutorService` created by the scheduler.
+
+### Fix
+Remove from both `cache` and `all` during eviction.

@@ -1,0 +1,9 @@
+Unable to set "connectionAutoCommit" parameter with JdbcCursorItemReaderBuilder
+**Bug description**
+AbstractCursorItemReader has parameter "connectionAutoCommit" that is not configurable with JdbcCursorItemReaderBuilder
+
+**Expected behavior**
+"connectionAutoCommit" can be configured with JdbcCursorItemReaderBuilder
+
+**Additional info**
+The parameter "connectionAutoCommit"  was added in https://github.com/spring-projects/spring-batch/pull/446

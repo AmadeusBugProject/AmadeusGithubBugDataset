@@ -1,0 +1,11 @@
+RRateLimiter delete
+Redisson version:3.11.6
+
+```java
+RRateLimiter rateLimiter = redissonClient.getRateLimiter("key");
+rateLimiter.trySetRate(RateType.OVERALL, 3, 10, RateIntervalUnit.MINUTES);
+//Delete the invalid
+rateLimiter.delete();
+```
+
+Delete the invalid

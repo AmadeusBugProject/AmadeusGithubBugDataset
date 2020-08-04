@@ -1,0 +1,6 @@
+[3.6.3] Infinite loop in SSLHandler
+SSLHandler doesn't handle SSLEngineResult.Status.BUFFER_OVERFLOW when it unwrap the buffer with the SSLEngine so it ends up in an infinite loop when buffer is larger than the default size used. I've noticed this behavior from time to time in our production system when it's use the Facebook API. Unfortunately, I'm not able to reproduce it locally.
+
+BUFFER_OVERFLOW is issued here: https://github.com/netty/netty/blob/netty-3.6.3.Final/src/main/java/org/jboss/netty/handler/ssl/SslHandler.java#L1216
+
+Let me know if I can help to fix it or if you need more input from me.

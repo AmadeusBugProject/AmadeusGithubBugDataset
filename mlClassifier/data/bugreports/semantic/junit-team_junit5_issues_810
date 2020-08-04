@@ -1,0 +1,17 @@
+UniqueId.parse fails for methods with array type parameters
+## Bug description
+```
+String idString = uniqueIdFromMethodDescriptorWithArrayParameter.toString();
+UniqueId id = UniqueId.parse(idString);
+```
+will fail with `PreconditionViolation` since array types are described with an `[` in front but `[` chars are currently forbidden as segment values.
+
+## Suggested Solution
+
+Change representation of array types in `ReflectionUtils.findMethod(clazz, methodName, parameterTypeNames)` and `StringUtils.nullSafeToString(classes)`. 
+
+Alternative: Don't use `[` as separator char in unique IDs. But some 3rd party tools might already have committed to the current format.
+
+## Deliverables
+
+- [ ] Encode `segmentType` and `value` in constructor and decode in `parse`.

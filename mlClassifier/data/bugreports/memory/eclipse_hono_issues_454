@@ -1,0 +1,60 @@
+Possible memory leak with `TelemetrySenderImpl`
+While testing Hono I stumbled over the situation that the Hono HTTP adapter runs into memory issues. Peeking at the heap I can see a high number of instances of the `TelemetrySenderImpl`:
+
+~~~
+sh-4.2$ jmap -histo 1  | head -n 30
+
+ num     #instances         #bytes  class name
+----------------------------------------------
+   1:        306888       31552608  [B
+   2:        273952       26299392  org.apache.qpid.proton.engine.impl.DeliveryImpl
+   3:        343058       25441536  [C
+   4:        273952        8766464  org.apache.qpid.proton.engine.impl.TransportDelivery
+   5:        330609        7934616  java.lang.String
+   6:        273952        6574848  io.vertx.proton.impl.ProtonDeliveryImpl
+   7:        273309        6559416  org.eclipse.hono.client.impl.TelemetrySenderImpl$$Lambda$180/1997786804
+   8:        284584        4553344  org.apache.qpid.proton.amqp.UnsignedInteger
+   9:         16953        3474568  [I
+  10:         14247        1534456  [Ljava.lang.Object;
+  11:          7507         834672  java.lang.Class
+  12:         19613         627616  java.util.concurrent.ConcurrentHashMap$Node
+  13:          8313         532032  java.nio.DirectByteBuffer
+  14:         10630         510240  java.nio.HeapByteBuffer
+  15:          5433         378288  [Ljava.util.HashMap$Node;
+  16:         10935         349920  java.util.HashMap$Node
+  17:          7718         308720  java.util.LinkedHashMap$Entry
+  18:         17963         287408  java.lang.Object
+  19:           386         212272  [Ljava.nio.channels.SelectionKey;
+  20:          4170         200160  io.netty.buffer.UnpooledByteBufAllocator$InstrumentedUnpooledUnsafeHeapByteBuf
+  21:          2186         192368  java.lang.reflect.Method
+  22:          3421         191576  java.util.LinkedHashMap
+  23:           133         177968  [Ljava.util.concurrent.ConcurrentHashMap$Node;
+  24:          3654         175392  java.util.HashMap
+  25:          4221         168840  io.netty.handler.codec.DefaultHeaders$HeaderEntry
+  26:           234         153504  io.netty.util.internal.shaded.org.jctools.queues.MpscArrayQueue
+  27:          4769         152608  java.lang.ref.WeakReference
+~~~
+
+Looking at the code I spotted the following in `org.eclipse.hono.client.impl.HonoClientImpl.getOrCreateSender(String, Consumer<Handler<AsyncResult<MessageSender>>>, Handler<AsyncResult<MessageSender>>)`:
+
+~~~java
+…
+} else if (!creationLocks.computeIfAbsent(key, k -> Boolean.FALSE)) {
+
+  // register a handler to be notified if the underlying connection to the server fails
+  // so that we can fail the result handler passed in
+  final Handler<Void> connectionFailureHandler = connectionLost -> {
+  // remove lock so that next attempt to open a sender doesn't fail
+  creationLocks.remove(key);
+  resultHandler.handle(Future.failedFuture(
+    new ServerErrorException(HttpURLConnection.HTTP_UNAVAILABLE, "connection to server lost")));
+  };
+  creationRequests.add(connectionFailureHandler);
+  creationLocks.put(key, Boolean.TRUE);
+  LOG.debug("creating new message sender for {}", key);
+…
+~~~
+
+To me it looks like as if this method gets called un-synchronized from various threads. So between the "computeIfAbsent" (which will always return false) and the "put", it might be that multiple callers might have triggered a new connection.
+
+Changing it to `creationLocks.putIfAbsent(key, k -> Boolean.TRUE) == null` should fix this issue as only the first caller will pass. After that the result will be non-null until the key is removed by the call to `remove`. Of course that would change the meaning of the value carried by the map. So maybe switching this to `Map<String,Object>` would be more appropriate then.

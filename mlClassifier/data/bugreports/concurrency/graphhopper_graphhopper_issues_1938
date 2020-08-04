@@ -1,0 +1,14 @@
+RuntimeException: Time was negative
+Error:
+```
+2020-02-28 15:25:52.374 [dw-4182 - GET /route?turn_costs=true&type=json&locale=en_US&weighting=fastest&<redacted>&vehicle=car] ERROR i.d.j.errors.LoggingExceptionMapper - Error handling a request: fec09cafb194a822
+java.lang.RuntimeException: Time was negative -9223372036852055154 for index 0. Please report as bug and include:<redacted> (Hints:{turn_costs=true, instructions=true, edge_based=true, way_point_max_distance=1.0, calc_points=true, type=json, locale=en_US, weighting=fastest, vehicle=car})
+        at com.graphhopper.routing.template.ViaRoutingTemplate.calcPaths(ViaRoutingTemplate.java:182)
+        at com.graphhopper.GraphHopper.calcPaths(GraphHopper.java:1087)
+        at com.graphhopper.GraphHopper.route(GraphHopper.java:962)
+        at com.graphhopper.resources.RouteResource.doGet(RouteResource.java:143)
+```
+
+Unfortunately I cannot reproduce this problem on the server using the still running same version and the exact same request parameters (14 via points in the Netherlands, point 3 == point 4)
+
+There are more of these bugs in the last days but none of them is reproducible. The smallest one still had 2 via points. But it only occurred for the edged based CH it seems.

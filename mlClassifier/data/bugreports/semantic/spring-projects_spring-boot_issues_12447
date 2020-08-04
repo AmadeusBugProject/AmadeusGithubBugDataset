@@ -1,0 +1,2 @@
+Templated requests with Jersey may cause an explosion of URI tag values
+See https://github.com/micrometer-metrics/micrometer/issues/486 for a reproducible example. 

@@ -1,0 +1,48 @@
+ThreadDeathWatcher causes custom classLoader script memory leaks
+### Expected behavior
+
+### Actual behavior
+
+### Steps to reproduce
+`package net.jueb.redAlert.script.game.serverScript.sys;
+
+import io.netty.buffer.ByteBufAllocator;
+import net.jueb.redAlert.core.base.message.AppByteMessage;
+import net.jueb.redAlert.core.base.message.MsgCode;
+import net.jueb.redAlert.game.ServerConfig;
+import net.jueb.redAlert.game.ServerMain;
+import net.jueb.redAlert.game.factory.ScriptFactory;
+import net.jueb.util4j.hotSwap.annationScriptFactory.annations.AnnationScript;
+
+/**
+ * 调试脚本
+ * @author Administrator
+ */
+@AnnationScript(id = MsgCode.Game_Sys_Debug)
+public class DebugScript extends AbstractSysScript{
+
+	@Override
+	public void action() {
+		ClassLoader customLoader=ServerConfig.classProvider.getClassLoader();
+		if(getClass().getClassLoader()==customLoader)
+		{//this is hotswap script
+			//test1 
+			ByteBufAllocator.DEFAULT.ioBuffer();// init ThreadDeathWatcher watcher thread
+			//or test2 ,use netty client write msg to init ThreadDeathWatcher
+			ServerMain.getInstance().getLogClient().sendMessage(new AppByteMessage(AppByteMessage.Heart_Req));
+			//so ,this script started netty thread
+		}
+	}
+	public static void main(String[] args) {
+		//run DebugScript action method
+		ScriptFactory.getInstance().buildAction(MsgCode.Game_Sys_Debug).run();
+	}
+}`
+### Minimal yet complete reproducer code (or URL to code)
+![default](https://user-images.githubusercontent.com/5427272/31369054-5110b35e-adb4-11e7-9796-a4bb6b2a5b88.png)
+
+### Netty version
+4.1.6
+### JVM version (e.g. `java -version`)
+
+### OS version (e.g. `uname -a`)

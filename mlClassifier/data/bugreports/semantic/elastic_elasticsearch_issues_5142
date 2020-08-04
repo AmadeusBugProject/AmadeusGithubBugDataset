@@ -1,0 +1,21 @@
+_exists_ doesn't work on objects
+At least in 1.0.0
+
+``` shell
+# create index and object
+curl -X PUT 'http://127.0.0.1:9200/wtf/?pretty'
+curl -X PUT 'http://127.0.0.1:9200/wtf/test/1?pretty' -d '{"complex": { "object": "it is" }, "simple": "value"}'
+
+# no results
+curl -X POST 'http://127.0.0.1:9200/wtf/test/_search?pretty&q=_exists_:complex'
+# has results
+curl -X POST 'http://127.0.0.1:9200/wtf/test/_search?pretty&q=_exists_:simple'
+
+# has results
+curl -X POST 'http://127.0.0.1:9200/wtf/test/_search?pretty' -d '{ "query": { "filtered": { "filter": { "not": { "missing": { "field": "complex" } } } } } }'
+
+# has results
+curl -X POST 'http://127.0.0.1:9200/wtf/test/_search?pretty' -d '{ "query": { "filtered": { "filter": { "not": { "missing": { "field": "simple" } } } } } }'
+```
+
+This behaviour  should be either fixed or noted in docs.

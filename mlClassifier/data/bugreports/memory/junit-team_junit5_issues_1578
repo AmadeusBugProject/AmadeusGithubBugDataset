@@ -1,0 +1,24 @@
+OutOfMemoryError in test suite when upgrading from JUnit 5.2 to 5.3
+## Overview
+
+I work on a large project which runs Junit 5 under Gradle (currently version 4.8).  One of our test suites which previously ran fine with a 8 GB max heap size now requires an ~11 GB heap to run without OutOfMemoryError (~12 GB to run without OutOfMemoryError AND without GC overhead slowing things down significantly).
+
+Looking at the release notes, I see nothing that should cause such a significant increase in memory usage from Junit 5 itself, so I was surprised to see this new problem while upgrading versions.
+
+I only found one other open issue mentioning OutOfMemoryError and it involves dynamic tests, which my suite isn't using at all.
+
+I suppose it's possible that some small behavior change in Junit 5.3 sensitizes an issue with my test suite that increases memory consumption, but I can't think of what that might be. 
+
+Are there any changes in Junit 5.3 that are known to increase memory consumption, and thus increase risk of OutOfMemoryError while running tests?
+
+My apologies if this issue seems more like a question and not a real bug report... but I figured it was better to raise the issue quickly after Junit 5.3 release just in case others are going to start hitting the same problem soon.
+
+Unfortunately, I can't share my unit tests from this project.  However, I am going to try to pare down the test suite to see if I can narrow down where the memory increase is happening.  I may or may not be able to come back here later and provide more specific information, after doing that work.
+
+## Deliverables
+
+**Team Decision**:
+
+- [x] Implement the _quick fix_ mentioned by @sbrannen.
+- [x] Investigate other possibilities for freeing up unnecessary memory consumption in the `HierarchicalTestEngine` and related infrastructure (specifically in `NodeTestTask`).
+- [x] Backport fix and release notes to a new `5.3.1` branch.

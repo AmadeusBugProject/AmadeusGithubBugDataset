@@ -1,0 +1,10 @@
+Recycler could cache infinite resources
+In Netty.4.0.24.final.
+
+In class io.netty.util.Recycler, there's a DEFAULT_MAX_CAPACITY variable to constrain the size of the stack in Recycler. From INITIAL_CAPACITY, whenever the stack is full, it's size doubled until hitting the DEFAULT_MAX_CAPACITY limit(Line 341 in Netty.4.0.24.final). 
+![image](https://cloud.githubusercontent.com/assets/1115061/5156597/45b7fa9a-730a-11e4-89aa-bb1f87c47428.png)
+As you can see in the image above, stack size is constrained by maxCapacity. And if the size > maxCapacity, this check will fail forever, beacuse the check use "if (size == maxCapacity)" rather than "if (size > maxCapacity)".  And there's a way to set size bigger than maxCapacity.
+
+In class WeakOrderQueue which is an inner class in Recycler, there's a method called "transfer" which can also double the stack size in Recycler, but there's no check to ensure the stack size not exceed DEFAULT_MAX_CAPACITY limit(Line 218 in Netty.4.0.24.final) like the one mentioned before. 
+![image](https://cloud.githubusercontent.com/assets/1115061/5156598/5a17c01a-730a-11e4-873b-1e65ee539db3.png)
+In the image above, variable "to" is a stack in Recycler and count is resources's quantity recycled by other thread rather than the Recycler's owner. If there's no enough space for those resources to be recycled, the stack's size will be doubled. I think there should have a check for the stack size here. And whenever the stack size greater than maxCapacity, it can grow infinitely.

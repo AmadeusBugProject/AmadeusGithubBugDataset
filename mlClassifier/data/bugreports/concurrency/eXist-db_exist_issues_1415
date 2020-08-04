@@ -1,0 +1,2 @@
+org.exist.security.realm.openid.OpenIDUtility never releases READ_LOCK
+READ_LOCK is acquired here: https://github.com/eXist-db/exist/blob/develop/extensions/security/openid/src/org/exist/security/realm/openid/OpenIDUtility.java#L107

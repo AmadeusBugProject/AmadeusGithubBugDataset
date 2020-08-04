@@ -1,0 +1,4 @@
+Fix potential thread safe problem in InterceptorScope
+InterceptorScopePool Field of DefaultProfilerPluginContext is not thread safe.
+
+fixed version : 1.6.0-RC2

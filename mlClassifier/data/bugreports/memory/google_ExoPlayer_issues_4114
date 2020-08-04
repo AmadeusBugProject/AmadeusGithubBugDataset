@@ -1,0 +1,26 @@
+IMA Extension Memory Leak
+### Issue description
+Using IMA Extension and in the sample main demo app, a memory leak happens when you serve a VMAP and quit the player activity during content playback and after ad/pods playback.
+
+In my opinion, it's an IMA problem and managed to reproduce the issue even without an IMA Extension and following exactly their integration guide but according to them they're claiming it's an IMA-Extension problem and not theirs
+https://groups.google.com/forum/#!topic/ima-sdk/ZM-WsPL1xdQ
+
+
+### Reproduction steps
+- In the Main Demo app, use any video and set the following sample adtag uri:
+https://pubads.g.doubleclick.net/gampad/ads?sz=640x480&iu=/124319096/external/ad_rule_samples&ciu_szs=300x250&ad_rule=1&impl=s&gdfp_req=1&env=vp&output=vmap&unviewed_position_start=1&cust_params=deployment%3Ddevsite%26sample_ar%3Dpremidpostlongpod&cmsid=496&vid=short_tencue&correlator=
+- When pre-roll finishes and content video plays for few seconds, press back to return to the home screen, PlayerActivity gets leaked
+
+
+### Link to test content
+Provide a link to media that reproduces the issue. If you don't wish to post it
+publicly, please submit the issue, then email the link to
+dev.exoplayer@gmail.com using a subject in the format "Issue #1234".
+
+
+### Version of ExoPlayer being used
+V2.7.3
+
+
+### Device(s) and version(s) of Android being used
+Tested on Pixel XL (Oreo 8.1), Xperia XZ (Oreo 8.0) but can be reproduced on any device

@@ -1,0 +1,23 @@
+Memory leak when using @Async after upgrading from 5.1 to 5.2
+<!--
+!!! For Security Vulnerabilities, please go to https://pivotal.io/security !!!
+-->
+**Affects:** 5.2.0.RC1
+
+---
+
+In our application I upgraded from spring-framework 5.1.9 to 5.2.0.RC1 and our tests started leaking memory.
+
+Previously it looked like this in VisualVM:
+
+![image](https://user-images.githubusercontent.com/109243/64158877-8d43cf80-ce39-11e9-8582-85357e439198.png)
+
+And now it looks like this:
+
+![image](https://user-images.githubusercontent.com/109243/64158907-9b91eb80-ce39-11e9-963a-e2c08716f55a.png)
+
+I've made a heapdump to see where the memory is going:
+
+![image](https://user-images.githubusercontent.com/109243/64163425-8325cf00-ce41-11e9-922d-886c6feac4e4.png)
+
+I've seen something similar in our application previously, but that was solved by using `@MockBean` instead of a lot of `@ContextConfiguration` with `@Configuration` classes inside our test classes to override beans with mocked objects :thinking:...

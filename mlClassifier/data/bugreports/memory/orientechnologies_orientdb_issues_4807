@@ -1,0 +1,8 @@
+Suggestions how to track down or solve memory leakage problem on OrientDb
+We have OrientDB  version 2.1.0 in production (before were other versions starting from 2.0.8). 
+Db is used as follows:
+ 4 to  5 remote clients are continuously pushing data to the database. 
+There are around 88k inserts in hour. Records older then some date are deleted every 10 min.
+The problem is that OrientDB eats all the ram (16 Gbytes) in about 4 days. Heap consumption is quite stable around 800 MB. So my guess would be that the problem is with the native memory leakage.
+
+Any suggestions how to solve this problem?  

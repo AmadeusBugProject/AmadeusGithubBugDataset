@@ -1,0 +1,75 @@
+MapFileWriter: OOM when processing ways
+On our server we see the following OOM condition quite frequently:
+```
+
+Feb 08, 2017 2:17:01 AM org.mapsforge.map.writer.MapFileWriter processTile
+WARNUNG: error in parallel preprocessing of ways
+java.util.concurrent.ExecutionException: java.lang.OutOfMemoryError: Java heap space
+	at java.util.concurrent.FutureTask.report(FutureTask.java:122)
+	at java.util.concurrent.FutureTask.get(FutureTask.java:192)
+	at org.mapsforge.map.writer.MapFileWriter.processTile(MapFileWriter.java:816)
+	at org.mapsforge.map.writer.MapFileWriter.writeSubfile(MapFileWriter.java:906)
+	at org.mapsforge.map.writer.MapFileWriter.writeFile(MapFileWriter.java:361)
+	at org.mapsforge.map.writer.osmosis.MapFileWriterTask.complete(MapFileWriterTas
+k.java:102)
+	at org.openstreetmap.osmosis.set.v0_6.EntityMerger.run(EntityMerger.java:243)
+	at java.lang.Thread.run(Thread.java:745)
+Caused by: java.lang.OutOfMemoryError: Java heap space
+	at org.mapsforge.map.writer.util.PolyLabel.get(PolyLabel.java:124)
+	at org.mapsforge.map.writer.MapFileWriter$WayPreprocessingCallable.call(MapFile
+Writer.java:193)
+	at org.mapsforge.map.writer.MapFileWriter$WayPreprocessingCallable.call(MapFile
+Writer.java:94)
+	at java.util.concurrent.FutureTask.run(FutureTask.java:266)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:11
+42)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:6
+17)
+	... 1 more
+
+Feb 08, 2017 2:17:40 AM org.mapsforge.map.writer.MapFileWriter$WayPreprocessingCallable
+ call
+INFORMATION: Large geometry 32951624755 (2835 coords, down from 3618 coords)
+Feb 08, 2017 2:18:07 AM org.mapsforge.map.writer.MapFileWriter$WayPreprocessingCallable
+ call
+
+```
+
+A quick look at the code shows that we do not handle the error correctly, as the way causing the OOM is silently ignored:
+
+  ```
+                  try {
+                        List<Future<WayPreprocessingResult>> futures = EXECUTOR_SERVICE.invokeAll(callables);
+                        for (Future<WayPreprocessingResult> wprFuture : futures) {
+                            WayPreprocessingResult wpr;
+                            try {
+                                wpr = wprFuture.get();
+                            } catch (ExecutionException e) {
+                                LOGGER.log(Level.WARNING, "error in parallel preprocessing of ways", e);
+                                continue;
+                            }
+                            if (wpr != null) {
+                                wayBuffer.clear();
+                                // increment count of ways on this zoom level                                             
+                                entitiesPerZoomLevel[indexEntitiesPerZoomLevelTable][1]++;
+                                if (configuration.isDebugStrings()) {
+                                    writeWaySignature(wpr.getWay(), wayDataBuffer);
+                                }
+                                processWay(wpr, wpr.getWay(), currentTileLat, currentTileLon, wayBuffer);
+                                // write size of way to way data buffer                                                   
+                                wayDataBuffer.put(Serializer.getVariableByteUnsigned(wayBuffer.position()));
+                                // write way data to way data buffer                                                      
+                                wayDataBuffer.put(wayBuffer.array(), 0, wayBuffer.position());
+                            }
+                        }
+                    } catch (InterruptedException e) {
+                        LOGGER.log(Level.WARNING, "error in parallel preprocessing of ways", e);
+                    }
+```
+
+The underlying reason for the error seems to be that we allocate as many threads as they are processors, on the server machine that might be 8. This then makes the thread run out of space.
+
+I think we should terminate the process if this error condition happens, because correctness should never be compromised for efficiency. 
+
+I also suggest that we reduce the thread pool size to 1. As I think the way processing is CPU bound it will probably not make much of a difference anyway.
+

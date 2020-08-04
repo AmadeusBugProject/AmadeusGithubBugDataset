@@ -1,0 +1,113 @@
+broken connections on the pool
+Relate to https://github.com/redisson/redisson/issues/2043
+## Expected behavior 
+When using a fixed connection pool of min=64 and max=64 to every node (masters and slaves) on cluster config. Redisson is able to open a healthy connection pool of 64 to each of the nodes
+
+## Actual behavior
+ Connection never recover
+## Redis version
+4.0.8 and use utils/create-cluster to create local cluster
+## Redission version
+3.11.5
+## Reproduce step
+
+
+Redisson configuration
+
+
+```	clusterServersConfig = {
+		connectTimeout = 500
+		timeout = 100
+		masterConnectionMinimumIdleSize = 1 <== just to make it easier to reproduce.
+		masterConnectionPoolSize = 1
+		slaveConnectionMinimumIdleSize = 1
+		slaveConnectionPoolSize = 1
+		retryAttempts = 3
+		retryInterval = 25
+		keepAlive = true
+		tcpNoDelay = true
+		readMode = MASTER_SLAVE
+		pingConnectionInterval = 2000
+		nodeAddresses = [
+							"redis://127.0.0.1:30001",
+							"redis://127.0.0.1:30002",
+							"redis://127.0.0.1:30003",
+							"redis://127.0.0.1:30004",
+							"redis://127.0.0.1:30005",
+							"redis://127.0.0.1:30006"
+		]
+					}
+```
+
+
+
+and request controller, each HTTP GET request will fetch 100 keys from Redis cluster in batch mode.
+
+```
+	@GetMapping(path = "/get/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
+	public CompletionStage<Map<String, String>> get(@PathVariable("id") int id) {
+
+		Set<String> req = new HashSet<>();
+		for (int i = 0; i< 100; i++) {
+			req.add("test"+ (id * 100  + i));
+		}
+		CompletionStage<Map<String, String>> test = myRedisClusterWithPrefix.getAllAsync(req);
+		test.thenAccept(mm -> {
+			//System.out.println("return "+ mm);
+		});
+		return test;
+	}
+```
+
+stress test 100 concurrency
+`ab -n 10000  -c 100 http://localhost:8080/rapid-samples-minimal-spring-boot/get/5 `
+
+
+just after running about 20 seconds and stop the stress test tool.
+
+then I call curl http://localhost:8080/rapid-samples-minimal-spring-boot/get/5 again
+it will already return an error and never recover.
+error log is
+```
+17:34:10.813 [DEBUG] r.s.o.r.c.ClusterConnectionManager - slot 3699 for api:rapid:test:test560
+17:34:10.813 [DEBUG] r.s.o.r.c.RedisExecutor - connection released for command null and params null from slot NodeSource [slot=null, addr=null, redisClient=null, redirect=null, entry=MasterSlaveEntry [masterEntry=[freeSubscribeConnectionsAmount=1, freeSubscribeConnectionsCounter=value:50:queue:0, freeConnectionsAmount=1, freeConnectionsCounter=value:1:queue:0, freezed=false, freezeReason=null, client=[addr=redis://127.0.0.1:30004], nodeType=MASTER, firstFail=0]]] using connection RedisConnection@9214847 [redisClient=[addr=redis://127.0.0.1:30004], channel=[id: 0x25f4bc57, L:/127.0.0.1:53318 - R:127.0.0.1/127.0.0.1:30004], currentCommand=null]
+17:34:10.846 [DEBUG] r.s.o.r.c.RedisExecutor - attempt 1 for command null and params null
+17:34:10.846 [DEBUG] r.s.o.r.c.RedisExecutor - attempt 1 for command null and params null
+17:34:10.881 [DEBUG] r.s.o.r.c.RedisExecutor - attempt 2 for command null and params null
+17:34:10.881 [DEBUG] r.s.o.r.c.RedisExecutor - attempt 2 for command null and params null
+17:34:10.916 [DEBUG] r.s.o.r.c.RedisExecutor - attempt 3 for command null and params null
+17:34:10.917 [DEBUG] r.s.o.r.c.RedisExecutor - attempt 3 for command null and params null
+17:34:10.957 [ERROR] c.r.r.e.h.RapidSpringErrorHandler - Unable to process unhandled exception
+rapid.shaded.org.redisson.client.RedisTimeoutException: Unable to acquire connection! Increase connection pool size and/or retryIntervalNode source: NodeSource [slot=null, addr=null, redisClient=null, redirect=null, entry=MasterSlaveEntry [masterEntry=[freeSubscribeConnectionsAmount=1, freeSubscribeConnectionsCounter=value:50:queue:0, freeConnectionsAmount=1, freeConnectionsCounter=value:1:queue:0, freezed=false, freezeReason=null, client=[addr=redis://127.0.0.1:30005], nodeType=MASTER, firstFail=0]]], command: null, params: null after 0 retry attempts
+	at rapid.shaded.org.redisson.command.RedisExecutor$2.run(RedisExecutor.java:191)
+	at rapid.shaded.io.netty.util.HashedWheelTimer$HashedWheelTimeout.expire(HashedWheelTimer.java:680)
+	at rapid.shaded.io.netty.util.HashedWheelTimer$HashedWheelBucket.expireTimeouts(HashedWheelTimer.java:755)
+	at rapid.shaded.io.netty.util.HashedWheelTimer$Worker.run(HashedWheelTimer.java:483)
+	at rapid.shaded.io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
+	at java.base/java.lang.Thread.run(Thread.java:834)
+```
+
+
+Connection status, still connected.
+```
+~ » lsof -P -p `jps |grep Application |awk '{print $1}'` |grep IPv     |grep 3000                                                         yinchin.chen@P49945
+java    14825 yinchin.chen  237u     IPv6 0x3dec6b4ca72da4d1        0t0      TCP localhost:53301->localhost:30001 (ESTABLISHED)
+java    14825 yinchin.chen  239u     IPv6 0x3dec6b4ca72dcd11        0t0      TCP localhost:53302->localhost:30006 (ESTABLISHED)
+java    14825 yinchin.chen  241u     IPv6 0x3dec6b4ca72db051        0t0      TCP localhost:53303->localhost:30004 (ESTABLISHED)
+java    14825 yinchin.chen  243u     IPv6 0x3dec6b4ca72dd2d1        0t0      TCP localhost:53304->localhost:30005 (ESTABLISHED)
+java    14825 yinchin.chen  245u     IPv6 0x3dec6b4ca8fb3611        0t0      TCP localhost:53305->localhost:30002 (ESTABLISHED)
+java    14825 yinchin.chen  246u     IPv6 0x3dec6b4ca8fb3051        0t0      TCP localhost:53306->localhost:30003 (ESTABLISHED)
+java    14825 yinchin.chen  247u     IPv6 0x3dec6b4ca8fb3bd1        0t0      TCP localhost:53309->localhost:30001 (ESTABLISHED)
+java    14825 yinchin.chen  248u     IPv6 0x3dec6b4ca8fb4191        0t0      TCP localhost:53311->localhost:30002 (ESTABLISHED)
+java    14825 yinchin.chen  249u     IPv6 0x3dec6b4ca8fb4751        0t0      TCP localhost:53307->localhost:30001 (ESTABLISHED)
+java    14825 yinchin.chen  250u     IPv6 0x3dec6b4ca8fb2a91        0t0      TCP localhost:53310->localhost:30003 (ESTABLISHED)
+java    14825 yinchin.chen  253u     IPv6 0x3dec6b4ca8fb24d1        0t0      TCP localhost:53314->localhost:30005 (ESTABLISHED)
+java    14825 yinchin.chen  254u     IPv6 0x3dec6b4ca8fb4d11        0t0      TCP localhost:53315->localhost:30006 (ESTABLISHED)
+java    14825 yinchin.chen  255u     IPv6 0x3dec6b4ca8fb1f11        0t0      TCP localhost:53308->localhost:30005 (ESTABLISHED)
+java    14825 yinchin.chen  256u     IPv6 0x3dec6b4ca8fb1951        0t0      TCP localhost:53313->localhost:30004 (ESTABLISHED)
+java    14825 yinchin.chen  260u     IPv6 0x3dec6b4ca8fb52d1        0t0      TCP localhost:53316->localhost:30006 (ESTABLISHED)
+java    14825 yinchin.chen  261u     IPv6 0x3dec6b4ca9512611        0t0      TCP localhost:53312->localhost:30004 (ESTABLISHED)
+java    14825 yinchin.chen  277u     IPv6 0x3dec6b4ca9513751        0t0      TCP localhost:53318->localhost:30004 (ESTABLISHED)
+java    14825 yinchin.chen  279u     IPv6 0x3dec6b4ca9513d11        0t0      TCP localhost:53319->localhost:30006 (ESTABLISHED)
+java    14825 yinchin.chen  380u     IPv6 0x3dec6b4cabc0da91        0t0      TCP localhost:53419->localhost:30005 (ESTABLISHED)
+```

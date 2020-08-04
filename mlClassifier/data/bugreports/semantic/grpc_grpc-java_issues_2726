@@ -1,0 +1,45 @@
+NPE during NettyClientTransport.start() if keepAlive is enabled
+### What version of gRPC are you using?
+GRPC 1.1.2
+
+### What JVM are you using (`java -version`)?
+1.8.0_112
+
+### What did you do?
+Just simply call io.grpc.netty.NettyChannelBuilder#enableKeepAlive(boolean) during channel build. and the grpc always throw NPE exception.
+
+```
+java.lang.NullPointerException: null
+	at io.grpc.netty.NettyClientTransport.start(NettyClientTransport.java:169)
+	at io.grpc.internal.ForwardingConnectionClientTransport.start(ForwardingConnectionClientTransport.java:44)
+	at io.grpc.internal.TransportSet.startNewTransport(TransportSet.java:233)
+	at io.grpc.internal.TransportSet.obtainActiveTransport(TransportSet.java:203)
+	at io.grpc.internal.ManagedChannelImpl$3.getTransport(ManagedChannelImpl.java:739)
+	at io.grpc.internal.ManagedChannelImpl$3.getTransport(ManagedChannelImpl.java:677)
+	at io.grpc.PickFirstBalancerFactory$PickFirstBalancer$1.get(PickFirstBalancerFactory.java:129)
+	at io.grpc.internal.DelayedClientTransport$2.run(DelayedClientTransport.java:271)
+	at java.util.concurrent.ForkJoinTask$RunnableExecuteAction.exec(ForkJoinTask.java:1402)
+	at java.util.concurrent.ForkJoinTask.doExec(ForkJoinTask.java:289)
+	at java.util.concurrent.ForkJoinPool$WorkQueue.runTask(ForkJoinPool.java:1056)
+	at java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:1692)
+	at java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:157)
+```
+
+and inspect the code(io.grpc.netty.NettyClientTransport#start):
+
+```java
+ @SuppressWarnings("unchecked")
+  @Override
+  public Runnable start(Listener transportListener) {
+    lifecycleManager = new ClientTransportLifecycleManager(
+        Preconditions.checkNotNull(transportListener, "listener"));
+
+    if (enableKeepAlive) {
+      keepAliveManager = new KeepAliveManager(this, channel.eventLoop(), keepAliveDelayNanos,
+          keepAliveTimeoutNanos);
+    }
+    ....
+}
+```
+
+i believe the field `channel` is never initialized right now, so NPE is throw by field call `channel.eventLoop()`.

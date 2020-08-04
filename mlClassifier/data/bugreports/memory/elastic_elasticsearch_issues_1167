@@ -1,0 +1,2 @@
+Get API: a get for a document that does not exists can cause open file handles leak
+Get API: a get for a document that does not exists can cause open file handles leak

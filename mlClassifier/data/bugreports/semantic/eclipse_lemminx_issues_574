@@ -1,0 +1,76 @@
+Test failures on Mac OS
+```
+[ERROR] Failures:
+[ERROR]   XMLSchemaCompletionExtensionsTest.completionWithXMLSchemaContentChanged:396 expected:<4> but was:<5>
+[ERROR]   XMLSchemaCompletionExtensionsTest.xsAny:752 expected:<8> but was:<6>
+[ERROR]   XMLValidationPoolCacheTest.dtd:240->testDiagnosticsFor:246 Unexpected diagnostics:
+[] expected:<[Diagnostic [
+  range = Range [
+    start = Position [
+      line = 2
+      character = 1
+    ]
+    end = Position [
+      line = 2
+      character = 5
+    ]
+  ]
+  severity = null
+  code = "MSG_CONTENT_INCOMPLETE"
+  source = null
+  message = ""
+  relatedInformation = null
+]]> but was:<[]>
+[ERROR]   XMLValidationPoolCacheTest.includedSchemaLocation:139->testDiagnosticsFor:246 Unexpected diagnostics:
+[Diagnostic [
+  range = Range [
+    start = Position [
+      line = 2
+      character = 2
+    ]
+    end = Position [
+      line = 2
+      character = 5
+    ]
+  ]
+  severity = Error
+  code = "cvc-complex-type.2.4.b"
+  source = "xml"
+  message = "Child elements are missing from element:\n - Bar\n\nThe following elements are expected:\n - FooBar\n\nError indicated by\n {the schema}\nwith code:"
+  relatedInformation = null
+]] expected:<[Diagnostic [
+  range = Range [
+    start = Position [
+      line = 2
+      character = 6
+    ]
+    end = Position [
+      line = 4
+      character = 1
+    ]
+  ]
+  severity = null
+  code = "cvc-complex-type.2.1"
+  source = null
+  message = ""
+  relatedInformation = null
+]]> but was:<[Diagnostic [
+  range = Range [
+    start = Position [
+      line = 2
+      character = 2
+    ]
+    end = Position [
+      line = 2
+      character = 5
+    ]
+  ]
+  severity = null
+  code = "cvc-complex-type.2.4.b"
+  source = null
+  message = ""
+  relatedInformation = null
+]]>
+[INFO]
+[ERROR] Tests run: 802, Failures: 4, Errors: 0, Skipped: 3
+```

@@ -1,0 +1,37 @@
+java.lang.IllegalArgumentException when gathering write a DuplicatedByteBuf
+During benchmarking I noticed that an exception is thrown as soon as we write a DuplicatedByteBuf as part of a gathering write operation.
+
+Not sure yet why:
+
+```
+java.lang.IllegalArgumentException
+    at java.nio.Buffer.position(Buffer.java:236)
+    at sun.nio.ch.IOUtil.write(IOUtil.java:159)
+    at sun.nio.ch.SocketChannelImpl.write(SocketChannelImpl.java:499)
+    at io.netty.channel.socket.nio.NioSocketChannel.doWrite(NioSocketChannel.java:249)
+    at io.netty.channel.AbstractChannel$AbstractUnsafe.flush0(AbstractChannel.java:680)
+    at io.netty.channel.nio.AbstractNioChannel$AbstractNioUnsafe.flush0(AbstractNioChannel.java:256)
+    at io.netty.channel.AbstractChannel$AbstractUnsafe.flush(AbstractChannel.java:649)
+    at io.netty.channel.DefaultChannelPipeline$HeadHandler.flush(DefaultChannelPipeline.java:1038)
+    at io.netty.channel.DefaultChannelHandlerContext.invokeFlush(DefaultChannelHandlerContext.java:676)
+    at io.netty.channel.DefaultChannelHandlerContext.flush(DefaultChannelHandlerContext.java:657)
+    at io.netty.channel.ChannelOutboundHandlerAdapter.flush(ChannelOutboundHandlerAdapter.java:115)
+    at io.netty.channel.DefaultChannelHandlerContext.invokeFlush(DefaultChannelHandlerContext.java:676)
+    at io.netty.channel.DefaultChannelHandlerContext.writeAndFlush(DefaultChannelHandlerContext.java:693)
+    at io.netty.channel.DefaultChannelHandlerContext.writeAndFlush(DefaultChannelHandlerContext.java:716)
+    at hello.HelloServerHandler.writeResponse(HelloServerHandler.java:75)
+    at hello.HelloServerHandler.channelRead0(HelloServerHandler.java:47)
+    at io.netty.channel.SimpleChannelInboundHandler.channelRead(SimpleChannelInboundHandler.java:98)
+    at io.netty.channel.DefaultChannelHandlerContext.invokeChannelRead(DefaultChannelHandlerContext.java:334)
+    at io.netty.channel.DefaultChannelHandlerContext.fireChannelRead(DefaultChannelHandlerContext.java:320)
+    at io.netty.handler.codec.ByteToMessageDecoder.channelRead(ByteToMessageDecoder.java:173)
+    at io.netty.channel.DefaultChannelHandlerContext.invokeChannelRead(DefaultChannelHandlerContext.java:334)
+    at io.netty.channel.DefaultChannelHandlerContext.fireChannelRead(DefaultChannelHandlerContext.java:320)
+    at io.netty.channel.DefaultChannelPipeline.fireChannelRead(DefaultChannelPipeline.java:785)
+    at io.netty.channel.nio.AbstractNioByteChannel$NioByteUnsafe.read(AbstractNioByteChannel.java:100)
+    at io.netty.channel.nio.NioEventLoop.processSelectedKey(NioEventLoop.java:479)
+    at io.netty.channel.nio.NioEventLoop.processSelectedKeysOptimized(NioEventLoop.java:447)
+    at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:341)
+    at io.netty.util.concurrent.SingleThreadEventExecutor$2.run(SingleThreadEventExecutor.java:101)
+    at java.lang.Thread.run(Thread.java:724)
+```

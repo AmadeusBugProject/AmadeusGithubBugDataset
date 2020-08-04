@@ -1,0 +1,92 @@
+Incorrect allocations value for PoolArena (tiny / small / normal)
+I found some PoolArena allocations value was incorrect, more specifically is:
+
+    long numTinyAllocations();
+    long numSmallAllocations();
+    long numNormalAllocations();
+
+and
+
+    long numNormalDeallocations();
+
+When I alloc Pooled ByteBuf & and release all these Bufs,
+
+### Expected behavior
+ 
+PoolArena's Metric SHOULD meet the following conditions:
+```
+           numTinyAllocations() == numTinyDeallocations()
+     &&   numSmallAllocations() == numSmallDeallocations()
+     &&   numNormalAllocations() == numNormalDeallocations()
+```
+### Actual behavior
+
+BUT now result:
+```
+           numTinyAllocations() < numTinyDeallocations()
+     &&   numSmallAllocations() < numSmallDeallocations()
+     &&   numNormalAllocations() > numNormalDeallocations()
+```
+It seems some tiny & small allocations increase normal's counter,  I export PoolArenaMetric as MBean by [code](https://github.com/isdom/jocean-http/blob/9d8d528a2a3ee6bf2ca12f04054523dec94d3507/jocean-http/src/main/java/org/jocean/http/util/NettyStats.java) and show MBean by Web using zkoss, see below:
+
+<img width="905" alt="2017-01-25 11 23 34" src="https://cloud.githubusercontent.com/assets/2010691/22338996/a21ee320-e423-11e6-8575-0fee497ae401.png">
+
+In this case, 
+
+`numAllocations(2404) == numDeallocations(2404)`
+
+BUT  
+```
+   (numTinyDeallocations - numTinyAllocations)       //  == 17
++ (numSmallDeallocations - numSmallAllocations)       //  == 9
+```
+equals
+
+` (numNormalAllocations - numNormalDeallocations)       // == 26`
+
+### Steps to reproduce
+
+I start test code with VM flag (disable thread local cache): 
+```
+-XX:MaxDirectMemorySize=96M
+-Dio.netty.allocator.tinyCacheSize=0 
+-Dio.netty.allocator.smallCacheSize=0 
+-Dio.netty.allocator.normalCacheSize=0 
+-Dio.netty.allocator.type=pooled
+```
+then alloc some ByteBuf and release Bufs.
+
+### Minimal yet complete reproducer code (or URL to code)
+
+TestCase to reproduce: https://github.com/isdom/jocean-http/blob/6bc6cfa9ae1e71395a4dd52355b1b0a8365bb530/jocean-http/src/test/java/org/jocean/netty/buffer/PooledByteBufAllocatorTestCase.java
+
+and make sure run this test with VM flag: -XX:MaxDirectMemorySize=96M
+
+It fail at:
+
+```
+assertEquals(metric.numTinyDeallocations(), metric.numTinyAllocations());
+assertEquals(metric.numSmallDeallocations(), metric.numSmallAllocations());
+assertEquals(metric.numNormalDeallocations(), metric.numNormalAllocations());
+```
+output : 
+```
+java.lang.AssertionError: expected:<1> but was:<0>
+	at org.junit.Assert.fail(Assert.java:88)
+```
+
+If this is confirmed as a issue，I can open a PR to fix it.
+
+### Netty version
+
+netty-all-4.1.7.Final
+
+### JVM version (e.g. `java -version`)
+
+java version "1.8.0_102"
+Java(TM) SE Runtime Environment (build 1.8.0_102-b14)
+Java HotSpot(TM) 64-Bit Server VM (build 25.102-b14, mixed mode)
+
+### OS version (e.g. `uname -a`)
+
+Linux xxx 3.10.0-327.22.2.el7.x86_64 #1 SMP Thu Jun 23 17:05:11 UTC 2016 x86_64 x86_64 x86_64 GNU/Linux

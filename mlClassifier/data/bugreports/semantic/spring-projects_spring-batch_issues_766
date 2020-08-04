@@ -1,0 +1,30 @@
+Incorrect error message when no FieldSetMapper is provided [BATCH-2848]
+**[Mahmoud Ben Hassine](https://jira.spring.io/secure/ViewProfile.jspa?name=mbenhassine)** opened **[BATCH-2848](https://jira.spring.io/browse/BATCH-2848?redirect=false)** and commented
+
+Using the `FlatFileItemReaderBuilder`, when I provide a `LineTokenizer` but no `FieldSetMapper`, the error message I get is `No LineTokenizer implementation was provided` while it should be `No FieldSetMapper implementation was provided` instead. Here is a failing test:
+
+```java
+@Test
+public void testErrorMessageWhenNoFieldSetMapperIsProvided() {
+	try {
+		new FlatFileItemReaderBuilder<Foo>()
+				.name("fooReader")
+				.resource(getResource("1;2;3"))
+				.lineTokenizer(line -> new DefaultFieldSet(line.split(";")))
+				.build();
+	} catch (IllegalStateException exception) {
+		String exceptionMessage = exception.getMessage();
+		if (exceptionMessage.equals("No LineTokenizer implementation was provided.")) {
+			fail("Should not throw 'No LineTokenizer implementation was provided.'" + 
+				 " exception when a LineTokenizer is provided");
+		}
+		assertEquals("No FieldSetMapper implementation was provided.", exceptionMessage);
+	}
+}
+```
+
+This test fails with `java.lang.IllegalStateException: No LineTokenizer implementation was provided.` which is obviously incorrect since I provided an implementation of `LineTokenizer`. In this particular case, it should rather fail with `No FieldSetMapper implementation was provided.` since I did not provide a `FieldSetMapper`.
+
+---
+
+**Affects:** 4.2.0, 4.0.3, 4.1.2

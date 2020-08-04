@@ -1,0 +1,12 @@
+Fix WebClient Memory Leaks
+<!--
+For Security Vulnerabilities, please use https://pivotal.io/security#reporting
+-->
+
+### Summary
+
+The [documentation](https://docs.spring.io/spring-framework/docs/current/spring-framework-reference/web-reactive.html#webflux-client-exchange) states:
+
+> When you use exchange(), you must always use any of the body or toEntity methods of ClientResponse to ensure resources are released and to avoid potential issues with HTTP connection pooling. You can use bodyToMono(Void.class) if no response content is expected. However, if the response does have content, the connection is closed and is not placed back in the pool.
+
+There are multiple places where the status is looked at and if it isn't 2xx then it throws an exception without consuming the body which causes a leak.

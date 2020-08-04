@@ -1,0 +1,107 @@
+problem about RLock.lock()  interruptedException ?
+<!--
+
+-->
+
+### Expected behavior
+**RLock.lock() does not return anything, is that mean a thread can always get the lock ?**
+
+> After i saw the source code of lock funcation, it calls lockInterruptibly and catch the InterruptedException, it means that when a thread is interrupted by other thread, it will stop waiting and return from this lock function.
+
+**so I tried a example in such way:**
+> There are two threads in my example, thread-1 gets the lock, and thread-2 is waiting for the lock, then main thread interrupts thread-2, and in this way, thread-2 actually does not get the lock, but thread-2 still stops waiting and return from lock() funcation and continues to do the business which should be locked.
+
+**should i use the interruption status of current thread to check if the current thread has got the lock?**
+
+
+Thank you very much!
+
+### Actual behavior
+```
+import org.redisson.Redisson;
+import org.redisson.api.RLock;
+import org.redisson.config.Config;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
+public class TestDistributedRedisLock {
+
+    private static CountDownLatch finish = new CountDownLatch(2);
+    private static final String KEY = "testlock";
+    private static Config config;
+    private static Redisson redisson;
+    static {
+        config = new Config();
+        config.useSingleServer().setAddress("127.0.0.1:6379");
+        redisson = (Redisson)Redisson.create(config);
+    }
+
+    public static void main(String[] args) {
+        Thread thread_1 = new LockWithoutBoolean("thread-1");
+        Thread thread_2 = new LockWithoutBoolean("thread-2");
+        thread_1.start();
+        try {
+            TimeUnit.SECONDS.sleep(10); // let thread-1 get the lock
+            thread_2.start();
+            TimeUnit.SECONDS.sleep(10); // let thread_2 waiting for the lock
+            thread_2.interrupt(); // interrupte the thread-2
+            finish.await();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } finally {
+            redisson.shutdown();
+        }
+    }
+
+    static class LockWithoutBoolean extends Thread {
+        private String name;
+
+        public LockWithoutBoolean(String name) {
+            super(name);
+        }
+
+        public void run() {
+            RLock lock = redisson.getLock(KEY);
+            lock.lock(10, TimeUnit.MINUTES);
+            System.out.println(Thread.currentThread().getName() + " gets lock. and interrupt: " + Thread.currentThread().isInterrupted());
+            try {
+                TimeUnit.MINUTES.sleep(1);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            } finally {
+                try {
+                    lock.unlock();
+                } finally {
+                    finish.countDown();
+                }
+            }
+            System.out.println(Thread.currentThread().getName() + " ends.");
+        }
+    }
+}
+```
+
+### Steps to reproduce or test case
+> **output:**
+```
+thread-1 gets lock. and interrupt: false
+thread-2 gets lock. and interrupt: true
+Exception in thread "thread-2" java.lang.IllegalMonitorStateException: attempt to unlock lock, not locked by current thread by node id: 965ec21d-aa56-4057-a0e9-a29acacf35b1 thread-id: 21
+	at org.redisson.RedissonLock.unlock(RedissonLock.java:353)
+	at com.example.TestDistributedRedisLock$LockWithoutBoolean.run(TestDistributedRedisLock.java:55)
+thread-1 ends.
+```
+### Redis version
+```4.0.6```
+### Redisson version
+```
+<dependency>
+            <groupId>org.redisson</groupId>
+            <artifactId>redisson</artifactId>
+            <version>2.7.0</version>
+        </dependency>
+```
+### Redisson configuration
+```
+no other configuration
+```

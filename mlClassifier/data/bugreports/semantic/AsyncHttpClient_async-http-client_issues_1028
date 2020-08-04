@@ -1,0 +1,7 @@
+Problem with custom FeedableBodyGenerator.
+Hello
+I want to implement my custom FeedableBodyGenerator, but the problem is that it suspends forever (timeout) when I return BodyState.SUSPEND from transferTo method.
+After a while, I've found out that the resumeTransfer method wasn't called because you add this callback only for the SimpleFeedableBodyGenerator
+https://github.com/AsyncHttpClient/async-http-client/blob/master/client/src/main/java/org/asynchttpclient/netty/request/body/NettyBodyBody.java#L70-L79
+
+How can I implement my custom FeedableBodyGenerator with 'resumeTransfer' method feature?

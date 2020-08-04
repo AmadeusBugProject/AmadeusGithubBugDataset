@@ -1,0 +1,2 @@
+Java API TransportClient can fail on remote node shutdown instead of retrying the next connected node under heavy load
+Java API TransportClient can fail on remote node shutdown instead of retrying the next connected node under heavy load

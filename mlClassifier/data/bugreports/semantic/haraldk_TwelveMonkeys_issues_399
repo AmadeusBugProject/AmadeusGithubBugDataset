@@ -1,0 +1,376 @@
+YCbCr color space incorrectly interpreted as RGB
+Hi,
+
+I've included a code snippet below that depends on an input image file IMG-26.jpg which I'll supply separately. The aim of the code it was extracted from is to attempt to resize an image to be below a maximum size in bytes.
+
+When run with the following 6 libs on the classpath, the output (IMG-26-out.jpg) image has incorrect colours (the symptoms look similar to other issues where an image is interpetted as a different colourspace than RGB like this one: https://stackoverflow.com/questions/9340569/jpeg-image-with-wrong-colors):
+
+> twelvemonkeys-common-image-3.4-SNAPSHOT.jar
+> twelvemonkeys-common-io-3.4-SNAPSHOT.jar
+> twelvemonkeys-common-lang-3.4-SNAPSHOT.jar
+> twelvemonkeys-imageio-core-3.4-SNAPSHOT.jar
+> twelvemonkeys-imageio-jpeg-3.4-SNAPSHOT.jar
+> twelvemonkeys-imageio-metadata-3.4-SNAPSHOT.jar
+
+The problem happens with both the libs from the 3.3.2 release and ones built from the master branch as of yesterday.
+
+When the code is run without the Twelve Monkeys libs on the classpath the output image colours look ok - the same as in the input image. 
+
+```java
+import java.awt.image.BufferedImage;
+import java.awt.image.RenderedImage;
+import java.io.BufferedInputStream;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.Iterator;
+
+import javax.imageio.IIOImage;
+import javax.imageio.ImageIO;
+import javax.imageio.ImageReader;
+import javax.imageio.ImageTypeSpecifier;
+import javax.imageio.ImageWriteParam;
+import javax.imageio.ImageWriter;
+import javax.imageio.stream.ImageInputStream;
+import javax.imageio.stream.ImageOutputStream;
+
+public class ImageTest {
+
+    public static final int READ_LIMIT = 14680064;
+
+    ImageDecoder decoder = new ImageDecoder();
+
+    static int sizeLimit = 3000000;
+    static int startingQuality = 100;
+
+    public static void main(String[] args) throws ImageProcessingException, IOException {
+        System.out.println("running...");
+        File input = new File("IMG-26.jpg");
+        File output = new File("IMG-26-out.jpg");
+        BufferedImage imageIn = new ImageDecoder().decodeImage(new FileInputStream(input));
+
+        InputStream in = encodeImage(imageIn, 0);
+
+        copy(in, new FileOutputStream(output));
+        System.out.println("Finished, wrote to " + output.getAbsolutePath());
+    }
+
+    public static InputStream encodeImage(RenderedImage image, long originalSize) throws ImageProcessingException {
+        long maxSize = sizeLimit;
+        float q = 1.00f;
+        float delta = q * 0.05f;
+        int maxTries = 5;
+        int tries = 0;
+        ByteArrayEncodedImage out = null;
+        // Encode 1..maxTries times until output is small enough
+        long previousSize = originalSize;
+        while (true) {
+            try {
+                ByteArrayEncodedImage out2 = encodeImage(image, q);
+                if (out != null) {
+                    previousSize = out.getSize();
+                    closePrevious(out);
+                }
+                out = out2;
+            } catch (ImageProcessingException e) {
+                if (out != null) {
+                    System.out.println("Failed to process image many times via limitator. "
+                            + "Using the previous encoding. " + e.getMessage());
+                    return out.getStream();
+                } else {
+                    throw e;
+                }
+            }
+            ++tries;
+            if (out.getSize() == null) {
+                System.out.println("Cannot limit image byte size");
+                break;
+            }
+            // if (LOG.isDebugEnabled()) {
+            double previous = (previousSize == 0 ? 0f : (1.0 * previousSize / 1024));
+            System.out.println(
+                    String.format("Previous size was %.2f kbytes encoding %d with quality %.2f produced %.2f kbytes.",
+                            previous, tries, q, 1.0 * out.getSize() / 1024));
+            // }
+            if (out.getSize() <= maxSize || tries >= maxTries) {
+                // either found small enough or tried too many times
+                break;
+            }
+            if (q < 0.1)
+                break; // already 0.0, stop
+            q -= delta;
+            if (q < 0.1)
+                q = 0.0f; // round last value into exactly 0.0
+        }
+
+        // use the last encoding hoping it is the best choice
+        return out.getStream();
+    }
+
+    public static ByteArrayEncodedImage encodeImage(RenderedImage image, float quality)
+            throws ImageProcessingException {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        writeJpeg(image, out, quality);
+        return new ByteArrayEncodedImage(out);
+    }
+
+    private static void writeJpeg(RenderedImage image, OutputStream os, float compressionQuality)
+            throws ImageProcessingException {
+
+        ImageWriter iwriter = null;
+        if (ImageIO.getImageWritersByFormatName("jpeg").hasNext()) {
+            iwriter = (ImageWriter) ImageIO.getImageWritersByFormatName("jpeg").next();
+        } else {
+            String msg = "Could not get JPEG ImageWriter";
+            throw new ImageProcessingException(msg);
+        }
+
+        ImageWriteParam iwparam = iwriter.getDefaultWriteParam();
+        iwparam.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
+        iwparam.setCompressionQuality(compressionQuality);
+        ImageOutputStream ios;
+        try {
+            ios = ImageIO.createImageOutputStream(os);
+        } catch (IOException ex) {
+            String msg = "Could not get create image stream";
+            throw new ImageProcessingException(msg, ex);
+        }
+
+        try {
+            iwriter.setOutput(ios);
+            iwriter.write(null, new IIOImage(image, null, null), iwparam);
+            ios.flush();
+            iwriter.dispose();
+        } catch (IOException ex) {
+            throw new ImageProcessingException("Could not write image", ex);
+        } finally {
+            try {
+                ios.close();
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+        }
+    }
+
+    public static class ByteArrayEncodedImage {
+
+        private final ByteArrayOutputStream data;
+
+        public ByteArrayEncodedImage(ByteArrayOutputStream out) {
+            this.data = out;
+        }
+
+        public Long getSize() {
+            return (long) data.size();
+        }
+
+        public InputStream getStream() {
+            byte[] bytes = data.toByteArray();
+            return new ByteArrayInputStream(bytes);
+            // return this.data.toByteArrayInputStream();
+        }
+
+    }
+
+    public static class ImageDecoder {
+        
+        // Define an exception to which the exceptions that occur during
+        // decoding are stored. The exceptions are appended to the exception
+        // chain of this exception.
+        ImageProcessingException ipe = null;
+
+        /**
+         * Load an image. If the source stream supports marking, then it can be reset to
+         * original state after this method has returned. If the stream does no support
+         * marking, then it will be consumed by this method.
+         *
+         * @param source
+         *            the stream from which the encoded image is read.
+         * @return the decoded image.
+         */
+        public BufferedImage decodeImage(InputStream source) throws ImageProcessingException {
+
+            // If reset is not allowed by the stream wrap it in a
+            // BufferedInputStream to allow us to unwind back to start
+            // if we need to do a jpeg4 thumbnail.
+            if (!source.markSupported()) {
+                source = new BufferedInputStream(source);
+            }
+            source.mark(READ_LIMIT);
+
+            try {
+                BufferedImage image = new ImageIODecoder().decodeImage(source);
+                // BufferedImage image = decoders[i].decodeImage(source);
+                if (image == null) {
+                    // This happens on some TIFF images.
+                    String msg = "Decoder failed silently and returned a " + "null reference";
+                    throw new ImageProcessingException(msg);
+                }
+
+                return image;
+            } catch (ImageProcessingException ex) {
+                // Append the exception to the previous one. We do not want to
+                // log this exception, since it is part of expected program
+                // behaviour. An ugly hack caused by the lack of CMYK support
+                // in Java image processing libraries.
+                if (ipe == null) {
+                    ipe = ex;
+                } else {
+                    append(ipe, ex);
+                }
+
+                // Reset the stream before the next decoder is tried.
+                try {
+                    source.reset();
+                    source.mark(READ_LIMIT);
+                } catch (IOException ex2) {
+                    throw new ImageProcessingException("Failed to reset " + "stream", ex2);
+                }
+            }
+
+            // If we get here, an error has occurred and ipe will be initialized.
+            throw ipe;
+        }
+
+        /**
+         * Append exception e2 to exception e1.
+         */
+        private void append(Throwable e1, Throwable e2) {
+            if (e1.getCause() != null) {
+                append(e1.getCause(), e2);
+            } else {
+                Exception spacer = new Exception("The following exception occurred after the previous exception.");
+                spacer.setStackTrace(new StackTraceElement[0]);
+                spacer.initCause(e2);
+                e1.initCause(spacer);
+            }
+        }
+    }
+
+    private static void closePrevious(ByteArrayEncodedImage out) {
+        if (out != null) {
+            try {
+                out.getStream().close();
+            } catch (Throwable t) {
+                // nop
+            }
+        }
+    }
+
+    public static class ImageProcessingException extends Exception {
+        public ImageProcessingException(String msg) {
+            super(msg);
+        }
+
+        public ImageProcessingException(String msg, Throwable cause) {
+            super(msg, cause);
+        }
+    }
+
+    /**
+     * A decoder that uses JAI to decode images.
+     */
+    public static class ImageIODecoder {
+
+        /**
+         * Load an image. The implementation of this method will consume the source
+         * stream.
+         *
+         * @param source
+         *            the stream from which the encoded image is read.
+         * @return the decoded image.
+         */
+        public BufferedImage decodeImage(InputStream source) throws ImageProcessingException {
+
+            // Get an ImageReader. This code chooses the first reader from
+            // the available readers. There amy be an algorithm with which
+            // the most suitable reader could be selected.
+            ImageInputStream input;
+            try {
+                input = ImageIO.createImageInputStream(source);
+            } catch (IOException ex) {
+                throw new ImageProcessingException("Failed to create image reader", ex);
+            }
+
+            Iterator<ImageReader> readers = ImageIO.getImageReaders(input);
+            ImageReader reader;
+            if (readers == null || !readers.hasNext()) {
+                throw new ImageProcessingException("No ImageReaders found for image");
+            } else {
+                reader = readers.next();
+                reader.setInput(input);
+            }
+
+            // Find out the image type and pixel size.
+            ImageTypeSpecifier spec = null;
+            try {
+                Iterator<ImageTypeSpecifier> iter = reader.getImageTypes(0);
+                if (iter.hasNext()) {
+                    spec = iter.next();
+                }
+
+                if (spec == null) {
+                    throw new ImageProcessingException("Failed to detect image " + "type");
+                }
+            } catch (IOException ex) {
+                throw new ImageProcessingException("Error while detecting image " + "type", ex);
+            }
+
+            // Read the image
+            BufferedImage image;
+            try {
+                image = reader.read(0);
+            } catch (IOException ex) {
+                try {
+                    source.reset();
+                    source.mark(READ_LIMIT);
+                } catch (IOException ex2) {
+                    throw new ImageProcessingException("Failed to reset " + "stream", ex2);
+                }
+
+                // write to temp file
+                File tmp = null;
+                FileOutputStream fout = null;
+                try {
+                    try {
+                        tmp = File.createTempFile("imageiodecoder", "tmp");
+                        fout = new FileOutputStream(tmp);
+                        copy(source, fout);
+                    } finally {
+                        if (fout != null) {
+                            fout.close();
+                        }
+                    }
+
+                    // read image from temp file
+                    image = ImageIO.read(tmp);
+                } catch (IOException e) {
+                    throw new ImageProcessingException("Failed to read image from file", e);
+
+                } finally {
+                    if (tmp != null) {
+                        tmp.delete();
+                    }
+                }
+            }
+
+            reader.dispose();
+            return image;
+        }
+    }
+    
+    private static void copy(InputStream in, OutputStream out)
+            throws IOException {
+            byte[] buf = new byte[8192];
+            int n;
+            while ((n = in.read(buf)) > 0) {
+                out.write(buf, 0, n);
+            }
+        }
+}
+```

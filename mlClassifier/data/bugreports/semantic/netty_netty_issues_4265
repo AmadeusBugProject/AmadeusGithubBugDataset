@@ -1,0 +1,12 @@
+Adding DefaultHttpHeaders to itself creates infinite loop
+Example:
+
+```
+public void test() {
+    HttpHeaders headers = new DefaultHttpHeaders();
+    headers.add("foo", "bar");
+    headers.add(headers);
+    // This will never end
+    headers.forEach(entry -> {});
+}
+```

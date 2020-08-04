@@ -1,0 +1,182 @@
+Concurrent INSERTs and DELETEs cause deadlock.
+## Expected behavior and actual behavior
+
+Concurrent INSERTs and DELETEs cause deadlock.
+![img](http://i.imgur.com/SzjrjA4.png)
+
+Stacktrace (taken with jvisualvm)
+
+```
+Found one Java-level deadlock:
+=============================
+"Thread-7":
+  waiting for ownable synchronizer 0x00000000d59c41d0, (a java.util.concurrent.locks.ReentrantReadWriteLock$NonfairSync),
+  which is held by "Thread-6"
+"Thread-6":
+  waiting for ownable synchronizer 0x00000000d59c41a0, (a java.util.concurrent.locks.ReentrantReadWriteLock$NonfairSync),
+  which is held by "Thread-7"
+
+Java stack information for the threads listed above:
+===================================================
+"Thread-7":
+    at sun.misc.Unsafe.park(Native Method)
+    - parking to wait for  <0x00000000d59c41d0> (a java.util.concurrent.locks.ReentrantReadWriteLock$NonfairSync)
+    at java.util.concurrent.locks.LockSupport.park(LockSupport.java:175)
+    at java.util.concurrent.locks.AbstractQueuedSynchronizer.parkAndCheckInterrupt(AbstractQueuedSynchronizer.java:836)
+    at java.util.concurrent.locks.AbstractQueuedSynchronizer.acquireQueued(AbstractQueuedSynchronizer.java:870)
+    at java.util.concurrent.locks.AbstractQueuedSynchronizer.acquire(AbstractQueuedSynchronizer.java:1199)
+    at java.util.concurrent.locks.ReentrantReadWriteLock$WriteLock.lock(ReentrantReadWriteLock.java:943)
+    at com.orientechnologies.common.concur.lock.OOneEntryPerKeyLockManager.acquireLock(OOneEntryPerKeyLockManager.java:173)
+    at com.orientechnologies.common.concur.lock.OOneEntryPerKeyLockManager.acquireLock(OOneEntryPerKeyLockManager.java:100)
+    at com.orientechnologies.orient.core.storage.impl.local.paginated.atomicoperations.OAtomicOperationsManager.acquireExclusiveLockTillOperationComplete(OAtomicOperationsManager.java:464)
+    at com.orientechnologies.orient.core.storage.impl.local.paginated.atomicoperations.OAtomicOperationsManager.startAtomicOperation(OAtomicOperationsManager.java:175)
+    at com.orientechnologies.orient.core.storage.impl.local.paginated.atomicoperations.OAtomicOperationsManager.startAtomicOperation(OAtomicOperationsManager.java:140)
+    at com.orientechnologies.orient.core.storage.impl.local.paginated.base.ODurableComponent.startAtomicOperation(ODurableComponent.java:123)
+    at com.orientechnologies.orient.core.storage.impl.local.paginated.OClusterPositionMap.remove(OClusterPositionMap.java:411)
+    at com.orientechnologies.orient.core.storage.impl.local.paginated.OPaginatedCluster.deleteRecord(OPaginatedCluster.java:806)
+    at com.orientechnologies.orient.core.storage.impl.local.OAbstractPaginatedStorage.doDeleteRecord(OAbstractPaginatedStorage.java:3205)
+    at com.orientechnologies.orient.core.storage.impl.local.OAbstractPaginatedStorage.deleteRecord(OAbstractPaginatedStorage.java:1151)
+    at com.orientechnologies.orient.core.db.document.ODatabaseDocumentTx.executeDeleteRecord(ODatabaseDocumentTx.java:2139)
+    at com.orientechnologies.orient.core.tx.OTransactionNoTx.deleteRecord(OTransactionNoTx.java:274)
+    at com.orientechnologies.orient.core.db.document.ODatabaseDocumentTx.delete(ODatabaseDocumentTx.java:2563)
+    at com.orientechnologies.orient.core.db.document.ODatabaseDocumentTx.delete(ODatabaseDocumentTx.java:101)
+    at com.orientechnologies.orient.core.record.ORecordAbstract.delete(ORecordAbstract.java:296)
+    at com.orientechnologies.orient.core.sql.OCommandExecutorSQLDelete.result(OCommandExecutorSQLDelete.java:325)
+    at com.orientechnologies.orient.core.sql.OCommandExecutorSQLResultsetAbstract.pushResult(OCommandExecutorSQLResultsetAbstract.java:278)
+    at com.orientechnologies.orient.core.sql.OCommandExecutorSQLSelect.addResult(OCommandExecutorSQLSelect.java:734)
+    at com.orientechnologies.orient.core.sql.OCommandExecutorSQLSelect.handleResult(OCommandExecutorSQLSelect.java:666)
+    at com.orientechnologies.orient.core.sql.OCommandExecutorSQLSelect.executeSearchRecord(OCommandExecutorSQLSelect.java:615)
+    at com.orientechnologies.orient.core.sql.OCommandExecutorSQLSelect.serialIterator(OCommandExecutorSQLSelect.java:1638)
+    at com.orientechnologies.orient.core.sql.OCommandExecutorSQLSelect.fetchFromTarget(OCommandExecutorSQLSelect.java:1553)
+    at com.orientechnologies.orient.core.sql.OCommandExecutorSQLSelect.executeSearch(OCommandExecutorSQLSelect.java:510)
+    at com.orientechnologies.orient.core.sql.OCommandExecutorSQLSelect.execute(OCommandExecutorSQLSelect.java:473)
+    at com.orientechnologies.orient.core.sql.OCommandExecutorSQLDelegate.execute(OCommandExecutorSQLDelegate.java:72)
+    at com.orientechnologies.orient.core.storage.impl.local.OAbstractPaginatedStorage.executeCommand(OAbstractPaginatedStorage.java:2577)
+    at com.orientechnologies.orient.core.storage.impl.local.OAbstractPaginatedStorage.command(OAbstractPaginatedStorage.java:2523)
+    at com.orientechnologies.orient.core.sql.query.OSQLQuery.run(OSQLQuery.java:78)
+    at com.orientechnologies.orient.core.sql.query.OSQLAsynchQuery.run(OSQLAsynchQuery.java:74)
+    at com.orientechnologies.orient.core.query.OQueryAbstract.execute(OQueryAbstract.java:33)
+    at com.orientechnologies.orient.core.sql.OCommandExecutorSQLDelete.execute(OCommandExecutorSQLDelete.java:205)
+    at com.orientechnologies.orient.core.sql.OCommandExecutorSQLDelegate.execute(OCommandExecutorSQLDelegate.java:72)
+    at com.orientechnologies.orient.core.storage.impl.local.OAbstractPaginatedStorage.executeCommand(OAbstractPaginatedStorage.java:2577)
+    at com.orientechnologies.orient.core.storage.impl.local.OAbstractPaginatedStorage.command(OAbstractPaginatedStorage.java:2523)
+    at com.orientechnologies.orient.core.command.OCommandRequestTextAbstract.execute(OCommandRequestTextAbstract.java:69)
+    at Hello$$anon$2.run(Hello.scala:752)
+"Thread-6":
+    at sun.misc.Unsafe.park(Native Method)
+    - parking to wait for  <0x00000000d59c41a0> (a java.util.concurrent.locks.ReentrantReadWriteLock$NonfairSync)
+    at java.util.concurrent.locks.LockSupport.park(LockSupport.java:175)
+    at java.util.concurrent.locks.AbstractQueuedSynchronizer.parkAndCheckInterrupt(AbstractQueuedSynchronizer.java:836)
+    at java.util.concurrent.locks.AbstractQueuedSynchronizer.acquireQueued(AbstractQueuedSynchronizer.java:870)
+    at java.util.concurrent.locks.AbstractQueuedSynchronizer.acquire(AbstractQueuedSynchronizer.java:1199)
+    at java.util.concurrent.locks.ReentrantReadWriteLock$WriteLock.lock(ReentrantReadWriteLock.java:943)
+    at com.orientechnologies.common.concur.lock.OOneEntryPerKeyLockManager.acquireLock(OOneEntryPerKeyLockManager.java:173)
+    at com.orientechnologies.common.concur.lock.OOneEntryPerKeyLockManager.acquireLock(OOneEntryPerKeyLockManager.java:100)
+    at com.orientechnologies.orient.core.storage.impl.local.paginated.atomicoperations.OAtomicOperationsManager.acquireExclusiveLockTillOperationComplete(OAtomicOperationsManager.java:464)
+    at com.orientechnologies.orient.core.storage.impl.local.paginated.atomicoperations.OAtomicOperationsManager.startAtomicOperation(OAtomicOperationsManager.java:175)
+    at com.orientechnologies.orient.core.storage.impl.local.paginated.atomicoperations.OAtomicOperationsManager.startAtomicOperation(OAtomicOperationsManager.java:140)
+    at com.orientechnologies.orient.core.storage.impl.local.paginated.base.ODurableComponent.startAtomicOperation(ODurableComponent.java:123)
+    at com.orientechnologies.orient.core.storage.impl.local.paginated.OPaginatedCluster.createRecord(OPaginatedCluster.java:441)
+    at com.orientechnologies.orient.core.storage.impl.local.OAbstractPaginatedStorage.doCreateRecord(OAbstractPaginatedStorage.java:3023)
+    at com.orientechnologies.orient.core.storage.impl.local.OAbstractPaginatedStorage.commitEntry(OAbstractPaginatedStorage.java:3584)
+    at com.orientechnologies.orient.core.storage.impl.local.OAbstractPaginatedStorage.commit(OAbstractPaginatedStorage.java:1344)
+    at com.orientechnologies.orient.core.tx.OTransactionOptimistic.doCommit(OTransactionOptimistic.java:555)
+    at com.orientechnologies.orient.core.tx.OTransactionOptimistic.commit(OTransactionOptimistic.java:109)
+    at com.orientechnologies.orient.core.db.document.ODatabaseDocumentTx.commit(ODatabaseDocumentTx.java:2665)
+    at com.orientechnologies.orient.core.db.document.ODatabaseDocumentTx.commit(ODatabaseDocumentTx.java:2634)
+    at Hello$$anon$1.run(Hello.scala:728)
+
+Found 1 deadlock.
+
+```
+
+Expected no deadlock.
+## Steps to reproduce the problem
+
+Run the code and wait a little (usually less than a minute)
+
+```
+      locally {
+        val db = new ODatabaseDocumentTx("plocal:databases/TestDb")
+        FileUtils.deleteDirectory(new java.io.File("databases/TestDb"))
+        db.create()
+        db.close()
+
+        db.open("admin", "admin")
+        try {
+          println(Try(db.command[OCommandRequest](new OCommandSQL("CREATE CLASS Ping")).execute[Object]()))
+        } finally {
+          db.close()
+        }
+      }
+
+      new Thread {
+        override def run {
+          while(true) {
+            // insert a simple record
+            val db = new ODatabaseDocumentTx("plocal:databases/TestDb")
+            db.open("admin", "admin")
+            try {
+              db.begin(OTransaction.TXTYPE.OPTIMISTIC)
+              try {
+                val d = new ODocument("Ping")
+                d.field("time", System.currentTimeMillis)
+                d.save()
+                db.commit()
+                print(GREEN+"."+RESET)
+              } catch {
+                case e: Throwable =>
+                  e.printStackTrace
+                  db.rollback()
+              }
+            } finally {
+              db.close()
+            }
+            Thread sleep 5
+          }
+        }
+      }.start()
+
+      new Thread {
+        override def run {
+          while(true) {
+            // delete records older than 5 sec
+            val db = new ODatabaseDocumentTx("plocal:databases/TestDb")
+            db.open("admin", "admin")
+            try {
+              val now = System.currentTimeMillis
+              println(s"${RED}deleting:${RESET}")
+              val rc = db .command[OCommandRequest](new OCommandSQL("delete from Ping where time < ?")) .execute[Int]((now - 5000).asInstanceOf[AnyRef])
+              println(s"${RED}deleted old msgs ${BOLD}${rc}${RESET+RED} in ${BOLD}${System.currentTimeMillis - now}${RESET+RED} ms${RESET}")
+            } finally {
+              db.close()
+            }
+            Thread sleep 5000
+          }
+        }
+      }.start()
+```
+## Important Questions
+### Runninng Mode
+- [ x] Embedded, using PLOCAL access mode
+- [  ] Embedded, using MEMORY access mode
+- [ x] Remote
+
+I have the issue with embedded PLOCAL, remote PLOCAL and remote MEMORY (single-server setup, no distribution). In the remote case, the deadlock occurs in the OrientDB server process.
+### Misc
+- [  ] I have a distributed setup with multiple servers. How many? 
+- [  ] I'm using the Enterprise Edition
+### OrientDB Version
+- [  ] v2.0.x - Please specify last number: 
+- [  ] v2.1.x - Please specify last number: 
+- [x ] v2.2.x - Please specify last number: 2.2.3 community edition
+### Operating System
+- [  ] Linux
+- [  ] MacOSX
+- [ x] Windows (Windows Server 2008, Java 8)
+- [  ] Other Unix
+- [  ] Other, name? 
+### Java Version
+- [  ] 6
+- [ x] 7
+- [ x] 8

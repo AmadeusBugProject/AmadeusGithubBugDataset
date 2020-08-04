@@ -1,0 +1,16 @@
+Box layout algorithm interferes with set minumum size
+```
+node n {
+	algorithm:box
+	minimalNodeSize:"(60.0,60.0)"
+	elk.padding:"[top=25.0,left=25.0,bottom=0.0,right=0.0]"
+	node ni {
+		layout[size:10,10]
+	}
+}
+```
+Drawing this graph I would expect a parent node with size 60x60 and a node inside that with a padding of 25 from the top left, putting it in the center of the 60x60 parent node.
+Instead, a 35*35 node is drawn with the inner node locked in the bottom right corner.
+
+I tracked down where this issue comes from and found [this commit](https://github.com/eclipse/elk/commit/89caa5cd53bf6a2a51534281f16702cb12cb82d1). In there, the BoxLayoutProvider was changed to not read the individual width and height and work on local copies of that, but change the x and y values of the instance stored in the minimum node size property directly. That causes the minimum size constraint to get messed with during box layout if a padding is configured. That should not happen.
+The version previous to that commit looks good to me, or just to not put the values for the box layouter back into the bounds instance.

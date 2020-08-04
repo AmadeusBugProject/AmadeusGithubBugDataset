@@ -1,0 +1,17 @@
+websocket server sample does not work for netty-example-4.0.35.Final-sources
+Directly run http/websocketx/server sample in netty-example-4.0.35.Final-sources would get "socket is closed" error. Then i try to modify:
+1. WebSocketServerInitializer.java add websocket handler：
+        pipeline.addLast(new WebSocketIndexPageHandler(WEBSOCKET_PATH));
+        **pipeline.addLast(new WebSocketServerProtocolHandler(WEBSOCKET_PATH));**
+        pipeline.addLast(new WebSocketFrameHandler());
+2. WebSocketIndexPageHandler.java add exclude websocket response, and pass request to next handler as:
+      *\* if (websocketPath.equals(req.getUri()))**
+        **{**
+            **ctx.fireChannelRead(req.retain());**
+        **}**
+        // Send the index page
+        *_else *_if ("/".equals(req.getUri()) || "/index.html".equals(req.getUri())) {
+
+Please verify whether the step is fine, or i miss anything, thanks!
+
+BTW, if i want to just use websocket server function. could i just import netty-codec-http-4.0.35.Final.jar, not import netty-all-4.0.35.Final.jar?

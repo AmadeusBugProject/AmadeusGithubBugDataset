@@ -1,0 +1,85 @@
+Deadlock when use SslHandler with SPDY
+Hello,
+
+I believe there is a deadlock situation in Netty 3.7(likely still exists in 3.8 and 3.9) when using SslHandler with SPDY/3:
+
+At the high level, the channel pipeline is setup as:
+SslHandler
+SpdyFrameCodec
+SpdySessionHandler
+
+The situation encountered showed the following call sequence in the stack trace:
+
+First invocation:
+        at org.jboss.netty.handler.ssl.SslHandler.channelClosed(SslHandler.java:1566)
+Second invocation:
+        at org.jboss.netty.handler.ssl.SslHandler$6.run(SslHandler.java:1593)
+Third invocation:
+        at org.jboss.netty.handler.ssl.SslHandler.handleDownstream(SslHandler.java:623)
+
+Netty 3.7 SSLHandler.java source code: http://netty.io/3.7/xref/org/jboss/netty/handler/ssl/SslHandler.html
+
+First invocation takes the pendingUnencryptedWritesLock at line 1568 and releases lock at line 1596, but at line 1593, it indirectly invoked SslHandler::handleDownstream() which attempts to take the pendingUnencryptedWritesLock at line 623.
+
+Would you mind confirming if this is a new bug or some known issue? Thanks!
+
+---
+
+Full stack trace:
+
+"New I/O worker #1" prio=10 tid=0x00002aaad4a0f000 nid=0x1833 waiting on condition [0x0000000040b5d000]
+   java.lang.Thread.State: WAITING (parking)
+        at sun.misc.Unsafe.park(Native Method)
+        - parking to wait for  <0x00000007d51b93e8> (a org.jboss.netty.util.internal.NonReentrantLock)
+        at java.util.concurrent.locks.LockSupport.park(LockSupport.java:186)
+        at java.util.concurrent.locks.AbstractQueuedSynchronizer.parkAndCheckInterrupt(AbstractQueuedSynchronizer.java:834)
+        at java.util.concurrent.locks.AbstractQueuedSynchronizer.acquireQueued(AbstractQueuedSynchronizer.java:867)
+        at java.util.concurrent.locks.AbstractQueuedSynchronizer.acquire(AbstractQueuedSynchronizer.java:1197)
+        at org.jboss.netty.util.internal.NonReentrantLock.lock(NonReentrantLock.java:31)
+        at org.jboss.netty.handler.ssl.SslHandler.handleDownstream(SslHandler.java:623)
+        at org.jboss.netty.channel.DefaultChannelPipeline.sendDownstream(DefaultChannelPipeline.java:591)
+        at org.jboss.netty.channel.DefaultChannelPipeline$DefaultChannelHandlerContext.sendDownstream(DefaultChannelPipeline.java:784)
+        at org.jboss.netty.channel.SimpleChannelHandler.writeRequested(SimpleChannelHandler.java:292)
+        at org.jboss.netty.channel.SimpleChannelHandler.handleDownstream(SimpleChannelHandler.java:254)
+        at org.jboss.netty.channel.DefaultChannelPipeline.sendDownstream(DefaultChannelPipeline.java:591)
+        at org.jboss.netty.channel.DefaultChannelPipeline$DefaultChannelHandlerContext.sendDownstream(DefaultChannelPipeline.java:784)
+        at org.jboss.netty.channel.SimpleChannelHandler.writeRequested(SimpleChannelHandler.java:292)
+        at org.jboss.netty.channel.SimpleChannelHandler.handleDownstream(SimpleChannelHandler.java:254)
+        at org.jboss.netty.channel.DefaultChannelPipeline.sendDownstream(DefaultChannelPipeline.java:591)
+        at org.jboss.netty.channel.DefaultChannelPipeline$DefaultChannelHandlerContext.sendDownstream(DefaultChannelPipeline.java:784)
+        at org.jboss.netty.channel.Channels.write(Channels.java:725)
+        at org.jboss.netty.handler.codec.spdy.SpdyFrameEncoder.handleDownstream(SpdyFrameEncoder.java:193)
+        at org.jboss.netty.handler.codec.spdy.SpdyFrameCodec.handleDownstream(SpdyFrameCodec.java:62)
+        at org.jboss.netty.channel.DefaultChannelPipeline.sendDownstream(DefaultChannelPipeline.java:591)
+        at org.jboss.netty.channel.DefaultChannelPipeline$DefaultChannelHandlerContext.sendDownstream(DefaultChannelPipeline.java:784)
+        at org.jboss.netty.channel.Channels.write(Channels.java:725)
+        at org.jboss.netty.handler.codec.spdy.SpdySessionHandler.issueStreamError(SpdySessionHandler.java:658)
+        at org.jboss.netty.handler.codec.spdy.SpdySessionHandler.access$000(SpdySessionHandler.java:39)
+        at org.jboss.netty.handler.codec.spdy.SpdySessionHandler$2.operationComplete(SpdySessionHandler.java:501)
+        at org.jboss.netty.channel.DefaultChannelFuture.notifyListener(DefaultChannelFuture.java:427)
+        at org.jboss.netty.channel.DefaultChannelFuture.notifyListeners(DefaultChannelFuture.java:413)
+        at org.jboss.netty.channel.DefaultChannelFuture.setFailure(DefaultChannelFuture.java:380)
+        at org.jboss.netty.handler.ssl.SslHandler$6.run(SslHandler.java:1593)
+        at org.jboss.netty.channel.socket.ChannelRunnableWrapper.run(ChannelRunnableWrapper.java:40)
+        at org.jboss.netty.channel.socket.nio.AbstractNioWorker.executeInIoThread(AbstractNioWorker.java:71)
+        at org.jboss.netty.channel.socket.nio.NioWorker.executeInIoThread(NioWorker.java:36)
+        at org.jboss.netty.channel.socket.nio.AbstractNioWorker.executeInIoThread(AbstractNioWorker.java:57)
+        at org.jboss.netty.channel.socket.nio.NioWorker.executeInIoThread(NioWorker.java:36)
+        at org.jboss.netty.channel.socket.nio.AbstractNioChannelSink.execute(AbstractNioChannelSink.java:34)
+        at org.jboss.netty.channel.DefaultChannelPipeline.execute(DefaultChannelPipeline.java:636)
+        at org.jboss.netty.handler.ssl.SslHandler.channelClosed(SslHandler.java:1566)
+        at org.jboss.netty.channel.SimpleChannelUpstreamHandler.handleUpstream(SimpleChannelUpstreamHandler.java:88)
+        at org.jboss.netty.channel.DefaultChannelPipeline.sendUpstream(DefaultChannelPipeline.java:564)
+        at org.jboss.netty.channel.DefaultChannelPipeline.sendUpstream(DefaultChannelPipeline.java:559)
+        at org.jboss.netty.channel.Channels.fireChannelClosed(Channels.java:468)
+        at org.jboss.netty.channel.socket.nio.AbstractNioWorker.close(AbstractNioWorker.java:376)
+        at org.jboss.netty.channel.socket.nio.NioWorker.read(NioWorker.java:93)
+        at org.jboss.netty.channel.socket.nio.AbstractNioWorker.process(AbstractNioWorker.java:109)
+        at org.jboss.netty.channel.socket.nio.AbstractNioSelector.run(AbstractNioSelector.java:312)
+        at org.jboss.netty.channel.socket.nio.AbstractNioWorker.run(AbstractNioWorker.java:90)
+        at org.jboss.netty.channel.socket.nio.NioWorker.run(NioWorker.java:178)
+        at org.jboss.netty.util.ThreadRenamingRunnable.run(ThreadRenamingRunnable.java:108)
+        at org.jboss.netty.util.internal.DeadLockProofWorker$1.run(DeadLockProofWorker.java:42)
+        at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+        at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:615)
+        at java.lang.Thread.run(Thread.java:744)

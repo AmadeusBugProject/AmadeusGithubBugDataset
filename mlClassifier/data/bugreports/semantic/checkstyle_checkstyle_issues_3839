@@ -1,0 +1,54 @@
+EmptyBlock: can't get violation from case token
+Taken from https://github.com/checkstyle/checkstyle/issues/3748#issuecomment-279396341
+
+````
+$ cat TestClass.java
+public class TestClass {
+    void method(int a) {
+                switch (a) {}
+                switch (a) {case 1:}
+                switch (a) {case 1:{}}
+                switch (a) {
+                    case 1:
+                }
+                switch (a) {
+                    case 1:
+                    {}
+                }
+                switch (a) {
+                    case 1:
+{
+}
+                }
+    }
+}
+
+$ cat TestConfig.xml
+<?xml version="1.0"?>
+<!DOCTYPE module PUBLIC
+          "-//Puppy Crawl//DTD Check Configuration 1.3//EN"
+          "http://www.puppycrawl.com/dtds/configuration_1_3.dtd">
+
+<module name="Checker">
+    <property name="charset" value="UTF-8"/>
+
+    <module name="TreeWalker">
+        <module name="EmptyBlock">
+            <property name="tokens" value="LITERAL_CASE"/>
+        </module>
+    </module>
+</module>
+
+$ java -jar checkstyle-7.5.1-all.jar -c TestConfig.xml TestClass.java
+Starting audit...
+Audit done.
+````
+
+http://checkstyle.sourceforge.net/config_blocks.html#EmptyBlock
+`LITERAL_CASE` is an allowed token, but I can NOT produce a violation for it.
+
+Our tests for the check makes no reference to cases. https://github.com/checkstyle/checkstyle/blob/master/src/test/java/com/puppycrawl/tools/checkstyle/checks/blocks/EmptyBlockCheckTest.java
+Even though blocks are mostly considered curlies, it makes sense that we treat `case` and `default` as blocks since the case is grouping code under it.
+I assume a `case` that just contains `break` should still be considered empty.
+
+We need to find the issue with the check and expand all our tests to every acceptable token for the check to verify we have no issues with any other tokens.

@@ -1,0 +1,2 @@
+SelectedSelectionKeySet may hold strong reference to SelectionKey after Channel is closed
+Because we not null out the array entry in the `SelectionKey[]` which is produced by `SelectedSelectionKeySet.flip()` we may end up with a few `SelectionKey`references still hanging around here even after the `Channel` was closed. As these entries may be present at the end of the `SelectionKey[]` which is never updated for a long time as not enough `SelectionKeys` are ready.

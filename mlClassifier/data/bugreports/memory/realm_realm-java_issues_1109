@@ -1,0 +1,12 @@
+Possibility of a memory leak due to a combination of `RealmChangeListener` and `automaticUpdate`
+Reported by @zaki50 
+
+`RealmChangeListener` is added to `Realm` when `automaticUpdate` is true. Then the listener instance was not released until the `Realm` instance is released because the `RealmChangeListener` is never deleted.
+
+Since a listener instance is an anonymous inner class of `RealmBaseAdapter`, it holds a reference to the `RealmBaseAdapter` as an enclosing instance. `RealmBaseAdapter` usually holds a reference to the `Activity` that uses it as `Context`. So these instances will not be released until the `Realm` instance is released.
+
+If you use `Realm` in only one Activity, there is no problem because `Realm#close()` is called when the `Activity`  is destroyed. (Strictly speaking, adapters may be accumulated if re-create a `RealmBaseAdapter` while the Activity is alive.)
+
+On the other hand, if you use two activities, there are main activity and another activity that has `ListView`, each activity uses `Realm`, the `Realm` instance is held in cache until `onDestroy` of main activity is called. For example if you transition between the two Activities as follows, Main -> List-> back -> List -> back -> List... I think the `RealmChangeListener` may be accumulated in the `Realm`.
+
+What do you think? @cmelchior @emanuelez 
