@@ -5,19 +5,24 @@ including the full data set, all code for data set creation and automated ML bug
 As our work is ongoing this data set is subject to change.
 
 ## The data set
-ToDo: describe data set - what is it?
+The dataset consists of 54755 "bug" labeled issues reports collected from 103 open source projects hosted on Github.
+This set is reduced to 10459 based on filter criteria described in "Root cause prediction based on bug reports" (commits available, changes in production java code, only dealing with a single issue, less than 10 commits, max. 20 files changed per commit, max. 250 LOC changed per file).
+
+These 10459 issues are considered "benchmark ready", and they contain: issue message, commit messages, java aware diff statistics, change location down to method level, github issue metadata, and commit metadata.
+This dataset can be used for natural language processing (NLP) experiments and as benchmark for information retrieval (IR) based fault localization approaches. 
 
 ### Using the data set:
 Create a python script, or console and run the following:
 ```python
 from pandasMagic import BugDataFrames, Filters
-df = BugDataFrames.get_all_issues_df() # loads all available issues (including PRs, without commits, etc)
-df = Filters.only_bugs_with_valid_commit_set(df)  # filter for issues where fixes are available
+df = BugDataFrames.get_all_issues_df() # loads all available issues (including PRs, without commits, etc) - 54755 issues
 df = Filters.remove_pull_request_issues(df) # remove all PRs
+df = Filters.only_bugs_with_valid_commit_set(df)  # filter for issues where fixes are available - 10459 issues
 ```
 Have a look at [RUN_example_load_dataset.py](RUN_example_load_dataset.py) for an example.
 
 ## Machine learning experiment
+
 ToDo: describe data set - what is it?
 
 ### Plots and Performance reports:
